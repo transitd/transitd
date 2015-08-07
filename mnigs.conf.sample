@@ -1,0 +1,9 @@
+[server]
+name=Mnigs
+rpcport=65533
+
+[client]
+
+[cjdns]
+config=/etc/cjdroute.conf
+
