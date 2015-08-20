@@ -23,6 +23,7 @@ dependencies = {
    "sha2",
    "bencode",
    "dkjson",
+   "bit32"
 }
 
 build = {

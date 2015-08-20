@@ -59,6 +59,7 @@ Warning:  code in this repository is work in progress and currently not usable y
 * sha2
 * bencode
 * dkjson
+* bit32
 
 ## Installation
 ```
