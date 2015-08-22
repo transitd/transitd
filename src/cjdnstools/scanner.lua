@@ -45,7 +45,7 @@ local function visitNode(ip)
 					parent = ip,
 					linkNum = i
 				})
-			if not err and response and response.result and response.result.child and response.result.isOneHop == 1 then
+			if not err and response and response.result and response.result.child then
 				local pubkey = string.gmatch(response.result.child, ".*[^%w%d]([%w%d]+\.k).*")()
 				local status, newip = pcall(addrcalc.pkey2ipv6,pubkey);
 				if status then
@@ -57,16 +57,52 @@ local function visitNode(ip)
 						newNodesCount = newNodesCount + 1
 					end
 				else
-					print("Error: " .. newip)
+					print("Error converting public key to IPv6 address: " .. newip)
 				end
 			end
 		end
 	end
 end
 
+function scanner.getMyKey()
+	local response, err = ai:auth({
+			q = "NodeStore_nodeForAddr",
+			ip = ip,
+		})
+	if err then
+		return nil, "Error getting node data: " .. err
+	elseif response and response.result and response.result.key then
+		return response.result.key, nil
+	else
+		return nil, "Unknown error"
+	end
+end
+
+function scanner.getMyIp()
+	local key, err = scanner.getMyKey()
+	if err then
+		return nil, "Error getting key: " .. err
+	else
+		local status, ip = pcall(addrcalc.pkey2ipv6,key);
+		if status then
+			return ip, nil
+		else
+			print("Error converting public key to IPv6 address: " .. ip)
+		end
+	end
+end
+
 function scanner.scan(callback)
 	
-	visitNode()
+	for k in next, newNodes do rawset(newNodes, k, nil) end
+	for k in next, visitedNodes do rawset(visitedNodes, k, nil) end
+	
+	local myip, err = scanner.getMyIp()
+	if err then
+		print("Error getting node ip: " .. err)
+	else
+		newNodes[myip] = myip
+	end
 	
 	local ip = next(newNodes)
 	while ip ~= nil do

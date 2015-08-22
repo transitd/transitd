@@ -1,5 +1,6 @@
 
 local rpcserver = require('json.rpcserver')
-package.path = package.path .. ";../?.lua"
+local lfs = require('lfs')
+lfs.chdir("..")
 local rpcInterface = require('rpc-interface')
 rpcserver.serve(rpcInterface)

@@ -1,9 +1,15 @@
 [server]
-name=Mnigs
+name=Mnigs Server
 rpcport=65533
+maxConnections=10
 
 [client]
+name=Mnigs Client
 
 [cjdns]
 config=/etc/cjdroute.conf
-
+serverSupport=yes
+clientSupport=yes
+tunnelTimeout=300
+tunnelIpv4subnet=10.67.1.0/16
+tunnelIpv6subnet=1111:1111:1111:1111::1111:0/120
