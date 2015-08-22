@@ -38,7 +38,15 @@ local rules = {
 } 
 
 xavante.HTTP{
-    server = {host = "*", port = config.server.rpcport},
+    server = {host = "::", port = config.server.rpcport},
+    
+    defaultHost = {
+    	rules = rules
+    },
+}
+
+xavante.HTTP{
+    server = {host = "0.0.0.0", port = config.server.rpcport},
     
     defaultHost = {
     	rules = rules
