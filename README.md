@@ -18,7 +18,7 @@ Warning:  code in this repository is work in progress and currently not usable y
   * terms of access (max clients, etc)
 * gateway server support
   * openvpn
-  * softeather
+  * softether
   * cjdns gateway
   * simple forwarding configuration
   * other methods
