@@ -77,10 +77,6 @@ $ vi mings.conf
 ```
 
 ## Usage
-```
-$ lua server.lua
-$ lua client.lua
-```
 
 ### Run Server
 ```
