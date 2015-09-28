@@ -17,10 +17,11 @@ Warning:  code in this repository is work in progress and currently not usable y
   * interfaces to run on and routing protocols to use
   * terms of access (max clients, etc)
 * gateway server support
-  * openvpn
-  * softether
+  * openvpn/softether
+  * ipip/gre
   * cjdns gateway
-  * simple forwarding configuration
+  * simple default gateway configuration (in Layer 2 networks)
+  * tun2socks?
   * other methods
 * HTTP JSON RPC server
 * JSON input/output
