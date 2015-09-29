@@ -9,7 +9,7 @@ package.path = package.path .. ";cjdns/contrib/lua/?.lua"
 local cjdns = require "cjdns.init"
 local addrcalc = require "cjdnstools.addrcalc"
 
-local conf = cjdns.ConfigFile.new(config.cjdns.config)
+local conf = cjdns.ConfigFile.new(get_path_from_path_relative_to_config(config.cjdns.config))
 local ai = conf:makeInterface()
 
 local socket = require("socket")

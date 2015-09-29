@@ -5,6 +5,8 @@ local cjdnsTunnel = require("cjdnstools.tunnel")
 local bit32 = require("bit32")
 local socket = require("socket")
 
+local db = require("db")
+
 -- need better random numbers
 math.randomseed(socket.gettime()*1000)
 
@@ -12,14 +14,41 @@ local interface = {
 	echo = function (msg) return msg end,
 	
 	gatewayInfo = function()
-		return { name = config.server.name, methods = {{name = "cjdns"}} }
+		local methods = {}
+		
+		if config.cjdns.serverSupport == "yes" then
+			methods[#methods+1] = {name = "cjdns"}
+		end
+		
+		return { name = config.server.name, ['methods'] = methods }
 	end,
 	
-	requestConnection = function(method, options)
+	requestConnection = function(name, method, options)
+		
+		-- check maxclients config to make sure we are not registering more clients than needed
+		local activeClients = db.getActiveClients()
+		if #activeClients > config.server.maxConnections then
+			return { success = false, errorMsg = "Too many users", temporaryError = true }
+		end
+		
+		-- TODO: fix IPv6
+		local userip = cgilua.servervariable("REMOTE_ADDR")
+		
+		-- check to make sure the user isn't already registered
+		local activeClient = db.lookupActiveClientByIp(userip)
+		if activeClient ~= nil then
+			if activeClient.method ~= method then
+				return { success = false, errorMsg = "User is already registered with a different method", temporaryError = true }
+			else
+				local timestamp = os.time()
+				return { success = true, timeout = activeClient.timeout_timestamp - timestamp, ['ipv4'] = activeClient.internetIPv4, ['ipv6'] = activeClient.internetIPv6 }
+			end
+		end
+		
 		if (method == "cjdns") and (config.cjdns.serverSupport == "yes") then
 			if options.key then
 				
-				-- come up with random ipv4
+				-- come up with random ipv4 based on settings in config
 				local a1, a2, a3, a4, s = config.cjdns.tunnelIpv4subnet:match("(%d+)%.(%d+)%.(%d+)%.(%d+)/(%d+)")
 				a1 = tonumber(a1)
 				a2 = tonumber(a2)
@@ -50,11 +79,35 @@ local interface = {
 				ipv4 = bit32.rshift(ipv4,8)
 				a1 = bit32.band(0xFF,ipv4)
 				
-				local response, err = cjdnsTunnel.addKey(options.key, ipv4)
+				-- TODO: implement ipv6 support, need ipv6 parser to parse config setting
+				ipv6 = nil
+				
+				-- come up with session id
+				local sidchars = "1234567890abcdefghijklmnopqrstuvwxyz"
+				local sid = ""
+				for t=0,5 do
+					for i=1,32 do
+						local char = math.random(1,string.len(sidchars))
+						sid = sid .. string.sub(sidchars,char,char)
+					end
+					if db.lookupClientBySession(sid) ~= nil then
+						sid = ""
+					else
+						break
+					end
+				end
+				if sid == "" then
+					return { success = false, errorMsg = "Failed to come up with an unused session id", temporaryError = true }
+				end
+				
+				local response, err = cjdnsTunnel.addKey(options.key, ipv4, ipv6)
 				if err then
 					return { success = false, errorMsg = "Error adding cjdns key at gateway: " .. err }
 				else
-					return { success = true, timeout = config.cjdns.tunnelTimeout }
+					
+					db.registerClient(sid, name, method, userip, nil, ipv4, ipv6)
+					
+					return { success = true, timeout = config.server.clientTimeout, ['ipv4'] = ivp4, ['ipv6'] = ipv6 }
 				end
 			else
 				return { success = false, errorMsg = "Key option is required" }
@@ -64,6 +117,10 @@ local interface = {
 		return { success = false, errorMsg = "Method not supported" }
   end,
   
+  renewConnection = function(sid)
+  	return { success = false, errorMsg = "Not implemented yet" }
+  end,
+  
   releaseConnection = function(method, options)
 		if method == "cjdns" and (config.cjdns.serverSupport == "yes") then
 			if options.key then
@@ -71,7 +128,7 @@ local interface = {
 				if err then
 					return { success = false, errorMsg = "Error adding cjdns key at gateway: " .. err }
 				else
-					return { success = true, timeout = config.cjdns.tunnelTimeout }
+					return { success = true, timeout = config.server.clientTimeout }
 				end
 			else
 				return { success = false, errorMsg = "Key option is required" }

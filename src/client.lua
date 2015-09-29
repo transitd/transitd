@@ -5,8 +5,6 @@ local rpc = require("json.rpc")
 
 rpc.setTimeout(5)
 
-local cjson_safe = require("cjson.safe")
-
 local availableGateways = {}
 local checkNodes = {}
 
@@ -28,7 +26,7 @@ local callback = function(ip)
 			if err then
 				print("Failed to get my own IP: " .. err)
 			else
-				local result, err = server.requestConnection("cjdns",{key=mykey})
+				local result, err = server.requestConnection(config.client.name,"cjdns",{key=mykey})
 				if err then
 					print("Failed to register with " .. addr .. ": " .. err)
 				elseif result.errorMsg then
