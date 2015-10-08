@@ -67,14 +67,19 @@ function db.registerClient(sid, name, method, meshIPv4, meshIPv6, internetIPv4, 
 end
 
 function db.lookupClientBySession(sid)
-	cur = dbc:execute(string.format("SELECT * FROM clients WHERE sid = '%s'", dbc:escape(sid)))
-	local clients = {}
+	local cur, error = dbc:execute(string.format("SELECT * FROM clients WHERE sid = '%s'", dbc:escape(sid)))
+	if cur == nil then
+		return nil, error
+	end
 	return cur:fetch ({}, "a")
 end
 
 function db.lookupActiveClientByIp(ip)
  	local timestamp = os.time()
-	cur = dbc:execute(string.format("SELECT * FROM clients WHERE (meshIPv4 = '%s' OR meshIPv6 = '%s') AND '%d' <= timeout_timestamp AND active = 1", dbc:escape(ip), dbc:escape(ip), timestamp))
+	local cur, error = dbc:execute(string.format("SELECT * FROM clients WHERE (meshIPv4 = '%s' OR meshIPv6 = '%s') AND '%d' <= timeout_timestamp AND active = 1", dbc:escape(ip), dbc:escape(ip), timestamp))
+	if cur == nil then
+		return nil, error
+	end
 	return cur:fetch ({}, "a")
 end
 
@@ -83,7 +88,10 @@ function db.getTimingOutClients(sinceTimestamp)
 	if sinceTimestamp >= timestamp then
 		error("Timestamp must be in the past")
 	end
-	cur = dbc:execute(string.format("SELECT * FROM clients WHERE '%d' <= timeout_timestamp AND timeout_timestamp < '%d'", sinceTimestamp, timestamp))
+	local cur, error = dbc:execute(string.format("SELECT * FROM clients WHERE '%d' <= timeout_timestamp AND timeout_timestamp < '%d'", sinceTimestamp, timestamp))
+	if cur == nil then
+		return nil, error
+	end
 	local clients = {}
 	local row = cur:fetch ({}, "a")
 	while row do
@@ -95,7 +103,10 @@ end
 
 function db.getActiveClients()
  	local timestamp = os.time()
-	local cur = dbc:execute(string.format("SELECT * FROM clients WHERE '%d' <= timeout_timestamp AND active = 1", timestamp))
+	local cur, error = dbc:execute(string.format("SELECT * FROM clients WHERE '%d' <= timeout_timestamp AND active = 1", timestamp))
+	if cur == nil then
+		return nil, error
+	end
 	local clients = {}
 	local row = cur:fetch ({}, "a")
 	while row do

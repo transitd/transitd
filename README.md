@@ -62,6 +62,7 @@ Warning:  code in this repository is work in progress and currently not usable y
 * dkjson
 * bit32
 * luasql-sqlite3
+* alt-getopt
 
 This fix is required to allow JSON RPC requests to work with IPv6: https://github.com/darklajid/luasocket/commit/4785d9e6fcf107721602afbc61352475d56f921a
 
