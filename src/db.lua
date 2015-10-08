@@ -14,6 +14,7 @@ end
 
 function prepareDatabase()
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS clients(sid varchar(32) PRIMARY KEY, name varchar(255), method varchar(64), meshIPv4 varchar(15), meshIPv6 varchar(45), internetIPv4 varchar(15), internetIPv6 varchar(45), register_timestamp INTEGER, timeout_timestamp INTEGER, active INTEGER)"))
+	assert(dbc:execute("CREATE TABLE IF NOT EXISTS servers(name varchar(255), ip varchar(15), last_seen_timestamp INTEGER)"))
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS schema_migrations(name varchar(255) PRIMARY KEY, timestamp INTEGER)"))
 	migrateSchema()
 end
@@ -74,7 +75,6 @@ end
 function db.lookupActiveClientByIp(ip)
  	local timestamp = os.time()
 	cur = dbc:execute(string.format("SELECT * FROM clients WHERE (meshIPv4 = '%s' OR meshIPv6 = '%s') AND '%d' <= timeout_timestamp AND active = 1", dbc:escape(ip), dbc:escape(ip), timestamp))
-	local clients = {}
 	return cur:fetch ({}, "a")
 end
 
@@ -85,7 +85,19 @@ function db.getTimingOutClients(sinceTimestamp)
 	end
 	cur = dbc:execute(string.format("SELECT * FROM clients WHERE '%d' <= timeout_timestamp AND timeout_timestamp < '%d'", sinceTimestamp, timestamp))
 	local clients = {}
-	row = cur:fetch ({}, "a")
+	local row = cur:fetch ({}, "a")
+	while row do
+		clients[#clients+1] = row.sid
+		local row = cur:fetch (row, "a")
+	end
+	return clients
+end
+
+function db.getActiveClients()
+ 	local timestamp = os.time()
+	local cur = dbc:execute(string.format("SELECT * FROM clients WHERE '%d' <= timeout_timestamp AND active = 1", timestamp))
+	local clients = {}
+	local row = cur:fetch ({}, "a")
 	while row do
 		clients[#clients+1] = row.sid
 		row = cur:fetch (row, "a")
@@ -93,16 +105,63 @@ function db.getTimingOutClients(sinceTimestamp)
 	return clients
 end
 
-function db.getActiveClients()
- 	local timestamp = os.time()
-	cur = dbc:execute(string.format("SELECT * FROM clients WHERE '%d' <= timeout_timestamp AND active = 1", timestamp))
-	local clients = {}
-	row = cur:fetch ({}, "a")
+function db.registerServer(name, ip)
+	local timestamp = os.time()
+	
+	-- TODO: fix race condition
+	
+	local server = db.lookupServer(ip)
+	local query
+	if server ~= nil then
+		query = string.format(
+			"UPDATE servers SET last_seen_timestamp = '%d' WHERE ip = '%s'"
+			,timestamp
+			,dbc:escape(ip)
+		)
+	else
+		query = string.format(
+			"INSERT INTO servers ("
+			.."name"
+			..",ip"
+			..",last_seen_timestamp"
+			..") VALUES ("
+			.."'%s'"
+			..",'%s'"
+			..",'%d'"
+			..")"
+			,dbc:escape(name)
+			,dbc:escape(ip)
+			,timestamp
+		)
+	end
+	local result, error = dbc:execute(query)
+	if result == nil then
+		return nil, error
+	end
+	return true, nil
+end
+
+function db.lookupServer(ip)
+	local cur, error = dbc:execute(string.format("SELECT * FROM servers WHERE ip = '%s'",dbc:escape(ip)))
+	if cur == nil then
+		return nil, error
+	end
+	return cur:fetch ({}, "a")
+end
+
+function db.getRecentServers()
+ 	local timestamp = os.time() - 30*24*60*60
+	local cur, error = dbc:execute(string.format("SELECT * FROM servers WHERE last_seen_timestamp > '%d'", timestamp))
+	if cur == nil then
+		return nil, error
+	end
+	local servers = {}
+	local row = cur:fetch ({}, "a")
 	while row do
-		clients[#clients+1] = row.sid
+		servers[#servers+1] = row
 		row = cur:fetch (row, "a")
 	end
-	return clients
+	return servers
 end
 
 prepareDatabase()
