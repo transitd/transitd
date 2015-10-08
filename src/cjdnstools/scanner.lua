@@ -13,8 +13,6 @@ require "cjdns.config" -- ConfigFile null in certain cases?
 local conf = cjdns.ConfigFile.new(get_path_from_path_relative_to_config(config.cjdns.config))
 local ai = conf:makeInterface()
 
-local socket = require("socket")
-
 local visitedNodes = {}
 local visitedNodesCount = 0
 local newNodes = {}
@@ -109,9 +107,6 @@ function scanner.scan(callback)
 	while ip ~= nil do
 		
 		callback(ip)
-		
-		-- wait 3 seconds
-		socket.select(nil, nil, 3)
 		
 		visitNode(ip)
 		
