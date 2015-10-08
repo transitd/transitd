@@ -27,5 +27,5 @@ dependencies = {
 }
 
 build = {
-   type = "builtin",
+   type = "none",
 }
