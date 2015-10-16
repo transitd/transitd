@@ -96,7 +96,7 @@ function db.getTimingOutClients(sinceTimestamp)
 	local row = cur:fetch ({}, "a")
 	while row do
 		clients[#clients+1] = row.sid
-		local row = cur:fetch (row, "a")
+		local row = cur:fetch ({}, "a")
 	end
 	return clients
 end
@@ -111,7 +111,7 @@ function db.getActiveClients()
 	local row = cur:fetch ({}, "a")
 	while row do
 		clients[#clients+1] = row.sid
-		row = cur:fetch (row, "a")
+		row = cur:fetch ({}, "a")
 	end
 	return clients
 end
@@ -170,7 +170,7 @@ function db.getRecentServers()
 	local row = cur:fetch ({}, "a")
 	while row do
 		servers[#servers+1] = row
-		row = cur:fetch (row, "a")
+		row = cur:fetch ({}, "a")
 	end
 	return servers
 end
