@@ -1,4 +1,6 @@
 [server]
+listenIpv6=true
+listenIpv4=true
 name=Mnigs Server
 rpcport=65533
 maxConnections=10
