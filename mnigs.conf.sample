@@ -5,6 +5,7 @@ name=Mnigs Server
 rpcport=65533
 maxConnections=10
 clientTimeout=300
+webdir=./www
 
 [client]
 name=Mnigs Client
