@@ -15,11 +15,10 @@ local ai = conf:makeInterface()
 
 function tunnel.getConnections()
 	local response, err = ai:auth({
-			q = "IpTunnel_listConnections",
-			publicKeyOfNodeToConnectTo = key,
+			q = "IpTunnel_listConnections"
 		})
 	if err then
-		return nil, "Error adding key " .. key .. ": " .. err
+		return nil, "Error getting connections: " .. err
 	else
 		return true, nil
 	end
@@ -33,7 +32,7 @@ function tunnel.connect(key)
 			publicKeyOfNodeToConnectTo = key,
 		})
 	if err then
-		return nil, "Error adding key " .. key .. ": " .. err
+		return nil, "Error connecting to " .. key .. ": " .. err
 	else
 		return true, nil
 	end
