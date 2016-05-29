@@ -20,7 +20,7 @@ function tunnel.getConnections()
 	if err then
 		return nil, "Error getting connections: " .. err
 	else
-		return true, nil
+		return response, nil
 	end
 end
 
