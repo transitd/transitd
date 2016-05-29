@@ -78,6 +78,7 @@ local interface = {
 				a2 = bit32.band(0xFF,ipv4)
 				ipv4 = bit32.rshift(ipv4,8)
 				a1 = bit32.band(0xFF,ipv4)
+				local ipv4 = a1.."."..a2.."."..a3.."."..a4;
 				
 				-- TODO: implement ipv6 support, need ipv6 parser to parse config setting
 				ipv6 = nil
