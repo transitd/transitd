@@ -95,8 +95,8 @@ function db.getTimingOutClients(sinceTimestamp)
 	local clients = {}
 	local row = cur:fetch ({}, "a")
 	while row do
-		clients[#clients+1] = row.sid
-		local row = cur:fetch ({}, "a")
+		clients[#clients+1] = row
+		row = cur:fetch ({}, "a")
 	end
 	return clients
 end
