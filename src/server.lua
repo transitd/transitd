@@ -6,6 +6,8 @@ local redirecthandler = require "xavante.redirecthandler"
 
 local config = require("config")
 
+local conman = require("conman")
+
 -- Define here where Xavante HTTP documents scripts are located
 local webDir = "./www"
 
@@ -53,9 +55,17 @@ xavante.HTTP{
     },
 }
 
-print "\nStarting mnigs server...\n";
+print "\nStarting mnigs server...\n"
 
-xavante.start();
+local thread = require "llthreads2".new[[
+	local conman = require("conman")
+	conman.startConnectionManager()
+]]
+
+thread:start(true, true)
+
+xavante.start()
 
 print "exiting...\n"
 
+thread:join()
