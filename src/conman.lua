@@ -37,10 +37,19 @@ local connectionManager = function()
 		
 		print("Client '"..client.name.." at "..at.."-> "..addr.." timed out.")
 		
-		local cjdnsConnections, err = cjdnsTunnel.getConnections()
-		if err ~= nil then
-			-- TODO: unregister key
-			-- cjdnsTunnel.removeKey(connIndex)
+		if client.method == "cjdns" then
+			-- we will need to remove the key from running cjdroute
+			local key, error = db.getCjdnsClientKey(client.sid)
+			if error then
+				print("Failed to deauthroize cjdns tunnel key: "..error)
+			else
+				local success, error = cjdnsTunnel.deauthorizeKey(key)
+				if error then
+					print("Failed to deauthroize cjdns tunnel key: "..error)
+				else
+					print("Deauthorized cjdns key "..key)
+				end
+			end
 		end
 	end
 end

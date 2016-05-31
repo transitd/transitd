@@ -107,6 +107,7 @@ local interface = {
 				else
 					
 					db.registerClient(sid, name, method, userip, nil, ipv4, ipv6)
+					db.registerCjdnsClient(sid, options.key)
 					
 					return { success = true, timeout = config.server.clientTimeout, ['ipv4'] = ivp4, ['ipv6'] = ipv6 }
 				end
@@ -124,15 +125,20 @@ local interface = {
   
   releaseConnection = function(method, options)
 		if method == "cjdns" and (config.cjdns.serverSupport == "yes") then
-			if options.key then
-				local response, err = cjdnsTunnel.removeKey(options.key)
-				if err then
-					return { success = false, errorMsg = "Error adding cjdns key at gateway: " .. err }
+			if options.sid then
+				local key, error = db.getCjdnsClientKey(options.sid)
+				if error then
+					return { success = false, errorMsg = "Error releasing connection: " .. err }
 				else
-					return { success = true, timeout = config.server.clientTimeout }
+					local response, err = cjdnsTunnel.deauthorizeKey(key)
+					if err then
+						return { success = false, errorMsg = "Error releasing connection: " .. err }
+					else
+						return { success = true, timeout = config.server.clientTimeout }
+					end
 				end
 			else
-				return { success = false, errorMsg = "Key option is required" }
+				return { success = false, errorMsg = "Sid option is required" }
 			end
 		end
 		
