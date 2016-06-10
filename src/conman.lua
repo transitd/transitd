@@ -48,6 +48,7 @@ local connectionManager = function()
 					print("Failed to deauthroize cjdns tunnel key: "..error)
 				else
 					print("Deauthorized cjdns key "..key)
+					db.deactivateClientBySession(client.sid)
 				end
 			end
 		end

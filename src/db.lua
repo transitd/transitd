@@ -109,6 +109,14 @@ function db.lookupClientBySession(sid)
 	return cur:fetch ({}, "a"), nil
 end
 
+function db.deactivateClientBySession(sid)
+	local cur, error = dbc:execute(string.format("UPDATE clients SET active = 0 WHERE sid = '%s'", dbc:escape(sid)))
+	if error ~= nil then
+		return false, error
+	end
+	return true, nil
+end
+
 function db.lookupActiveClientByIp(ip)
  	local timestamp = os.time()
 	local cur, error = dbc:execute(string.format("SELECT * FROM clients WHERE (meshIPv4 = '%s' OR meshIPv6 = '%s') AND '%d' <= timeout_timestamp AND active = 1", dbc:escape(ip), dbc:escape(ip), timestamp))
@@ -123,7 +131,7 @@ function db.getTimingOutClients(sinceTimestamp)
 	if sinceTimestamp >= timestamp then
 		error("Timestamp must be in the past")
 	end
-	local cur, error = dbc:execute(string.format("SELECT * FROM clients WHERE '%d' <= timeout_timestamp AND timeout_timestamp < '%d'", sinceTimestamp, timestamp))
+	local cur, error = dbc:execute(string.format("SELECT * FROM clients WHERE '%d' <= timeout_timestamp AND timeout_timestamp < '%d' AND active = 1", sinceTimestamp, timestamp))
 	if cur == nil then
 		return nil, error
 	end
