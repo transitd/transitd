@@ -11,11 +11,11 @@ Warning:  code in this repository is work in progress and currently not usable, 
 * Supports multiple connection methods
 * Automatically registers with available servers and sets up WAN
 
-## Server Component
+## Gateway Component
 * config file
   * JSON RPC ports
   * interfaces to run on and routing protocols to use
-  * terms of access (max clients, etc)
+  * terms of access (max subscribers, etc)
 * gateway server support
   * openvpn/softether
   * ipip/gre
@@ -27,24 +27,24 @@ Warning:  code in this repository is work in progress and currently not usable, 
 * JSON input/output
 
 ### Function
-1. Set up external routing system(s): locally running VPN server software, etc.
-2. Start JSON RPC server
-  a. serve available connection details to clients
-  b. allow clients to register/unregister with the server
+1. set up external routing system(s): locally running VPN server software, etc.
+2. start JSON RPC server
+  a. serve available connection details to subscribers
+  b. allow subscribers to register/unregister with the server
 
-## Client Component
+## Subscriber Component
 * config file
   * JSON RPC ports
   * interfaces to scan and routing protocols to use
   * IP scan methods
   * connection methods
   * connection method specific configuration
-* client support for all the connection methods supported by the server
+* subscriber support for all the connection methods supported by the server
 * support traversing network for multiple routing protocols, including cjdns
 
-## Function
+### Function
   1. traverse the network to find nodes
-  2. send JSON RPC client request to configured port(s) that servers run on
+  2. send JSON RPC request to configured port(s) that servers run on
   3. register with the server over JSON RPC if connection is possible
   4. set up connection with the appropriate method, retry with different methods on failure
   5. detect downtime and search for another server, track connection quality of servers
@@ -91,9 +91,10 @@ $ sudo luarocks install alt-getopt
 $ sudo luarocks install lua-llthreads2
 $ sudo apt-get install libsqlite3-dev
 $ sudo luarocks install luasql-sqlite3
-$ sudo patch ...... (1b35d812c7d637b91f2ac0a8d91f9698ba84d8d9.patch)
-$ sudo patch ...... (4785d9e6fcf107721602afbc61352475d56f921a.patch) (optional)
+$ sudo patch /path/to/.../cgilua/post.lua < 1b35d812c7d637b91f2ac0a8d91f9698ba84d8d9.patch
+$ sudo patch /path/to/.../socket/http.lua < 4785d9e6fcf107721602afbc61352475d56f921a.patch
 ```
+If you are using --local flag with luarocks, make sure you have ``` eval `luarocks path` ``` in your .bashrc file.
 
 ## Configuration
 ```
@@ -104,14 +105,17 @@ $ vi mings.conf
 
 ## Usage
 
-### Run Server
+### Run daemon
 ```
 $ cd src
-$ lua server.lua
+$ lua daemon.lua
 ```
 
-### Run Client
+### Run command line interface
 ```
 $ cd src
-$ lua client.lua
+$ lua cli.lua
 ```
+
+### Web UI
+You can access `http://localhost:65533` from your browser.

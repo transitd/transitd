@@ -60,7 +60,7 @@ function db.registerClient(sid, name, method, meshIPv4, meshIPv6, internetIPv4, 
 		,internetIPv4~=nil and dbc:escape(internetIPv4) or ""
 		,internetIPv6~=nil and dbc:escape(internetIPv6) or ""
 		,timestamp
-		,timestamp+config.server.clientTimeout
+		,timestamp+config.gateway.subscriberTimeout
 	)
 	local result, error = dbc:execute(query)
 	if result == nil then

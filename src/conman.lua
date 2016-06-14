@@ -8,7 +8,7 @@ local cjdnsTunnel = require("cjdnstools.tunnel")
 
 local conManTs = 0
 
-local connectionManager = function()
+local subscriberManager = function()
 	
 	local sinceTimestamp = conManTs
 	conManTs = os.time()
@@ -53,6 +53,15 @@ local connectionManager = function()
 			end
 		end
 	end
+end
+
+local gatewayManager = function()
+	-- TODO: renew connection to gateway when about to expire
+end
+
+local connectionManager = function()
+	subscriberManager()
+	gatewayManager()
 end
 
 function conman.startConnectionManager()
