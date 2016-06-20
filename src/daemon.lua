@@ -17,7 +17,7 @@ local rules = {
     {
       match = "^[^%./]*/$",
       with = redirecthandler,
-      params = {"index.lua"}
+      params = {"index.html"}
     }, 
     {
       match = "^[^%./]*/jsonrpc/?$",
