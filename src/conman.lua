@@ -13,33 +13,33 @@ local subscriberManager = function()
 	local sinceTimestamp = conManTs
 	conManTs = os.time()
 	
-	local clients, error = db.getTimingOutClients(sinceTimestamp)
-	if clients == nil then
+	local subscribers, error = db.getTimingOutSubscribers(sinceTimestamp)
+	if subscribers == nil then
 		print(error)
 		return
 	end
 	
-	for k,client in pairs(clients) do
+	for k,subscriber in pairs(subscribers) do
 		local at = ""
-		if client.meshIPv4 ~= nil then
-			at = at..client.method.."::"..client.meshIPv4.." "
+		if subscriber.meshIPv4 ~= nil then
+			at = at..subscriber.method.."::"..subscriber.meshIPv4.." "
 		end
-		if client.meshIPv6 ~= nil then
-			at = at..client.method.."::"..client.meshIPv6.." "
+		if subscriber.meshIPv6 ~= nil then
+			at = at..subscriber.method.."::"..subscriber.meshIPv6.." "
 		end
 		local addr = ""
-		if client.meshIPv4 ~= nil then
-			addr = addr..client.internetIPv4.." "
+		if subscriber.meshIPv4 ~= nil then
+			addr = addr..subscriber.internetIPv4.." "
 		end
-		if client.meshIPv6 ~= nil then
-			addr = addr..client.internetIPv6.." "
+		if subscriber.meshIPv6 ~= nil then
+			addr = addr..subscriber.internetIPv6.." "
 		end
 		
-		print("Client '"..client.name.." at "..at.."-> "..addr.." timed out.")
+		print("Subscriber '"..subscriber.name.." at "..at.."-> "..addr.." timed out.")
 		
-		if client.method == "cjdns" then
+		if subscriber.method == "cjdns" then
 			-- we will need to remove the key from running cjdroute
-			local key, error = db.getCjdnsClientKey(client.sid)
+			local key, error = db.getCjdnsSubscriberKey(subscriber.sid)
 			if error then
 				print("Failed to deauthroize cjdns tunnel key: "..error)
 			else
@@ -48,7 +48,7 @@ local subscriberManager = function()
 					print("Failed to deauthroize cjdns tunnel key: "..error)
 				else
 					print("Deauthorized cjdns key "..key)
-					db.deactivateClientBySession(client.sid)
+					db.deactivateClientBySession(subscriber.sid)
 				end
 			end
 		end

@@ -19,7 +19,7 @@ local callback = function(ip)
 	else
 		if result.name and result.name then
 			print("Server '" .. result.name .. "' at " .. ip)
-			db.registerServer(result.name, ip)
+			db.registerGateway(result.name, ip)
 		end
 	end
 end

@@ -16,18 +16,18 @@ optarg,optind = alt_getopt.get_opts (arg, "hlc:s", long_opts)
 
 if optarg.h or not (optarg.l or optarg.c or optarg.s) then
 	print("Program arguments: \
-	 -l      List available servers \
-	 -c ip   Connect to server \
-	 -s      Run server scanner to look for servers \
+	 -l      List available gateways \
+	 -c ip   Connect to a gateway \
+	 -s      Run a scanner to look for gateways \
 	")
 end
 
 if optarg.l then
-	local servers, error = db.getRecentServers()
-	if servers == nil then
+	local gateways, error = db.getRecentGateways()
+	if gateways == nil then
 		print(error)
 	else
-		for k,v in pairs (servers) do
+		for k,v in pairs (gateways) do
 		   print(v.ip.."\t"..v.name)
 		end
 	end
@@ -38,37 +38,37 @@ if optarg.c then
 	local ip = optarg.c
 	
 	local addr = "http://[" .. ip .. "]:" .. config.main.rpcport .. "/jsonrpc"
-	local server = rpc.proxy(addr)
+	local gateway = rpc.proxy(addr)
 	
-	local record = db.lookupServer(ip)
+	local record = db.lookupGateway(ip)
 	
 	if record == nil then
 		print("Checking " .. ip .. "...")
-		local result, err = server.gatewayInfo()
+		local result, err = gateway.gatewayInfo()
 		if err then
 			print("Failed to connect to " .. ip .. ": " .. err)
 		else
 			if result.name and result.name then
-				print("Server '" .. result.name .. "' at " .. ip)
-				db.registerServer(result.name, ip)
-				record = db.lookupServer(ip)
+				print("Gateway '" .. result.name .. "' at " .. ip)
+				db.registerGateway(result.name, ip)
+				record = db.lookupGateway(ip)
 			end
 		end
 	end
 	
 	if record == nil then
-		print("No mnigs server at " .. ip)
+		print("No mnigs at " .. ip)
 		return
 	end
 	
 	local scanner = require("cjdnstools.scanner")
 	
-	print("Connecting to server '" .. record.name .. "' at " .. record.ip)
+	print("Connecting to gateway '" .. record.name .. "' at " .. record.ip)
 	local mykey, err = scanner.getMyKey()
 	if err then
 		print("Failed to get my own IP: " .. err)
 	else
-		local result, err = server.requestConnection(config.main.name,"cjdns",{key=mykey})
+		local result, err = gateway.requestConnection(config.main.name,"cjdns",{key=mykey})
 		if err then
 			print("Failed to register with " .. record.ip .. ": " .. err)
 		elseif result.errorMsg then

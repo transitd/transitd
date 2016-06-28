@@ -17,7 +17,7 @@ function gateway.allocateIpv4()
 	a4 = tonumber(a4)
 	s = tonumber(s)
 	if 0>a1 or a1>255 or 0>a2 or a2>255 or 0>a3 or a3>255 or 0>a4 or a4>255 or 0>s or s>32 then
-		return nil, "Error in server configuration"
+		return nil, "Error in daemon configuration"
 	end
 	local ipv4 = 0;
 	ipv4 = bit32.bor(ipv4,a1)

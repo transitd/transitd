@@ -34,9 +34,9 @@ local interface = {
 		-- TODO: check to make sure they are connecting over allowed network
 		
 		-- check maxclients config to make sure we are not registering more clients than needed
-		local activeClients = db.getActiveClients()
-		if #activeClients > config.gateway.maxConnections then
-			return { success = false, errorMsg = "Too many users", temporaryError = true }
+		local activeSubscribers = db.getActiveSubscribers()
+		if #activeSubscribers > config.gateway.maxConnections then
+			return { success = false, errorMsg = "Too many subscribers", temporaryError = true }
 		end
 		
 		local subscriberip = cgilua.servervariable("REMOTE_ADDR")
@@ -85,7 +85,7 @@ local interface = {
 		return { success = false, errorMsg = "Method not supported" }
 	end,
 	
-	connectTo = function(ip)
+	connectTo = function(ip, method)
 		local methods = {}
 		
 		local requiestip = cgilua.servervariable("REMOTE_ADDR")
@@ -94,7 +94,12 @@ local interface = {
 			return { success = false, errorMsg = "Permission denied" }
 		end
 		
+		-- TODO: check network == cjdns
+		if method == "cjdns" and config.cjdns.subscriberSupport == "yes" and config.cjdns.tunnelSupport == "yes" then
+			return cjdns.connectTo(ip, method)
+		end
 		
+		return { success = false, errorMsg = "Method not supported" }
 	end
 }
 
