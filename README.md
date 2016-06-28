@@ -92,7 +92,14 @@ $ sudo luarocks install lua-llthreads2
 $ sudo apt-get install libsqlite3-dev
 $ sudo luarocks install luasql-sqlite3
 $ sudo patch /path/to/.../cgilua/post.lua < 1b35d812c7d637b91f2ac0a8d91f9698ba84d8d9.patch
+```
+Then, either,
+```
 $ sudo patch /path/to/.../socket/http.lua < 4785d9e6fcf107721602afbc61352475d56f921a.patch
+```
+OR
+```
+$ sudo luarocks install https://raw.githubusercontent.com/diegonehab/luasocket/master/luasocket-scm-0.rockspec
 ```
 If you are using --local flag with luarocks, make sure you have ``` eval `luarocks path` ``` in your .bashrc file.
 
