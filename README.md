@@ -76,7 +76,6 @@ This fix is required to allow JSON RPC requests to work with IPv6: https://githu
 ```
 $ git clone git://github.com/pdxmeshnet/mnigs.git
 $ cd mnigs
-$ git submodule update --init --recursive
 $ sudo luarocks install cgilua
 $ sudo luarocks install lua-cjson
 $ sudo luarocks install inifile

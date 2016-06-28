@@ -4,7 +4,7 @@ local scanner = {}
 
 local config = require("config")
 
-package.path = package.path .. ";cjdns/contrib/lua/?.lua"
+package.path = package.path .. ";cjdnstools/contrib/lua/?.lua"
 
 local cjdns = require "cjdns.init"
 local addrcalc = require "cjdnstools.addrcalc"
