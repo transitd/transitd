@@ -6,6 +6,9 @@ local redirecthandler = require "xavante.redirecthandler"
 
 local config = require("config")
 
+local conman = require("conman")
+-- Define here where Xavante HTTP documents scripts are located
+local webDir = "./www"
 
 local mnigs_logo = '[meshnet-mgr]'
 
@@ -18,7 +21,7 @@ local rules = {}
 table.insert(rules, {
   match  = "^[^%./]*/$",
   with   = redirecthandler,
-  params = { "index.lua" }
+  params = { "index.html" }
 })
 
 -- rpc (redirect)
@@ -70,7 +73,12 @@ for ifs, server in pairs(listenOn) do
 
 end
 
+local thread = require "llthreads2".new[[
+	local conman = require("conman")
+	conman.startConnectionManager()
+]]
+
+thread:start(true, true)
 xavante.start();
-
-
 print(mnigs_logo, "Shutting down")
+thread:join()

@@ -1,21 +1,47 @@
 [server]
 listenIpv6=true
 listenIpv4=true
-name=Mnigs Server
 rpcport=65533
+[main]
+
+name=Lua mnigs
+
+[gateway]
+
+# enable gateway function
+enabled=yes
+
+# maximum allowed subscribers
 maxConnections=10
 clientTimeout=300
-webdir=./www
 
-[client]
-name=Mnigs Client
+# automatically disable users after this timeout
+subscriberTimeout=300
+
+# subscriber address allocation
+addressAllocation = static
+
+# static address allocation subnets
+subscriberIpv4subnet=10.67.1.0/16
+subscriberIpv6subnet=1111:1111:1111:1111::1111:0/120
+
+
+[subscriber]
 
 [cjdns]
+# don't change this
+network=fc00::/8
+
+# path to main cjdns config file
 config=/etc/cjdroute.conf
-serverSupport=yes
-clientSupport=yes
-tunnelIpv4subnet=10.67.1.0/16
-tunnelIpv6subnet=1111:1111:1111:1111::1111:0/120
+# publish gateway on this network
+gatewaySupport=yes
+
+# subscribe over this network
+subscriberSupport=yes
+
+# allow the use of built in cjdns tunnel function
+tunnelSupport=yes
 
 [database]
 file=mnigs.db
