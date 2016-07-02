@@ -73,7 +73,7 @@ end
 
 function cjdns.connectTo(ip, method)
 	
-	local addr = "http://[" .. ip .. "]:" .. config.server.rpcport .. "/jsonrpc"
+	local addr = "http://[" .. ip .. "]:" .. config.daemon.rpcport .. "/jsonrpc"
 	local gateway = rpc.proxy(addr)
 	
 	local record = db.lookupGateway(ip)

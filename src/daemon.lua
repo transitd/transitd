@@ -7,13 +7,11 @@ local redirecthandler = require "xavante.redirecthandler"
 local config = require("config")
 
 local conman = require("conman")
+
 -- Define here where Xavante HTTP documents scripts are located
 local webDir = "./www"
 
 local mnigs_logo = '[meshnet-mgr]'
-
--- Xavante HTTP documents scripts are located
-local webDir = config.server.webdir
 
 local rules = {}
 
@@ -52,12 +50,12 @@ local function xavante_params(addr, port)
   return { host = addr, port = port }
 end
 
-if (config.server.listenIpv6) then
-  table.insert(listenOn, xavante_params('::', config.server.rpcport))
+if (config.daemon.listenIpv6) then
+  table.insert(listenOn, xavante_params('::', config.daemon.rpcport))
 end
 
-if (config.server.listenIpv4) then
-  table.insert(listenOn, xavante_params('0.0.0.0', config.server.rpcport))
+if (config.daemon.listenIpv4) then
+  table.insert(listenOn, xavante_params('0.0.0.0', config.daemon.rpcport))
 end
 
 for ifs, server in pairs(listenOn) do

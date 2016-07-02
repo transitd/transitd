@@ -1,10 +1,12 @@
-[server]
-listenIpv6=true
-listenIpv4=true
-rpcport=65533
 [main]
 
 name=Lua mnigs
+
+[daemon]
+
+listenIpv6=true
+listenIpv4=true
+rpcport=65533
 
 [gateway]
 
@@ -29,11 +31,13 @@ subscriberIpv6subnet=1111:1111:1111:1111::1111:0/120
 [subscriber]
 
 [cjdns]
+
 # don't change this
 network=fc00::/8
 
 # path to main cjdns config file
 config=/etc/cjdroute.conf
+
 # publish gateway on this network
 gatewaySupport=yes
 
