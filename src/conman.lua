@@ -5,6 +5,7 @@ local conman = {}
 local config = require("config")
 local db = require("db")
 local cjdnsTunnel = require("cjdnstools.tunnel")
+local threadman = require("threadman")
 
 local conManTs = 0
 
@@ -45,8 +46,10 @@ local subscriberManager = function()
 			else
 				local success, error = cjdnsTunnel.deauthorizeKey(key)
 				if error then
+					threadman.notify({type = "subscriber.deauth.fail", sid = subscriber.sid, cjdnskey = key})
 					print("Failed to deauthroize cjdns tunnel key: "..error)
 				else
+					threadman.notify({type = "subscriber.deauth", sid = subscriber.sid, cjdnskey = key})
 					print("Deauthorized cjdns key "..key)
 					db.deactivateClientBySession(subscriber.sid)
 				end
@@ -66,10 +69,22 @@ end
 
 function conman.startConnectionManager()
 	local socket = require("socket")
+	local listener = threadman.registerListener("conman")
 	while true do
+		socket.sleep(2)
 		connectionManager()
-		socket.sleep(10)
+		local msg = {};
+		while msg ~= nil do
+			msg = listener:listen(true)
+			if msg ~= nil then
+				if msg["type"] == "exit" then
+					threadman.unregisterListener(listener)
+					return
+				end
+			end
+		end
 	end
+	
 end
 
 return conman

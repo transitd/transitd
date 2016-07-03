@@ -64,7 +64,7 @@ Warning:  code in this repository is work in progress and currently not usable, 
 * bit32
 * luasql-sqlite3
 * alt-getopt
-* lua-llthreads2
+* luaproc
 
 This fix is required to allow CGILua to accept JSON-RPC content type: https://github.com/pdxmeshnet/cgilua/commit/1b35d812c7d637b91f2ac0a8d91f9698ba84d8d9.patch
 (see https://github.com/keplerproject/cgilua/pull/9)
@@ -87,7 +87,7 @@ $ sudo luarocks install bencode
 $ sudo luarocks install dkjson
 $ sudo luarocks install bit32
 $ sudo luarocks install alt-getopt
-$ sudo luarocks install lua-llthreads2
+$ sudo luarocks install luaproc
 $ sudo apt-get install libsqlite3-dev
 $ sudo luarocks install luasql-sqlite3
 $ sudo patch /path/to/.../cgilua/post.lua < 1b35d812c7d637b91f2ac0a8d91f9698ba84d8d9.patch

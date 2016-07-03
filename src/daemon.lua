@@ -1,82 +1,64 @@
 
-local xavante = require "xavante"
-local filehandler = require "xavante.filehandler"
-local cgiluahandler = require "xavante.cgiluahandler"
-local redirecthandler = require "xavante.redirecthandler"
-
 local config = require("config")
-
 local conman = require("conman")
+local threadman = require("threadman")
+local httpd = require("httpd")
 
--- Define here where Xavante HTTP documents scripts are located
-local webDir = "./www"
 
-local mnigs_logo = '[meshnet-mgr]'
+print("[mnigs]", "starting up...")
 
-local rules = {}
+threadman.setup()
 
--- index (redirect)
-table.insert(rules, {
-  match  = "^[^%./]*/$",
-  with   = redirecthandler,
-  params = { "index.html" }
-})
-
--- rpc (redirect)
-table.insert(rules, {
-  match  = "^[^%./]*/jsonrpc/?$",
-  with   = redirecthandler,
-  params = { "jsonrpc.lua" }
-})
-
--- cgi
-table.insert(rules, {
-  match = {
-    "%.lp$", "%.lp/.*$", "%.lua$", "%.lua/.*$"
-  },
-  with  = cgiluahandler.makeHandler(webDir)
-})
-
--- static content
-table.insert(rules, {
-  match  = ".",
-  with   = filehandler,
-  params = { baseDir = webDir }
-})
-
-local listenOn = {}
-
-local function xavante_params(addr, port)
-  return { host = addr, port = port }
-end
-
-if (config.daemon.listenIpv6) then
-  table.insert(listenOn, xavante_params('::', config.daemon.rpcport))
-end
-
-if (config.daemon.listenIpv4) then
-  table.insert(listenOn, xavante_params('0.0.0.0', config.daemon.rpcport))
-end
-
-for ifs, server in pairs(listenOn) do
-
-  print(mnigs_logo,
-    'Xavante listening on ' .. server.host ..
-    ' port ' .. server.port)
-
-  xavante.HTTP {
-    defaultHost = { rules = rules },
-    server = server
-  }
-
-end
-
-local thread = require "llthreads2".new[[
+-- start conneciton manager
+threadman.startThread(function()
+	-- luaproc doesn't load everything by default
+	io = require("io")
+	os = require("os")
+	table = require("table")
+	string = require("string")
+	math = require("math")
+	debug = require("debug")
+	coroutine = require("coroutine")
+	
 	local conman = require("conman")
 	conman.startConnectionManager()
-]]
+end)
 
-thread:start(true, true)
-xavante.start();
-print(mnigs_logo, "Shutting down")
-thread:join()
+-- start interthread message queue monitor (for debugging purposes only)
+threadman.startThread(function()
+	-- luaproc doesn't load everything by default
+	io = require("io")
+	os = require("os")
+	table = require("table")
+	string = require("string")
+	math = require("math")
+	debug = require("debug")
+	coroutine = require("coroutine")
+	
+	local threadman = require("threadman")
+	local monitor = threadman.registerListener("monitor")
+	local cjson_safe = require("cjson.safe")
+	
+	while true do
+		msg = monitor:listen()
+		if msg ~= nil then
+			print("[monitor]", "msg = "..cjson_safe.encode(msg))
+			if msg["type"] == "exit" then
+				monitor.unregisterListener(listener)
+				return
+			end
+		end
+	end
+end)
+
+-- TODO: set up SIGTERM callback
+-- send shutdown message
+-- threadman.notify({type="exit"})
+
+
+httpd.run()
+
+
+threadman.teardown()
+
+print("[mnigs]", "shutting down...")
