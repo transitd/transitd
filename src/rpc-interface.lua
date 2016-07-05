@@ -3,6 +3,7 @@ local config = require("config")
 local socket = require("socket")
 local db = require("db")
 local cjdns = require("rpc-interface.cjdns")
+local threadman = require("threadman")
 
 -- need better random numbers
 math.randomseed(socket.gettime()*1000)
@@ -96,7 +97,9 @@ local interface = {
 		
 		-- TODO: check network == cjdns
 		if method == "cjdns" and config.cjdns.subscriberSupport == "yes" and config.cjdns.tunnelSupport == "yes" then
-			return cjdns.connectTo(ip, method)
+			--return cjdns.connectTo(ip, method)
+			threadman.notify({type = "rpc.subscriber.connectTo", ["ip"] = ip, ["method"] = method})
+			return { success = true }
 		end
 		
 		return { success = false, errorMsg = "Method not supported" }

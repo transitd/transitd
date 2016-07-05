@@ -76,9 +76,6 @@ function threadman.teardown()
 	luaproc.delchannel("master")
 end
 
-function threadman.threadInit()
-end
-
 function threadman.startThread(func)
 	local started, err = luaproc.newproc(func)
 	if started ~= true then

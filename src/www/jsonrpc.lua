@@ -1,4 +1,6 @@
 
+local luaproc = require("luaproc")
+
 local lfs = require('lfs')
 lfs.chdir("..")
 

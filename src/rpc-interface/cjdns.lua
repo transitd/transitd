@@ -5,6 +5,7 @@ local config = require("config")
 local gateway = require("gateway")
 local db = require("db")
 local cjdnsTunnel = require("cjdnstools.tunnel")
+local threadman = require("threadman")
 
 local rpc = require("json.rpc")
 rpc.setTimeout(10)
@@ -17,6 +18,8 @@ function cjdns.requestConnection(name, method, options)
 	if options.key == nil then
 		return { success = false, errorMsg = "Key option is required" }
 	end
+	
+	local key = tostring(options.key)
 	
 	-- come up with random ips based on settings in config
 	ipv4, error4 = gateway.allocateIpv4();
@@ -35,13 +38,15 @@ function cjdns.requestConnection(name, method, options)
 		return { success = false, errorMsg = error, temporaryError = true }
 	end
 	
-	local response, err = cjdnsTunnel.addKey(options.key, ipv4, ipv6)
+	local response, err = cjdnsTunnel.addKey(key, ipv4, ipv6)
 	if err then
 		return { success = false, errorMsg = "Error adding cjdns key at gateway: " .. err }
 	else
 		
 		db.registerSubscriber(sid, name, method, subscriberip, nil, ipv4, ipv6)
-		db.registerCjdnsSubscriber(sid, options.key)
+		db.registerCjdnsSubscriber(sid, key)
+		
+		threadman.notify({type = "subscriber.auth", ["sid"] = sid, cjdnskey = key})
 		
 		return { success = true, timeout = config.gateway.subscriberTimeout, ['ipv4'] = ivp4, ['ipv6'] = ipv6 }
 	end
@@ -49,7 +54,7 @@ function cjdns.requestConnection(name, method, options)
 end
 
 function cjdns.renewConnection(sid)
-	
+	-- nothing needs to be done
 	return true, nil
 end
 

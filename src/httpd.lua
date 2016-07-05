@@ -3,8 +3,8 @@ local httpd = {}
 
 local xavante = require("xavante")
 local filehandler = require("xavante.filehandler")
-local cgiluahandler = require("xavante.cgiluahandler")
 local redirecthandler = require("xavante.redirecthandler")
+local wsapixavante = require("wsapi.xavante")
 
 local config = require("config")
 local threadman = require("threadman")
@@ -28,12 +28,29 @@ table.insert(rules, {
 	params = { "jsonrpc.lua" }
 })
 
--- cgi
+local sapi = require "wsapi.sapi"
+
+local launcher_params = {
+  isolated = false,
+  reload = true,
+  period = ONE_HOUR,
+  ttl = ONE_DAY
+}
+
+-- custom lua handler that executes lua scripts within the same lua state as the main daemon process
+function lua_handler(env)
+	local lfs = require('lfs')
+	lfs.chdir(webDir)
+	local sapi = require "wsapi.sapi"
+	env["PATH_TRANSLATED"] = lfs.currentdir()..env["PATH_INFO"]
+	env["SCRIPT_FILENAME"] = lfs.currentdir()..env["PATH_INFO"]
+	return sapi.run(env)
+end
+
+-- lua cgi
 table.insert(rules, {
-	match = {
-		"%.lp$", "%.lp/.*$", "%.lua$", "%.lua/.*$"
-	},
-	with  = cgiluahandler.makeHandler(webDir)
+	match = "%.lua$",
+	with = wsapixavante.makeHandler(lua_handler, nil, webDir, nil, nil)
 })
 
 -- static content
