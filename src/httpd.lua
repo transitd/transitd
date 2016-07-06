@@ -10,7 +10,7 @@ local config = require("config")
 local threadman = require("threadman")
 
 -- Define here where Xavante HTTP documents scripts are located
-local webDir = "./www"
+local webDir = script_path().."www"
 
 local rules = {}
 
@@ -39,12 +39,16 @@ local launcher_params = {
 
 -- custom lua handler that executes lua scripts within the same lua state as the main daemon process
 function lua_handler(env)
-	local lfs = require('lfs')
-	lfs.chdir(webDir)
 	local sapi = require "wsapi.sapi"
-	env["PATH_TRANSLATED"] = lfs.currentdir()..env["PATH_INFO"]
-	env["SCRIPT_FILENAME"] = lfs.currentdir()..env["PATH_INFO"]
-	return sapi.run(env)
+	local filepath = webDir..env["PATH_INFO"];
+	local lfs = require('lfs')
+	if lfs.attributes(filepath) then
+		env["PATH_TRANSLATED"] = filepath
+		env["SCRIPT_FILENAME"] = filepath
+		return sapi.run(env)
+	else
+		return 404, {}, nil;
+	end
 end
 
 -- lua cgi
