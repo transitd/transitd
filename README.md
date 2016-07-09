@@ -125,3 +125,7 @@ $ lua cli.lua
 
 ### Web UI
 You can access `http://localhost:65533` from your browser.
+
+## Design
+
+![Design](docs/design.png?raw=true)
