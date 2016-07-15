@@ -25,7 +25,6 @@ function threadman.setup()
 		debug = require("debug")
 		coroutine = require("coroutine")
 		
-		local config = require("config")
 		local luaproc = require("luaproc")
 		local cjson_safe = require("cjson.safe")
 		

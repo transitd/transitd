@@ -7,6 +7,7 @@ name=Lua mnigs
 listenIpv6=true
 listenIpv4=true
 rpcport=65533
+scanports=65533,65534
 
 [gateway]
 
@@ -15,7 +16,6 @@ enabled=yes
 
 # maximum allowed subscribers
 maxConnections=10
-clientTimeout=300
 
 # automatically disable users after this timeout
 subscriberTimeout=300
@@ -24,8 +24,12 @@ subscriberTimeout=300
 addressAllocation = static
 
 # static address allocation subnets
+subscriberAllocationMethod="static"
 subscriberIpv4subnet=10.67.1.0/16
+subscriberIpv4gateway=10.67.1.1
 subscriberIpv6subnet=1111:1111:1111:1111::1111:0/120
+subscriberIpv6gateway=1111:1111:1111:1111::1111:1
+subscriberDns=8.8.8.8,8.8.4.4
 
 
 [subscriber]

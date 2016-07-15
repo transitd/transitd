@@ -1,8 +1,7 @@
 
 local config = require("config")
 
-local rpc = require("json.rpc")
-rpc.setTimeout(5)
+local rpc = require("rpc")
 
 local scanner = require("cjdnstools.scanner")
 local tunnel = require("cjdnstools.tunnel")
@@ -10,16 +9,29 @@ local tunnel = require("cjdnstools.tunnel")
 local db = require("db")
 
 local callback = function(ip)
-	local addr = "http://[" .. ip .. "]:" .. config.daemon.rpcport .. "/jsonrpc"
 	print("Checking " .. ip .. "...")
-	local server = rpc.proxy(addr)
-	local result, err = server.gatewayInfo()
-	if err then
-		print("Failed to connect to " .. ip .. ": " .. err)
-	else
-		if result.name and result.name then
-			print("Server '" .. result.name .. "' at " .. ip)
-			db.registerGateway(result.name, ip)
+	ports = {}
+	for port in string.gmatch(config.daemon.scanports, "%d+") do 
+		local port = tonumber(port)
+		local gateway = rpc.getProxy(ip, port)
+		local info, err = gateway.gatewayInfo()
+		if err then
+			print("Failed to connect to " .. ip .. ": " .. err)
+		else
+			if info.name and info.name then
+				db.registerNode(info.name, ip, port)
+				if info.methods then
+					print("Gateway '" .. info.name .. "' at " .. ip .. ":" .. tostring(port) .. "!")
+					for k, m in pairs(info.methods) do
+						-- register methods
+						if m and m.name then
+							db.registerGateway(info.name, ip, port, m.name)
+						end
+					end
+				else
+					print("Node '" .. info.name .. "' at " .. ip .. ":" .. tostring(port) .. "!")
+				end
+			end
 		end
 	end
 end

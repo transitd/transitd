@@ -8,6 +8,7 @@ local wsapixavante = require("wsapi.xavante")
 
 local config = require("config")
 local threadman = require("threadman")
+local rpc = require("rpc")
 
 -- Define here where Xavante HTTP documents scripts are located
 local webDir = script_path().."www"
@@ -101,6 +102,9 @@ function httpd.run()
 			if msg ~= nil then
 				if msg["type"] == "exit" then
 					return true
+				end
+				if msg["type"] == "nonblockingcall.complete" then
+					rpc.processBlockingCallMsg(msg)
 				end
 			end
 		end

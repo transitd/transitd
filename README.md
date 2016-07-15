@@ -3,7 +3,7 @@ Mnigs is an automated Internet gateway publish, search and connect tool for mesh
 
 Emerging mesh networks make use of many different routing protocols.  These protocols may or may not be peering-compatible with the current Internet routing infrastructure.  Implementations of such networks may not necessarily want to have default routes (for Internet-bound traffic) or may not have network-wide default route.  Most access to the traditional Internet has recurring cost associated with it, which is incompatible with the idea of open community mesh networking.  In most cases, one cannot simply assume that access to such networks will grant them access to the traditional Internet.  There may be multiple available Internet gateways in a particular mesh network, some free of charge to use and some that may cost a fee.  In all cases, setting up connection to the traditional Internet through these community network gateways would be a manual process.  Mnigs makes the process of staying online through the mesh network automated.
 
-Warning:  code in this repository is work in progress and currently not usable, feel free to contribute.
+### Warning:  code in this repository is work in progress and currently not usable, feel free to contribute.
 
 ## Main Advantages
 * Decentralized (uses routing tables to do breadth first search for mnigs servers)
@@ -108,6 +108,7 @@ $ cd mnigs
 $ cp mnigs.conf.sample mnigs.conf
 $ vi mings.conf
 ```
+Add path to your cjdroute.conf config file in the [cjdns] section.
 
 ## Usage
 
@@ -125,6 +126,45 @@ $ lua cli.lua
 
 ### Web UI
 You can access `http://localhost:65533` from your browser.
+
+## Demo usage on the same host with CJDNS
+In order to demo the system, you actually need 2 different machines.  You can avoid this by using 2 different config files running mnigs on different ports and different database file.
+
+### Start daemon 1
+```
+$ cd src
+$ cp mnigs.conf.sample mnigs1.conf
+$ vi mnigs1.conf
+set cjdns.config=....
+set daemon.rpcport=65533
+set gateway.enabled=yes
+set database.file=mnigs1.db
+$ lua daemon.lua -f ../mnigs1.conf
+```
+
+### Start daemon 2
+```
+$ cd src
+$ cp mnigs.conf.sample mnigs2.conf
+$ vi mnigs2.conf
+set cjdns.config=....
+set daemon.rpcport=65534
+set gateway.enabled=no
+set database.file=mnigs2.db
+$ lua daemon.lua -f ../mnigs2.conf
+```
+
+### Trigger network scan
+```
+$ cd src
+$ lua cli.lua -f ../mnigs2.conf -s
+```
+
+### Trigger connection
+```
+$ cd src
+$ lua cli.lua -f ../mnigs2.conf -c <YOUR CJDNS IP> -p 65533
+```
 
 ## Design
 

@@ -4,10 +4,14 @@ local conman = require("conman")
 local threadman = require("threadman")
 local httpd = require("httpd")
 
-
 print("[mnigs]", "starting up...")
 
 threadman.setup()
+
+-- TODO: switch to using notifications to propagate config variables to threads
+-- instead of running config code for each thread
+local cjson_safe = require("cjson.safe")
+local config_encoded = cjson_safe.encode(config)
 
 -- start conneciton manager
 threadman.startThread(function()
@@ -19,9 +23,11 @@ threadman.startThread(function()
 	math = require("math")
 	debug = require("debug")
 	coroutine = require("coroutine")
-	
 	local luaproc = require("luaproc")
-	local threadman = require("threadman")
+	
+	local cjson_safe = require("cjson.safe")
+	_G.config = cjson_safe.decode(config_encoded)
+	
 	local conman = require("conman")
 	conman.startConnectionManager()
 end)
@@ -36,11 +42,13 @@ threadman.startThread(function()
 	math = require("math")
 	debug = require("debug")
 	coroutine = require("coroutine")
-	
 	local luaproc = require("luaproc")
+	
+	local cjson_safe = require("cjson.safe")
+	_G.config = cjson_safe.decode(config_encoded)
+	
 	local threadman = require("threadman")
 	local monitor = threadman.registerListener("monitor")
-	local cjson_safe = require("cjson.safe")
 	
 	while true do
 		msg = monitor:listen()

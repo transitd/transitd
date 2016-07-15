@@ -4,9 +4,6 @@ function script_path()
 	return str:match("(.*/)")
 end
 
-local lfs = require('lfs')
-lfs.chdir(script_path())
-
 function get_path_from_path_relative_to_config(path)
 	if path:sub(1,1) == "/" then
 		return path
@@ -15,7 +12,29 @@ function get_path_from_path_relative_to_config(path)
 	end
 end
 
-local inifile = require("inifile")
-local conf = inifile.parse(script_path() .. "../mnigs.conf")
+local lfs = require('lfs')
 
-return conf
+-- force cwd to src location
+lfs.chdir(script_path())
+
+if _G.config == nil then
+	local inifile = require("inifile")
+	
+	local configfile = script_path() .. "../mnigs.conf"
+	
+	local options = require("options")
+	local optarg = options.getArguments()
+	
+	if optarg.f then
+		configfile = optarg.f
+	end
+	
+	if not io.open(configfile,"r") then
+		print("Configuration file '"..configfile.."' not found")
+		os.exit(1)
+	end
+	
+	_G.config = inifile.parse(configfile)
+end
+
+return _G.config

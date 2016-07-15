@@ -53,30 +53,36 @@ function gateway.allocateIpv6()
 	return ipv6, "unimplemented"
 end
 
-function gateway.allocateSid()
+function gateway.allocateSid(suggesteredSid)
 	
 	-- come up with unused session id
 	
 	-- TODO: fix race condition
 	
-	local sidchars = "1234567890abcdefghijklmnopqrstuvwxyz"
-	local sid = ""
-	for t=0,5 do
-		for i=1,32 do
-			local char = math.random(1,string.len(sidchars))
-			sid = sid .. string.sub(sidchars,char,char)
+	if suggesteredSid == nil then
+		local sidchars = "1234567890abcdefghijklmnopqrstuvwxyz"
+		local sid = ""
+		for t=0,5 do
+			for i=1,32 do
+				local char = math.random(1,string.len(sidchars))
+				sid = sid .. string.sub(sidchars,char,char)
+			end
+			if db.lookupSession(sid) ~= nil then
+				sid = ""
+			else
+				break
+			end
 		end
-		if db.lookupClientBySession(sid) ~= nil then
-			sid = ""
-		else
-			break
+		if sid == "" then
+			return nil, "Failed to come up with an unused session id"
 		end
+		return sid, nil
+	else
+		if db.lookupSession(suggesteredSid) ~= nil then
+			return nil, "Duplicate session id"
+		end
+		return suggesteredSid, nil
 	end
-	if sid == "" then
-		return nil, "Failed to come up with an unused session id"
-	end
-	
-	return sid, nil
 end
 
 return gateway

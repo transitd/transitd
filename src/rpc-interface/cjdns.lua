@@ -6,14 +6,12 @@ local gateway = require("gateway")
 local db = require("db")
 local cjdnsTunnel = require("cjdnstools.tunnel")
 local threadman = require("threadman")
+local rpc = require("rpc")
 
-local rpc = require("json.rpc")
-rpc.setTimeout(10)
-
-
-function cjdns.requestConnection(name, method, options)
+function cjdns.requestConnection(sid, name, port, method, options)
 	
-	local subscriberip = cgilua.servervariable("REMOTE_ADDR")
+	local port = tonumber(port)
+	local subscriberip = tostring(cgilua.servervariable("REMOTE_ADDR"))
 	
 	if options.key == nil then
 		return { success = false, errorMsg = "Key option is required" }
@@ -33,7 +31,7 @@ function cjdns.requestConnection(name, method, options)
 		end
 	end
 	
-	local sid, error = gateway.allocateSid()
+	local sid, error = gateway.allocateSid(sid)
 	if error ~= nil then
 		return { success = false, errorMsg = error, temporaryError = true }
 	end
@@ -43,12 +41,14 @@ function cjdns.requestConnection(name, method, options)
 		return { success = false, errorMsg = "Error adding cjdns key at gateway: " .. err }
 	else
 		
-		db.registerSubscriber(sid, name, method, subscriberip, nil, ipv4, ipv6)
-		db.registerCjdnsSubscriber(sid, key)
+		local timeout = config.gateway.subscriberTimeout
+		
+		db.registerSubscriberSession(sid, name, method, subscriberip, port, ipv4, ipv6, timeout)
+		db.registerSubscriberSessionCjdnsKey(sid, key)
 		
 		threadman.notify({type = "subscriber.auth", ["sid"] = sid, cjdnskey = key})
 		
-		return { success = true, timeout = config.gateway.subscriberTimeout, ['ipv4'] = ivp4, ['ipv6'] = ipv6 }
+		return { success = true, ['timeout'] = timeout, ['ipv4'] = ipv4, ['ipv6'] = ipv6 }
 	end
 	
 end
@@ -60,55 +60,40 @@ end
 
 function cjdns.releaseConnection(sid)
 	if sid then
-		local key, error = db.getCjdnsClientKey(sid)
-		if error then
+		local key, err = db.getCjdnsSubscriberKey(sid)
+		if err then
+			threadman.notify({type = "subscriber.deauth.fail", ["sid"] = sid, method = "cjdns", cjdnskey = key, error = err})
 			return { success = false, errorMsg = "Error releasing connection: " .. err }
 		else
 			local response, err = cjdnsTunnel.deauthorizeKey(key)
 			if err then
+				threadman.notify({type = "subscriber.deauth.fail", ["sid"] = sid, method = "cjdns", cjdnskey = key, error = err})
 				return { success = false, errorMsg = "Error releasing connection: " .. err }
 			else
+				db.deactivateSession(subscriber.sid)
+				threadman.notify({type = "subscriber.deauth", ["sid"] = sid, method = "cjdns", cjdnskey = key})
 				return { success = true }
 			end
 		end
 	else
-		return { success = false, errorMsg = "'sid' option is invalid" }
+		local err = "'sid' option is invalid"
+		threadman.notify({type = "subscriber.deauth.fail", ["sid"] = sid, method = "cjdns", error = err})
+		return { success = false, errorMsg = err }
 	end
 end
 
-function cjdns.connectTo(ip, method)
+function cjdns.connectTo(ip, port, method, sid)
 	
-	local addr = "http://[" .. ip .. "]:" .. config.daemon.rpcport .. "/jsonrpc"
-	local gateway = rpc.proxy(addr)
+	sid = sid or gateway.allocateSid()
 	
-	local record = db.lookupGateway(ip)
-	
-	if record == nil then
-		print("Checking " .. ip .. "...")
-		local result, err = gateway.gatewayInfo()
-		if err then
-			return {success = false, errorMsg = "Failed to connect to " .. ip .. ": " .. err}
-		else
-			if result.name and result.name then
-				print("Gateway '" .. result.name .. "' at " .. ip)
-				db.registerGateway(result.name, ip)
-				record = db.lookupGateway(ip)
-			end
-		end
-	end
-	
-	if record == nil then
-		return {success = false, errorMsg = "No mnigs at " .. ip}
-	end
-	
-	print("Connecting to gateway '" .. record.name .. "' at " .. record.ip)
+	local node = rpc.getProxy(ip, port)
 	
 	local scanner = require("cjdnstools.scanner")
 	local mykey, err = scanner.getMyKey()
 	if err then
 		return {success = false, errorMsg = "Failed to get my own IP: " .. err}
 	else
-		local result, err = gateway.requestConnection(config.main.name,"cjdns",{key=mykey})
+		local result, err = node.requestConnection(sid, config.main.name, config.daemon.rpcport, "cjdns", {key = mykey})
 		if err then
 			return {success = false, errorMsg = err}
 		elseif result.errorMsg then
@@ -116,11 +101,7 @@ function cjdns.connectTo(ip, method)
 		elseif result.success == false then
 			return {success = false, errorMsg = "Unknown error"}
 		else
-			print("Registered with " .. record.ip .. "!")
-			if result.timeout then
-				print("Timeout is " .. result.timeout .. " seconds")
-			end
-			return {success = true, info = result}
+			return result
 		end
 	end
 end
