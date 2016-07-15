@@ -127,7 +127,7 @@ $ lua cli.lua
 ### Web UI
 You can access `http://localhost:65533` from your browser.
 
-## Demo usage on the same host with CJDNS
+## Demo usage on a single host with CJDNS
 In order to demo the system, you actually need 2 different machines.  You can avoid this by using 2 different config files running mnigs on different ports and different database file.
 
 ### Start daemon 1
@@ -167,5 +167,26 @@ $ lua cli.lua -f ../mnigs2.conf -c <YOUR CJDNS IP> -p 65533
 ```
 
 ## Design
+Each node runs a daemon.  The daemon sends and receives messages over HTTP JSON RPC interface.  The web UI is also available over HTTP.  Subscribers can request connections with gateways.  Connection sessions have a short lifetime and need to be renewed.  The daemon manages networking configuration on both ends, which can be adjusted in the configuration file.
+Knowledge of available gateways on a network is gained by occasionally scanning the network and adding the new information into the DHT.
 
 ![Design](docs/design.png?raw=true)
+
+### Protocol
+
+The following RPC functions are available.
+
+- gatewayInfo()
+- requestConnection(sid, name, port, method, options)
+- renewConnection(sid)
+- releaseConnection(sid)
+
+In case of success, the following object is returned,
+```
+{ success: true, .... }
+```
+
+In case of error, the following object is returned,
+```
+{ success: false, errorMsg: "...." }
+```
