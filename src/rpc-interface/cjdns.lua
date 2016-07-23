@@ -70,7 +70,7 @@ function cjdns.releaseConnection(sid)
 				threadman.notify({type = "subscriber.deauth.fail", ["sid"] = sid, method = "cjdns", cjdnskey = key, error = err})
 				return { success = false, errorMsg = "Error releasing connection: " .. err }
 			else
-				db.deactivateSession(subscriber.sid)
+				db.deactivateSession(sid)
 				threadman.notify({type = "subscriber.deauth", ["sid"] = sid, method = "cjdns", cjdnskey = key})
 				return { success = true }
 			end
