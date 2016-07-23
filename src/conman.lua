@@ -16,7 +16,7 @@ local subscriberManager = function()
 	conManTs = os.time()
 	
 	local subscribers, err = db.getTimingOutSubscribers(sinceTimestamp)
-	if subscribers == nil then
+	if err == nil and subscribers == nil then
 		err = "Unexpected subscriber list query result"
 	end
 	if err then
