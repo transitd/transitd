@@ -13,21 +13,19 @@ math.randomseed(socket.gettime()*1000)
 local interface = {
 	echo = function (msg) return msg end,
 	
-	gatewayInfo = function()
+	nodeInfo = function()
 		
-		if config.gateway.enabled ~= "yes" then
-			return { success = false, errorMsg = "No gateway here" }
-		end
-		
-		local methods = {}
+		local info = { name = config.main.name }
 		
 		if config.gateway.enabled == "yes" then
+			local methods = {}
 			if config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
 				methods[#methods+1] = {name = "cjdns"}
 			end
+			info['methods'] = methods
 		end
 		
-		return { name = config.main.name, ['methods'] = methods }
+		return info
 	end,
 	
 	requestConnection = function(sid, name, port, method, options)

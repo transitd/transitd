@@ -176,7 +176,7 @@ Knowledge of available gateways on a network is gained by occasionally scanning 
 
 The following RPC functions are available.
 
-- gatewayInfo()
+- nodeInfo()
 - requestConnection(sid, name, port, method, options)
 - renewConnection(sid)
 - releaseConnection(sid)

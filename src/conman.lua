@@ -57,7 +57,7 @@ function conman.connectToGateway(ip, port, method, sid)
 	local record = db.lookupGateway(ip)
 	
 	print("[conman] Checking " .. ip .. "...")
-	local info, err = gateway.gatewayInfo()
+	local info, err = gateway.nodeInfo()
 	if err then
 		return nil, "Failed to connect to " .. ip .. ": " .. err
 	else

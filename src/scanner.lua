@@ -9,16 +9,16 @@ local tunnel = require("cjdnstools.tunnel")
 local db = require("db")
 
 local callback = function(ip)
-	print("Checking " .. ip .. "...")
 	ports = {}
 	for port in string.gmatch(config.daemon.scanports, "%d+") do 
+		print("Connecting to " .. ip .. ":" .. port .. "...")
 		local port = tonumber(port)
 		local gateway = rpc.getProxy(ip, port)
-		local info, err = gateway.gatewayInfo()
+		local info, err = gateway.nodeInfo()
 		if err then
-			print("Failed to connect to " .. ip .. ": " .. err)
+			print("Failed to connect to " .. ip .. ":" .. port .. ": " .. err)
 		else
-			if info.name and info.name then
+			if info.name then
 				db.registerNode(info.name, ip, port)
 				if info.methods then
 					print("Gateway '" .. info.name .. "' at " .. ip .. ":" .. tostring(port) .. "!")
