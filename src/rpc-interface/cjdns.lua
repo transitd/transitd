@@ -4,6 +4,7 @@ local cjdns = {}
 local config = require("config")
 local gateway = require("gateway")
 local db = require("db")
+local scanner = require("cjdnstools.scanner")
 local cjdnsTunnel = require("cjdnstools.tunnel")
 local threadman = require("threadman")
 local rpc = require("rpc")
@@ -19,7 +20,14 @@ function cjdns.requestConnection(sid, name, port, method, options)
 	
 	local key = tostring(options.key)
 	
-	-- come up with random ips based on settings in config
+	local mykey, err = scanner.getMyKey()
+	if err then
+		return {success = false, errorMsg = "Failed to get my own key: " .. err}
+	elseif mykey == nil then
+		return {success = false, errorMsg = "Failed to get my own key: Unknown error"}
+	end
+	
+	-- allocate ips based on settings in config
 	ipv4, error4 = gateway.allocateIpv4();
 	ipv6, error5 = gateway.allocateIpv6();
 	if error4 ~= nil and error6 ~= nil then
@@ -48,7 +56,7 @@ function cjdns.requestConnection(sid, name, port, method, options)
 		
 		threadman.notify({type = "subscriber.auth", ["sid"] = sid, cjdnskey = key})
 		
-		return { success = true, ['timeout'] = timeout, ['ipv4'] = ipv4, ['ipv6'] = ipv6 }
+		return { success = true, ['timeout'] = timeout, ['ipv4'] = ipv4, ['ipv6'] = ipv6, ["key"] = mykey }
 	end
 	
 end
@@ -88,10 +96,11 @@ function cjdns.connectTo(ip, port, method, sid)
 	
 	local node = rpc.getProxy(ip, port)
 	
-	local scanner = require("cjdnstools.scanner")
 	local mykey, err = scanner.getMyKey()
 	if err then
-		return {success = false, errorMsg = "Failed to get my own IP: " .. err}
+		return {success = false, errorMsg = "Failed to get my own key: " .. err}
+	elseif mykey == nil then
+		return {success = false, errorMsg = "Failed to get my own key: Unknown error"}
 	else
 		local result, err = node.requestConnection(sid, config.main.name, config.daemon.rpcport, "cjdns", {key = mykey})
 		if err then
@@ -101,6 +110,19 @@ function cjdns.connectTo(ip, port, method, sid)
 		elseif result.success == false then
 			return {success = false, errorMsg = "Unknown error"}
 		else
+			if result.key == nil then
+				return {success = false, errorMsg = "Gateway did not send its key"}
+			end
+			
+			local success, err = cjdnsTunnel.connect(result.key)
+			if not success then
+				if err then
+					return {success = false, errorMsg = "Failed to get local cjdroute to connect to gateway: "..err}
+				else
+					return {success = false, errorMsg = "Failed to get local cjdroute to connect to gateway: Unknown error"}
+				end
+			end
+			
 			return result
 		end
 	end

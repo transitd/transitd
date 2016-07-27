@@ -69,10 +69,15 @@ local interface = {
 		end
 		
 		if method == "cjdns" and config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
-			return cjdns.renewConnection(sid)
+			cjdns.renewConnection(sid)
 		end
 		
-		return { success = false, errorMsg = "Not implemented yet" }
+		local timeout = config.gateway.subscriberTimeout
+		db.updateSessionTimeout(sid, timeout)
+		
+		threadman.notify({type = "renewedSubscriberSession", ["sid"] = sid, ["timeout"] = timeout})
+		
+		return { success = true, ["timeout"] = timeout }
 	end,
 
 	releaseConnection = function(sid)

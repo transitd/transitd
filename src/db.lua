@@ -3,6 +3,8 @@ local db = {}
 
 local config = require("config")
 
+-- TODO: switch to using ORM library
+
 local sqlite3 = require("luasql.sqlite3")
 local env = sqlite3.sqlite3()
 local dbfile = get_path_from_path_relative_to_config(config.database.file)
@@ -28,6 +30,8 @@ function migrateSchema()
 	-- TODO: code simple schema migration system for painless upgrades
 end
 
+-- TODO: add purge function to remove records with expired last_seen_timestamp values
+
 function db.getLastActiveSessions()
 	local cur, error = dbc:execute("SELECT * FROM sessions WHERE active = 1 ORDER BY timeout_timestamp DESC")
 	if cur == nil then
@@ -36,7 +40,7 @@ function db.getLastActiveSessions()
 	local list = {}
 	local row = cur:fetch ({}, "a")
 	while row do
-		list[#list+1] = row.sid
+		list[#list+1] = row
 		row = cur:fetch ({}, "a")
 	end
 	return list, nil
@@ -190,7 +194,16 @@ function db.lookupSession(sid)
 end
 
 function db.activateSession(sid)
-	local cur, error = dbc:execute(string.format("UPDATE sessions SET active = 1 WHERE sid = '%s'", dbc:escape(sid)))
+	local result, error = dbc:execute(string.format("UPDATE sessions SET active = 1 WHERE sid = '%s'", dbc:escape(sid)))
+	if error ~= nil then
+		return false, error
+	end
+	return true, nil
+end
+
+function db.updateSessionTimeout(sid, timeout)
+	local timestamp = os.time()
+	local result, error = dbc:execute(string.format("UPDATE sessions SET timeout_timestamp = '%d' WHERE sid = '%s' AND active = 1", timestamp+tonumber(timeout), dbc:escape(sid)))
 	if error ~= nil then
 		return false, error
 	end
@@ -198,7 +211,7 @@ function db.activateSession(sid)
 end
 
 function db.deactivateSession(sid)
-	local cur, error = dbc:execute(string.format("UPDATE sessions SET active = 0 WHERE sid = '%s'", dbc:escape(sid)))
+	local result, error = dbc:execute(string.format("UPDATE sessions SET active = 0 WHERE sid = '%s'", dbc:escape(sid)))
 	if error ~= nil then
 		return false, error
 	end
@@ -216,8 +229,9 @@ end
 
 function db.getTimingOutSubscribers(sinceTimestamp)
  	local timestamp = os.time()
+	local sinceTimestamp = tonumber(sinceTimestamp)
 	if sinceTimestamp >= timestamp then
-		error("Timestamp must be in the past")
+		return nil, "Timestamp must be in the past"
 	end
 	local cur, error = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND '%d' <= timeout_timestamp AND timeout_timestamp < '%d' AND active = 1", sinceTimestamp, timestamp))
 	if cur == nil then

@@ -37,18 +37,57 @@ local subscriberManager = function()
 			addr = addr..subscriber.internetIPv6.." "
 		end
 		
-		print("Subscriber '"..subscriber.name.." at "..at.."-> "..addr.." timed out.")
-		
 		if subscriber.method == "cjdns" then
 			cjdns.releaseConnection(subscriber.sid)
 		else
 			threadman.notify({type = "error", module = "conman", error = "Unknown method", method = subscriber.method})
 		end
+		
+		threadman.notify({type = "subscriberSessionTimedOut", ["sid"] = subscriber.sid})
 	end
 end
 
 local gatewayManager = function()
-	-- TODO: renew connection to gateway when about to expire
+	
+	local currentTimestamp = os.time()
+	local gracePeriod = 10;
+	
+	local sessions, err = db.getLastActiveSessions()
+	if err == nil and sessions == nil then
+		err = "Unexpected session list query result"
+	end
+	if err then
+		threadman.notify({type = "error", module = "conman", error = err})
+		return
+	end
+	
+	for k, session in pairs(sessions) do
+		if session.subscriber == 0 and session.active == 1 then
+			if currentTimestamp > session.timeout_timestamp then
+				
+				db.deactivateSession(session.sid)
+				threadman.notify({type = "gatewaySessionTimedOut", ["sid"] = session.sid})
+				
+			elseif currentTimestamp > session.timeout_timestamp-gracePeriod then
+				
+				local gateway = rpc.getProxy(session.meshIP, session.port)
+				
+				local result, err = gateway.renewConnection(session.sid)
+				if err then
+					threadman.notify({type = "error", module = "conman", ["error"] = err})
+				elseif not result then
+					threadman.notify({type = "error", module = "conman", ["error"] = "Unknown error"})
+				elseif result.success == false and result.errorMsg then
+					threadman.notify({type = "error", module = "conman", ["error"] = result.errorMsg})
+				elseif result.success == false then
+					threadman.notify({type = "error", module = "conman", ["error"] = "Unknown error"})
+				else
+					db.updateSessionTimeout(session.sid, result.timeout)
+					threadman.notify({type = "renewedGatewaySession", ["sid"] = session.sid, ["timeout"] = result.timeout})
+				end
+			end
+		end
+	end
 end
 
 function conman.connectToGateway(ip, port, method, sid)
