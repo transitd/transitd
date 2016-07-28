@@ -66,11 +66,9 @@ Emerging mesh networks make use of many different routing protocols.  These prot
 * alt-getopt
 * luaproc
 
-This fix is required to allow CGILua to accept JSON-RPC content type: https://github.com/pdxmeshnet/cgilua/commit/1b35d812c7d637b91f2ac0a8d91f9698ba84d8d9.patch
-(see https://github.com/keplerproject/cgilua/pull/9)
+A fix is required to allow CGILua to accept JSON-RPC content type (see https://github.com/keplerproject/cgilua/pull/9).  The fix has been merged into CGILua master branch, however, no stable release is available as of this writing.
 
-This fix is required to allow JSON RPC requests to work with IPv6: https://github.com/darklajid/luasocket/commit/4785d9e6fcf107721602afbc61352475d56f921a.patch
-(see https://github.com/diegonehab/luasocket/pull/91)
+A fix is required to allow JSON RPC requests to work with IPv6 (see https://github.com/diegonehab/luasocket/pull/91).  A more permanent fix has been merged into luasocket master branch, however, no stable release is available as of this writing.
 
 ## Installation
 ```
@@ -90,11 +88,11 @@ $ sudo luarocks install alt-getopt
 $ sudo luarocks install luaproc
 $ sudo apt-get install libsqlite3-dev
 $ sudo luarocks install luasql-sqlite3
-$ sudo patch /path/to/.../cgilua/post.lua < 1b35d812c7d637b91f2ac0a8d91f9698ba84d8d9.patch
+$ sudo patch /usr/share/lua/5.1/cgilua/post.lua < patches/cgilua-content-type-fix.patch
 ```
 Then, either,
 ```
-$ sudo patch /path/to/.../socket/http.lua < 4785d9e6fcf107721602afbc61352475d56f921a.patch
+$ sudo patch /usr/share/lua/5.1/socket/http.lua < patches/luasocket-ipv6-fix.patch
 ```
 OR
 ```
