@@ -102,7 +102,7 @@ Then, either,
 ```
 $ sudo patch -p0 /usr/share/lua/5.1/socket/http.lua patches/luasocket-ipv6-fix.patch
 ```
-OR
+OR (unstable luasocket version)
 ```
 $ sudo luarocks install https://raw.githubusercontent.com/diegonehab/luasocket/master/luasocket-scm-0.rockspec
 ```
