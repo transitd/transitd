@@ -71,6 +71,14 @@ A fix is required to allow CGILua to accept JSON-RPC content type (see https://g
 A fix is required to allow JSON RPC requests to work with IPv6 (see https://github.com/diegonehab/luasocket/pull/91).  A more permanent fix has been merged into luasocket master branch, however, no stable release is available as of this writing.
 
 ## Installation
+
+### Docker Installation
+```
+$ docker build -t "mnigs:0" .
+$ docker run -it --privileged --rm mnigs:0
+```
+
+### Manual Installation
 ```
 $ git clone git://github.com/pdxmeshnet/mnigs.git
 $ cd mnigs
