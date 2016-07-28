@@ -88,11 +88,11 @@ $ sudo luarocks install alt-getopt
 $ sudo luarocks install luaproc
 $ sudo apt-get install libsqlite3-dev
 $ sudo luarocks install luasql-sqlite3
-$ sudo patch /usr/share/lua/5.1/cgilua/post.lua < patches/cgilua-content-type-fix.patch
+$ sudo patch -p1 /usr/share/lua/5.1/cgilua/post.lua patches/cgilua-content-type-fix.patch
 ```
 Then, either,
 ```
-$ sudo patch /usr/share/lua/5.1/socket/http.lua < patches/luasocket-ipv6-fix.patch
+$ sudo patch -p1 /usr/share/lua/5.1/socket/http.lua patches/luasocket-ipv6-fix.patch
 ```
 OR
 ```

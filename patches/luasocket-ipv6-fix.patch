@@ -31,10 +31,3 @@ index 1d0eb50..12b815f 100644
      local h = base.setmetatable({ c = c }, metat)
      -- create finalized try
      h.try = socket.newtry(function() h:close() end)
-@@ -353,4 +361,4 @@ _M.request = socket.protect(function(reqt, body)
-     else return trequest(reqt) end
- end)
- 
--return _M
-\ No newline at end of file
-+return _M
