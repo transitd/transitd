@@ -1,7 +1,9 @@
 # Mesh Network Internet Gateway System
-Mnigs is an automated Internet gateway publish, search and connect tool for mesh networks.  The goal of this package is to provide gateway owners the function to automatically advertise their gateway on the network and to provide users the automated Internet gateway search and connect function for their routers.
+Mnigs is an automated Internet gateway publish, search and connect tool for community networks.
 
-Emerging mesh networks make use of many different routing protocols.  These protocols may or may not be peering-compatible with the current Internet routing infrastructure.  Implementations of such networks may not necessarily want to have default routes (for Internet-bound traffic) or may not have network-wide default route.  Most access to the traditional Internet has recurring cost associated with it, which is incompatible with the idea of open community mesh networking.  In most cases, one cannot simply assume that access to such networks will grant them access to the traditional Internet.  There may be multiple available Internet gateways in a particular mesh network, some free of charge to use and some that may cost a fee.  In all cases, setting up connection to the traditional Internet through these community network gateways would be a manual process.  Mnigs makes the process of staying online through the mesh network automated.
+The goal of this package is to provide to gateway operators the ability to automatically run and advertise their gateway on the network and to provide to subscribers the automated gateway search and connect functionality.
+
+Emerging community mesh networks seek to provide free and open access to a network built by its users.  Implementations of such networks may not necessarily povide transit to the rest of the Internet.  Access to the traditional Internet has a recurring cost (paid to transit providers), which someone has to pay.  In the case where someone does pay for it, service type/quality may not suit all users.  This makes Internet access incompatible with the open/free nature of community networks.  In most cases, one cannot simply assume that access to such networks will grant them access to the traditional Internet.  There may be multiple available Internet gateways on a particular community network, some free of charge to use and some that may come at a cost.  In all cases, setting up connection to the traditional Internet through community network gateways is a manual process.  Mnigs makes the process of getting and having Internet access via a community network easy.
 
 ### Warning:  code in this repository is work in progress and currently not usable, feel free to contribute.
 
@@ -74,13 +76,15 @@ A fix is required to allow JSON RPC requests to work with IPv6 (see https://gith
 
 ### Docker Installation
 ```
+$ git clone --depth=1 git://github.com/pdxmeshnet/mnigs.git
+$ cd mnigs
 $ docker build -t "mnigs:0" .
 $ docker run -it --privileged --rm mnigs:0
 ```
 
 ### Manual Installation
 ```
-$ git clone git://github.com/pdxmeshnet/mnigs.git
+$ git clone --depth=1 git://github.com/pdxmeshnet/mnigs.git
 $ cd mnigs
 $ sudo luarocks install cgilua
 $ sudo luarocks install lua-cjson
