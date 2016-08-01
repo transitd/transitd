@@ -148,7 +148,25 @@ local interface = {
 		
 		return { success = false, errorMsg = "Method not supported" }
 	end,
-	
+    
+	listGateways = function(ip, port, method, sid)
+		
+		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		
+		if requestip ~= "127.0.0.1" and requestip ~= "::1" then
+			return { success = false, errorMsg = "Permission denied" }
+		end
+        
+        local gateways, err = db.getRecentGateways()
+        
+        if err then
+            return { success = false, errorMsg = err }
+        else
+            return { success = true, ["gateways"] = gateways }
+        end
+        
+	end,
+    
 	pollCallStatus = function(callId)
 		if rpc.isBlockingCallDone(callId) then
 			local result, err = rpc.returnBlockingCallResult(callId)
