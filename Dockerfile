@@ -49,7 +49,7 @@ RUN { \
 if [ ! -f /mnigs/mnigs.conf ]; then \n\
 	 cp /mnigs/mnigs.conf.sample /mnigs/mnigs.conf; \n\
 fi \n\
-cd /mnigs/src/; lua5.1 daemon.lua -f ../mnigs.conf >/var/log/mnigs.log 2>&1 \n\
+cd /mnigs/src/; sleep 3; lua5.1 daemon.lua -f ../mnigs.conf >/var/log/mnigs.log 2>&1 \n\
 ' > /mnigs.sh; \
 	chmod a+x /mnigs.sh; \
 	echo $'#!/bin/bash \n\
@@ -68,6 +68,7 @@ RUN { \
 	echo $'#!/bin/bash \n\
 /cjdns.sh & \n\
 /mnigs.sh & \n\
+echo "Web UI available at http://127.0.0.1:65533/" \n\
 echo "# mnigs-cli -h" \n\
 mnigs-cli -h \n\
 bash \n\
