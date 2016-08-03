@@ -267,12 +267,13 @@ function db.registerNode(name, ip, port)
 	local query
 	
 	-- TODO: fix race condition
-	local gateway = db.lookupNode(ip)
-	if gateway ~= nil then
+	local node = db.lookupNode(ip, port)
+	if node ~= nil then
 		query = string.format(
-			"UPDATE nodes SET last_seen_timestamp = '%d' WHERE ip = '%s'"
+			"UPDATE nodes SET last_seen_timestamp = '%d' WHERE ip = '%s' AND port = '%d'"
 			,timestamp
 			,dbc:escape(ip)
+			,tonumber(port)
 		)
 	else
 		query = string.format(
@@ -290,7 +291,7 @@ function db.registerNode(name, ip, port)
 			,dbc:escape(name)
 			,dbc:escape(ip)
 			,tonumber(port)
-			,timestamp
+			,tonumber(timestamp)
 		)
 	end
 	local result, error = dbc:execute(query)
@@ -300,8 +301,8 @@ function db.registerNode(name, ip, port)
 	return true, nil
 end
 
-function db.lookupNode(ip)
-	local cur, error = dbc:execute(string.format("SELECT * FROM nodes WHERE ip = '%s'",dbc:escape(ip)))
+function db.lookupNode(ip, port)
+	local cur, error = dbc:execute(string.format("SELECT * FROM nodes WHERE ip = '%s' AND port = '%d'",dbc:escape(ip),tonumber(port)))
 	if cur == nil then
 		return nil, error
 	end
@@ -328,26 +329,38 @@ function db.registerGateway(name, ip, port, method)
 	
 	local query
 	
-	query = string.format(
-		"INSERT INTO gateways ("
-		.."name"
-		..",ip"
-		..",port"
-		..",last_seen_timestamp"
-		..",method"
-		..") VALUES ("
-		.."'%s'"
-		..",'%s'"
-		..",'%d'"
-		..",'%d'"
-		..",'%s'"
-		..")"
-		,dbc:escape(name)
-		,dbc:escape(ip)
-		,tonumber(port)
-		,tonumber(timestamp)
-		,dbc:escape(method)
-	)
+	-- TODO: fix race condition
+	local gateway = db.lookupGateway(ip, port, method)
+	if gateway ~= nil then
+		query = string.format(
+			"UPDATE gateways SET last_seen_timestamp = '%d' WHERE ip = '%s' AND port = '%d' AND method = '%s'"
+			,timestamp
+			,dbc:escape(ip)
+			,tonumber(port)
+			,dbc:escape(method)
+		)
+	else
+		query = string.format(
+			"INSERT INTO gateways ("
+			.."name"
+			..",ip"
+			..",port"
+			..",last_seen_timestamp"
+			..",method"
+			..") VALUES ("
+			.."'%s'"
+			..",'%s'"
+			..",'%d'"
+			..",'%d'"
+			..",'%s'"
+			..")"
+			,dbc:escape(name)
+			,dbc:escape(ip)
+			,tonumber(port)
+			,tonumber(timestamp)
+			,dbc:escape(method)
+		)
+	end
 	
 	local result, error = dbc:execute(query)
 	if result == nil then
@@ -356,8 +369,8 @@ function db.registerGateway(name, ip, port, method)
 	return true, nil
 end
 
-function db.lookupGateway(ip)
-	local cur, error = dbc:execute(string.format("SELECT * FROM gateways WHERE ip = '%s'",dbc:escape(ip)))
+function db.lookupGateway(ip, port, method)
+	local cur, error = dbc:execute(string.format("SELECT * FROM gateways WHERE ip = '%s' AND port = '%d' AND method = '%s'",dbc:escape(ip),tonumber(port),dbc:escape(method)))
 	if cur == nil then
 		return nil, error
 	end
