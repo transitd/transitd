@@ -93,7 +93,6 @@ end
 function conman.connectToGateway(ip, port, method, sid)
 	
 	local gateway = rpc.getProxy(ip, port)
-	local record = db.lookupGateway(ip)
 	
 	print("[conman] Checking " .. ip .. "...")
 	local info, err = gateway.nodeInfo()
