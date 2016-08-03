@@ -8,30 +8,31 @@ Emerging community mesh networks seek to provide free and open access to a netwo
 ### Warning:  code in this repository is work in progress and currently not usable, feel free to contribute.
 
 ## Main Advantages
-Although it is possible for community network users to set up Internet connectivity on their networks, using this package has a number of advantages.
+Although it is possible for community network users to set up Internet connectivity on their networks manually, using this package has a number of advantages.
 * Quick and efficient to use
 * Installs on routers
 * No network administration knowledge needed
 * Decentralized (uses routing protocol facilities to do breadth first search for gateways)
+* Provides a selection of multiple gateways on a single network
 * Supports multiple routing protocols / network configurations
 * Supports multiple connection methods / tunneling configurations
 * Supports payments
 
-## Routing configurations support
+### Network configuration support
 * cjdns
 * babel
 * batman-adv
 * olsr
 * plain layer 2 network with switches
 
-## Tunneling configuration support
+### Tunneling configuration support
 * cjdns tunneling
 * openvpn/softether
 * ipip/gre
 * tun2socks?
 * simple forwarding
 
-## Payment support
+### Payment method support
 * free
 * gateway-hosted web page
 
