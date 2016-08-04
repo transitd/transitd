@@ -227,6 +227,15 @@ function db.lookupActiveSubscriberSessionByIp(ip, port)
 	return cur:fetch ({}, "a"), nil
 end
 
+function db.lookupActiveSubscriberSessionByInternetIp(ip)
+ 	local timestamp = os.time()
+	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND (internetIPv4 = '%s' OR internetIPv6 = '%s') AND '%d' <= timeout_timestamp AND active = 1", dbc:escape(ip), dbc:escape(ip), timestamp))
+	if err then
+		return nil, err
+	end
+	return cur:fetch ({}, "a"), nil
+end
+
 function db.getTimingOutSubscribers(sinceTimestamp)
  	local timestamp = os.time()
 	local sinceTimestamp = tonumber(sinceTimestamp)
