@@ -13,28 +13,35 @@ local network = require("network")
 function gateway.allocateIpv4()
 	
 	-- come up with random ipv4 based on settings in config
-	local ip, cidr, err = network.parseIpv4Subnet(config.gateway.subscriberIpv4subnet)
+	local subnet, err = network.parseIpv4Subnet(config.gateway.subscriberIpv4subnet)
+	local prefixIp, cidr = unpack(subnet)
 	if err then
 		return nil, "Failed to parse subscriberIpv4subnet"
 	end
 	
+	local gatewayIp, err = network.parseIpv4(config.gateway.subscriberIpv4gateway)
+	if err then
+		return nil, "Failed to parse subscriberIpv4gateway"
+	end
+	gatewayIp = network.ip2string(gatewayIp)
+	
 	local prefixMask = network.Ipv4cidrToBinaryMask(cidr)
-	local prefixAddr = bit32.band(network.ipv4toBinary(ip), prefixMask)
+	local prefixAddr = bit32.band(network.ip2binary(prefixIp), prefixMask)
 	local subnetMask = bit32.bnot(prefixMask)
 	local randomAddr = math.random(2^30)
 	
 	for i=1,2^(32-cidr) do
 		local subnetAddr = bit32.band(randomAddr, subnetMask)
 		local combinedAddr = bit32.bor(prefixAddr, subnetAddr)
-		local ip = network.ipv4toString(network.binaryToIpv4(combinedAddr));
+		local ip = network.ip2string(network.binaryToIp(combinedAddr));
 		-- check in database to make sure ipv4 hasn't already been allocated to another subscriber
 		-- TODO: fix race conditions
 		local session, err = db.lookupActiveSubscriberSessionByInternetIp(ip)
 		if err then return nil, err end
-		if session then
+		if session and ip == gatewayIp then
 			randomAddr = randomAddr+1
 		else
-			return ip, nil
+			return {ip, cidr}, nil
 		end
 	end
 	
@@ -43,33 +50,40 @@ end
 
 function gateway.allocateIpv6()
 	
-	if not config.gateway.subscriberIpv6subnet then
-		return nil
+	if not config.gateway.subscriberIpv6subnet or not config.gateway.subscriberIpv6gateway then
+		return nil, nil
 	end
 	
+	local gatewayIp, err = network.parseIpv6(config.gateway.subscriberIpv6gateway)
+	if err then
+		return nil, "Failed to parse subscriberIpv6gateway"
+	end
+	gatewayIp = network.ip2string(gatewayIp)
+	
 	-- come up with random ipv4 based on settings in config
-	local ip, cidr, err = network.parseIpv6Subnet(config.gateway.subscriberIpv6subnet)
+	local subnet, err = network.parseIpv6Subnet(config.gateway.subscriberIpv6subnet)
+	local prefixIp, cidr = unpack(subnet)
 	if err then
 		return nil, "Failed to parse subscriberIpv6subnet"
 	end
 	
 	local prefixMask = network.Ipv6cidrToBinaryMask(cidr)
-	local prefixAddr = bit128.band(network.ipv6toBinary(ip), prefixMask)
+	local prefixAddr = bit128.band(network.ip2binary(prefixIp), prefixMask)
 	local subnetMask = bit128.bnot(prefixMask)
 	local randomAddr = {math.random(2^30),math.random(2^30),math.random(2^30),math.random(2^30)}
 	
 	for i=1,2^(128-cidr) do
 		local subnetAddr = bit128.band(randomAddr, subnetMask)
 		local combinedAddr = bit128.bor(prefixAddr, subnetAddr)
-		local ip = network.ipv6toString(network.binaryToIpv6(combinedAddr));
+		local ip = network.ip2string(network.binaryToIp(combinedAddr));
 		-- check in database to make sure ipv4 hasn't already been allocated to another subscriber
 		-- TODO: fix race conditions
 		local session, err = db.lookupActiveSubscriberSessionByInternetIp(ip)
 		if err then return nil, err end
-		if session then
+		if session or ip == gatewayIp then
 			randomAddr = randomAddr+1
 		else
-			return ip, nil
+			return {ip, cidr}, nil
 		end
 	end
 	

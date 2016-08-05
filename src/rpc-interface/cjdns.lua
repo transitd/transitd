@@ -8,6 +8,7 @@ local scanner = require("cjdnstools.scanner")
 local cjdnsTunnel = require("cjdnstools.tunnel")
 local threadman = require("threadman")
 local rpc = require("rpc")
+local network = require("network")
 
 function cjdns.requestConnection(sid, name, port, method, options)
 	
@@ -28,8 +29,9 @@ function cjdns.requestConnection(sid, name, port, method, options)
 	end
 	
 	-- allocate ips based on settings in config
-	ipv4, error4 = gateway.allocateIpv4();
-	ipv6, error5 = gateway.allocateIpv6();
+	local ipv4, cidr4, ipv6, cidr6
+	local subnet4, error4 = gateway.allocateIpv4();
+	local subnet6, error5 = gateway.allocateIpv6();
 	if error4 ~= nil and error6 ~= nil then
 		if error4 ~= nil then
 			return { success = false, errorMsg = error4 }
@@ -37,6 +39,15 @@ function cjdns.requestConnection(sid, name, port, method, options)
 		if error6 ~= nil then
 			return { success = false, errorMsg = error6 }
 		end
+	end
+	if not subnet4 and not subnet6 then
+		return { success = false, errorMsg = "Failed to allocate IP address(s)" }
+	end
+	if subnet4 then
+		ipv4, cidr4 = unpack(subnet4)
+	end
+	if subnet6 then
+		ipv6, cidr6 = unpack(subnet6)
 	end
 	
 	local sid, error = gateway.allocateSid(sid)
@@ -56,7 +67,17 @@ function cjdns.requestConnection(sid, name, port, method, options)
 		
 		threadman.notify({type = "subscriber.auth", ["sid"] = sid, cjdnskey = key})
 		
-		return { success = true, ['timeout'] = timeout, ['ipv4'] = ipv4, ['ipv6'] = ipv6, ["key"] = mykey }
+		return {
+				success = true,
+				['timeout'] = timeout,
+				['ipv4'] = ipv4,
+				['ipv6'] = ipv6,
+				['cidr4'] = cidr4,
+				['cidr6'] = cidr6,
+				["ipv4gateway"] = config.gateway.subscriberIpv4gateway,
+				["ipv6gateway"] = config.gateway.subscriberIpv6gateway,
+				["key"] = mykey
+			}
 	end
 	
 end
@@ -121,6 +142,94 @@ function cjdns.connectTo(ip, port, method, sid)
 				else
 					return {success = false, errorMsg = "Failed to get local cjdroute to connect to gateway: Unknown error"}
 				end
+			end
+			
+			local subnet4, ipv4, cidr4, subnet6, ipv6, cidr6, ipv4gateway, ipv6gateway, err
+			
+			if not result.ipv4 and not result.ipv6 then
+				return {success = false, errorMsg = "Failed to obtain IPv4 and IPv6 addresses from gateway"}
+			end
+			if result.ipv4 and not result.cidr4 then
+				return {success = false, errorMsg = "Failed to obtain IPv4 CIDR from gateway"}
+			end
+			if result.ipv6 and not result.cidr6 then
+				return {success = false, errorMsg = "Failed to obtain IPv6 CIDR from gateway"}
+			end
+			
+			-- make sure addresses are valid
+			if result.ipv4 then
+				subnet4, err = network.parseIpv4Subnet(result.ipv4.."/"..result.cidr4)
+				if err then
+					return {success = false, errorMsg = "Failed to parse IPv4 address"}
+				end
+				ipv4, cidr4 = unpack(subnet4)
+				ipv4 = network.ip2string(ipv4)
+				
+				ipv4gateway, err = network.parseIpv4(result.ipv4gateway)
+				if err then
+					return {success = false, errorMsg = "Failed to parse gateway IPv4 address"}
+				end
+				if not ipv4gateway then
+					return {success = false, errorMsg = "No gateway IPv4 address provided"}
+				end
+			end
+			if result.ipv6 then
+				subnet6, err = network.parseIpv6Subnet(result.ipv6.."/"..result.cidr6)
+				if err then
+					return {success = false, errorMsg = "Failed to parse IPv6 address"}
+				end
+				ipv6, cidr6 = unpack(subnet6)
+				ipv6 = network.ip2string(ipv6)
+				
+				ipv6gateway, err = network.parseIpv6(result.ipv6gateway)
+				if err then
+					return {success = false, errorMsg = "Failed to parse gateway IPv6 address"}
+				end
+				if not ipv6gateway then
+					return {success = false, errorMsg = "No gateway IPv6 address provided"}
+				end
+			end
+			
+			-- figure out what the cjdns network interface is
+			local cjdnsPrefix, err = network.parseIpv6Subnet(config.cjdns.network)
+			if err then
+				return {success = false, errorMsg = "Failed to determine cjdns network prefix: "..err}
+			end
+			local cjdnsPrefixIp, cjdnsPrefixCidr = unpack(cjdnsPrefix)
+			local interface, err = network.getInterfaceBySubnet({cjdnsPrefixIp, cjdnsPrefixCidr})
+			if err then
+				return {success = false, errorMsg = "Failed to determine cjdns network interface: "..err}
+			end
+			if not interface then
+				return {success = false, errorMsg = "Failed to determine cjdns network interface"}
+			end
+			
+			-- set up local networking
+			
+			-- this is already done by cjdns
+			--if ipv4 then
+			--	local cmd = "ip addr add "..ipv4.."/"..cidr4.." dev "..interface.name
+			--	local retval = os.execute(cmd)
+			--	if retval ~= 0 then 
+			--		return {success = false, errorMsg = "Failed to set local IPv4 address"}
+			--	end
+			--end
+			--if ipv6 then
+			--	local cmd = "ip addr add "..ipv6.."/"..cidr6.." dev "..interface.name
+			--	local retval = os.execute(cmd)
+			--	if retval ~= 0 then 
+			--		return {success = false, errorMsg = "Failed to set local IPv6 address"}
+			--	end
+			--end
+			
+			-- configure default route
+			local retval = os.execute("ip route del default")
+			if retval ~= 0 then
+				return {success = false, errorMsg = "Failed to remove default route"}
+			end
+			local retval = os.execute("ip route add dev "..interface.name)
+			if retval ~= 0 then
+				return {success = false, errorMsg = "Failed to configure default route"}
 			end
 			
 			return result

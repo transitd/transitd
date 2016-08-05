@@ -101,15 +101,15 @@ function network.parseIpv4Subnet(subnet)
 	local ip, err = network.parseIpv4(ip)
 	
 	if err then
-		return nil, nil, err
+		return nil, err
 	end
 	
 	cidr = tonumber(cidr)
 	if  0>cidr or cidr>32 then
-		return nil, nil, "Not a valid IPv4 subnet cidr"
+		return nil, "Not a valid IPv4 subnet cidr"
 	end
 	
-	return ip, cidr, nil
+	return {ip, cidr}, nil
 end
 
 -- takes string representation of ip and cidr and returns internal representation and cidr
@@ -120,85 +120,83 @@ function network.parseIpv6Subnet(subnet)
 	local ip, err = network.parseIpv6(ip)
 	
 	if err then
-		return nil, nil, err
+		return nil, err
 	end
 	
 	cidr = tonumber(cidr)
 	if  0>cidr or cidr>128 then
-		return nil, nil, "Not a valid IPv6 subnet cidr"
+		return nil, "Not a valid IPv6 subnet cidr"
 	end
 	
-	return ip, cidr, nil
+	return {ip, cidr}, nil
 end
 
 -- takes internal representation and returns string representation
-function network.ipv4toString(ip)
-	local a1, a2, a3, a4 = unpack(ip)
-	return a1.."."..a2.."."..a3.."."..a4;
-end
-
--- takes internal representation and returns string representation
-function network.ipv6toString(ip)
-	local str = ""
-	for i=0,7 do
-		local segment1 = string.format("%x",ip[i*2+1])
-		segment1 = string.rep("0", 2-#segment1)..segment1
-		local segment2 = string.format("%x",ip[i*2+2])
-		segment2 = string.rep("0", 2-#segment2)..segment2
-		str = str..string.lower(segment1..segment2)
-		if i < 7 then
-			str = str..":"
+function network.ip2string(ip)
+	local v6 = #ip > 4
+	if v6 then
+		local str = ""
+		for i=0,7 do
+			local segment1 = string.format("%x",ip[i*2+1])
+			segment1 = string.rep("0", 2-#segment1)..segment1
+			local segment2 = string.format("%x",ip[i*2+2])
+			segment2 = string.rep("0", 2-#segment2)..segment2
+			str = str..string.lower(segment1..segment2)
+			if i < 7 then
+				str = str..":"
+			end
 		end
+		return str
+	else
+		local a1, a2, a3, a4 = unpack(ip)
+		return a1.."."..a2.."."..a3.."."..a4;
 	end
-	return str
-end
-
-
--- takes internal representation and returns binary representation
-function network.ipv4toBinary(ip)
-	local bin = 0;
-	bin = bit32.bor(bin,ip[1])
-	bin = bit32.lshift(bin,8)
-	bin = bit32.bor(bin,ip[2])
-	bin = bit32.lshift(bin,8)
-	bin = bit32.bor(bin,ip[3])
-	bin = bit32.lshift(bin,8)
-	bin = bit32.bor(bin,ip[4])
-	return bin
 end
 
 -- takes internal representation and returns binary representation
-function network.ipv6toBinary(ip)
-	local bin = {}
-	for i=0,3 do
-		table.insert(bin, network.ipv4toBinary({ip[i*4+1],ip[i*4+2],ip[i*4+3],ip[i*4+4]}))
-	end
-	return bin
-end
-
--- takes binary representation and returns internal representation
-function network.binaryToIpv4(bin)
-	local a1, a2, a3, a4
-	a4 = bit32.band(0xFF,bin)
-	bin = bit32.rshift(bin,8)
-	a3 = bit32.band(0xFF,bin)
-	bin = bit32.rshift(bin,8)
-	a2 = bit32.band(0xFF,bin)
-	bin = bit32.rshift(bin,8)
-	a1 = bit32.band(0xFF,bin)
-	return {a1, a2, a3, a4};
-end
-
--- takes binary representation and returns internal representation
-function network.binaryToIpv6(bin)
-	local ipv6 = {}
-	for i=1,4 do
-		local segment = network.binaryToIpv4(bin[i])
-		for key,value in pairs(segment) do
-			table.insert(ipv6, value)
+function network.ip2binary(ip)
+	local v6 = #ip > 4
+	if v6 then
+		local bin = {}
+		for i=0,3 do
+			table.insert(bin, network.ip2binary({ip[i*4+1],ip[i*4+2],ip[i*4+3],ip[i*4+4]}))
 		end
+		return bin
+	else
+		local bin = 0;
+		bin = bit32.bor(bin,ip[1])
+		bin = bit32.lshift(bin,8)
+		bin = bit32.bor(bin,ip[2])
+		bin = bit32.lshift(bin,8)
+		bin = bit32.bor(bin,ip[3])
+		bin = bit32.lshift(bin,8)
+		bin = bit32.bor(bin,ip[4])
+		return bin
 	end
-	return ipv6
+end
+
+-- takes binary representation and returns internal representation
+function network.binaryToIp(bin)
+	if type(bin) == "table" then
+		local ipv6 = {}
+		for i=1,4 do
+			local segment = network.binaryToIp(bin[i])
+			for key,value in pairs(segment) do
+				table.insert(ipv6, value)
+			end
+		end
+		return ipv6
+	else
+		local a1, a2, a3, a4
+		a4 = bit32.band(0xFF,bin)
+		bin = bit32.rshift(bin,8)
+		a3 = bit32.band(0xFF,bin)
+		bin = bit32.rshift(bin,8)
+		a2 = bit32.band(0xFF,bin)
+		bin = bit32.rshift(bin,8)
+		a1 = bit32.band(0xFF,bin)
+		return {a1, a2, a3, a4};
+	end
 end
 
 -- takes cidr and returns binary representation of subnet mask
@@ -228,7 +226,7 @@ function network.getInterfaces()
 		end
 	end
 	procnetdev:close()
-	return ifs
+	return ifs, nil
 end
 
 function network.getInterfaceIpv4subnet(interface)
@@ -266,7 +264,7 @@ function network.getInterfaceIpv6subnet(interface)
 		local addr, cidr, iface = string.match(string.lower(l), "^([0-9a-f]+)%s[0-9a-f]+%s([0-9a-f]+)%s.*%s(%w+)$")
 		if addr and cidr and iface == interface then
 			local ipv6 = {}
-			for i=0,7 do table.insert(ipv6, tonumber(addr:sub(i*4+1,i*4+4),16)) end
+			for i=0,15 do table.insert(ipv6, tonumber(addr:sub(i*2+1,i*2+2),16)) end
 			procnetif:close()
 			return ipv6, tonumber(cidr, 16), nil
 		end
@@ -281,12 +279,12 @@ function network.subnetAddr(subnet)
 	local ip, cidr = unpack(subnet)
 	local v6 = #ip > 4
 	
+	ip = network.ip2binary(ip);
+	
 	if v6 then
-		ip = network.ipv6toBinary(ip);
-		return network.binaryToIpv6(bit128.band(ip, network.Ipv6cidrToBinaryMask(cidr)))
+		return network.binaryToIp(bit128.band(ip, network.Ipv6cidrToBinaryMask(cidr)))
 	else
-		ip = network.ipv4toBinary(ip);
-		return network.binaryToIpv4(bit32.band(ip, network.Ipv4cidrToBinaryMask(cidr)))
+		return network.binaryToIp(bit32.band(ip, network.Ipv4cidrToBinaryMask(cidr)))
 	end
 end
 
@@ -298,7 +296,7 @@ function network.compareSubnet(subnet1, subnet2)
 	if #ip1 ~= #ip2 then return false end
 	if cidr1 ~= cidr2 then return false end
 	
-	return network.subnetAddr(subnet1) == network.subnetAddr(subnet2)
+	return network.ip2string(network.subnetAddr(subnet1)) == network.ip2string(network.subnetAddr(subnet2))
 end
 
 function network.getInterfaceBySubnet(subnet)
@@ -306,14 +304,25 @@ function network.getInterfaceBySubnet(subnet)
 	local ip, cidr = unpack(subnet)
 	local v6 = #ip > 4
 	
-	for interface in network.getInterfaces() do
+	local interfaces, err = network.getInterfaces()
+	if err then
+		return nil, err
+	end
+	
+	for name,interface in pairs(interfaces) do
 		
 		if v6 then
-			if network.compareSubnet(interface.ipv6subnet, subnet) then return interface.name end
+			if network.compareSubnet(interface.ipv6subnet, subnet) then
+				return interface, nil
+			end
 		else
-			if network.compareSubnet(interface.ipv4subnet, subnet) then return interface.name end
+			if network.compareSubnet(interface.ipv4subnet, subnet) then
+				return interface, nil
+			end
 		end
 	end
+	
+	return nil, nil
 end
 
 return network
