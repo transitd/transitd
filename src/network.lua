@@ -219,45 +219,50 @@ function network.getInterfaces()
 		local ifname = string.match(string.lower(l), "^%s*(%w+):")
 		if ifname then
 			
-			local ipv4, cidrv4, err = network.getInterfaceIpv4subnet(ifname)
-			local ipv6, cidrv6, err = network.getInterfaceIpv6subnet(ifname)
+			local ipv4subnets, err = network.getInterfaceIpv4subnets(ifname)
+			local ipv6subnets, err = network.getInterfaceIpv6subnets(ifname)
 			
-			ifs[ifname] = { ["name"] = ifname, ["ipv4subnet"] = {ipv4, cidrv4}, ["ipv6subnet"] = {ipv6, cidrv6} }
+			ifs[ifname] = { ["name"] = ifname, ["ipv4subnets"] = ipv4subnets, ["ipv6subnets"] = ipv6subnets }
 		end
 	end
 	procnetdev:close()
 	return ifs, nil
 end
 
-function network.getInterfaceIpv4subnet(interface)
+function network.getInterfaceIpv4subnets(interface)
 	interface = string.lower(interface)
 	
 	local ipcmd = io.popen("ip addr show "..interface, 'r')
 	
 	if not ipcmd then 
-		return nil, nil, "Failed to get IPv4 address for interface "..interface
+		return nil, "Failed to get IPv4 address for interface "..interface
 	end
+	
+	local subnets = {}
 	
 	for l in ipcmd:lines() do
 		local subnet = string.match(string.lower(l), "^%s*inet%s+(%d+%.%d+%.%d+%.%d+/%d+)%s")
 		if subnet then
-			return network.parseIpv4Subnet(subnet)
+			local subnet, err = network.parseIpv4Subnet(subnet)
+			if not err and subnet then table.insert(subnets, subnet) end
 		end
 	end
 	
 	ipcmd:close()
 	
-	return nil, nil, nil
+	return subnets, nil
 end
 
-function network.getInterfaceIpv6subnet(interface)
+function network.getInterfaceIpv6subnets(interface)
 	interface = string.lower(interface)
 	
 	local procnetif, err = io.open("/proc/net/if_inet6")
 	
 	if err then
-		return nil, nil, err
+		return nil, err
 	end
+	
+	local subnets = {}
 	
 	local ifs = {}
 	for l in procnetif:lines() do
@@ -265,14 +270,13 @@ function network.getInterfaceIpv6subnet(interface)
 		if addr and cidr and iface == interface then
 			local ipv6 = {}
 			for i=0,15 do table.insert(ipv6, tonumber(addr:sub(i*2+1,i*2+2),16)) end
-			procnetif:close()
-			return ipv6, tonumber(cidr, 16), nil
+			table.insert(subnets, {ipv6, tonumber(cidr, 16)})
 		end
 	end
 	
 	procnetif:close()
 	
-	return nil, nil, nil
+	return subnets, nil
 end
 
 function network.subnetAddr(subnet)
@@ -311,12 +315,16 @@ function network.getInterfaceBySubnet(subnet)
 	
 	for name,interface in pairs(interfaces) do
 		
+		local ifsubnets
+		
 		if v6 then
-			if network.compareSubnet(interface.ipv6subnet, subnet) then
-				return interface, nil
-			end
+			ifsubnets = interface.ipv6subnets
 		else
-			if network.compareSubnet(interface.ipv4subnet, subnet) then
+			ifsubnets = interface.ipv4subnets
+		end
+		
+		for k,ifsubnet in pairs(ifsubnets) do
+			if network.compareSubnet(ifsubnet, subnet) then
 				return interface, nil
 			end
 		end

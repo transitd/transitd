@@ -3,6 +3,7 @@
 local tunnel = {}
 
 local config = require("config")
+local network = require("network")
 
 package.path = package.path .. ";cjdnstools/contrib/lua/?.lua"
 
@@ -132,6 +133,90 @@ function tunnel.deauthorizeKey(key)
 			end
 		end
 	end
+end
+
+function tunnel.getInterface()
+	-- figure out what the cjdns network interface is
+	local cjdnsPrefix, err = network.parseIpv6Subnet(config.cjdns.network)
+	if err then
+		return nil, "Failed to determine cjdns network prefix: "..err
+	end
+	local cjdnsPrefixIp, cjdnsPrefixCidr = unpack(cjdnsPrefix)
+	local interface, err = network.getInterfaceBySubnet({cjdnsPrefixIp, cjdnsPrefixCidr})
+	if err then
+		return nil, "Failed to determine cjdns network interface: "..err
+	end
+	if not interface then
+		return nil, "Failed to determine cjdns network interface"
+	end
+	
+	return interface
+end
+
+function tunnel.gatewaySetup()
+	
+	local interface, err = tunnel.getInterface()
+	if err then return nil, err end
+	
+	--	local cmd = "ip addr add "..gatewayData.ipv4.."/"..gatewayData.cidr4.." dev "..interface.name
+	--	local retval = os.execute(cmd)
+	--	if retval ~= 0 then
+	--		return nil, "Failed to set local IPv4 address"
+	--	end
+	
+end
+
+function tunnel.subscriberSetup(gatewayData)
+	
+	local interface, err = tunnel.getInterface()
+	if err then return nil, err end
+	
+	-- this is already done by cjdns
+	--if ipv4 then
+	--	local cmd = "ip addr add "..gatewayData.ipv4.."/"..gatewayData.cidr4.." dev "..interface.name
+	--	local retval = os.execute(cmd)
+	--	if retval ~= 0 then
+	--		return nil, "Failed to set local IPv4 address"
+	--	end
+	--end
+	--if ipv6 then
+	--	local cmd = "ip addr add "..gatewayData.ipv6.."/"..gatewayData.cidr6.." dev "..interface.name
+	--	local retval = os.execute(cmd)
+	--	if retval ~= 0 then
+	--		return nil, "Failed to set local IPv6 address"
+	--	end
+	--end
+	
+	-- configure default route
+	
+	os.execute("ip route del default")
+	os.execute("ip -6 route del default")
+	
+	local retval = os.execute("ip route add dev "..interface.name)
+	if retval ~= 0 then
+		return nil, "Failed to configure default IPv4 route"
+	end
+	local retval = os.execute("ip -6 route add dev "..interface.name)
+	if retval ~= 0 then
+		return nil, "Failed to configure default IPv6 route"
+	end
+	
+	return true
+end
+
+function tunnel.subscriberTeardown()
+	
+	local retval = os.execute("ip route del default")
+	if retval ~= 0 then
+		return nil, "Failed to remove default IPv4 route"
+	end
+	
+	local retval = os.execute("ip -6 route del default")
+	if retval ~= 0 then
+		return nil, "Failed to remove default IPv6 route"
+	end
+	
+	return true
 end
 
 return tunnel

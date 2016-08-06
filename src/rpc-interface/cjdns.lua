@@ -5,7 +5,7 @@ local config = require("config")
 local gateway = require("gateway")
 local db = require("db")
 local scanner = require("cjdnstools.scanner")
-local cjdnsTunnel = require("cjdnstools.tunnel")
+local tunnel = require("cjdnstools.tunnel")
 local threadman = require("threadman")
 local rpc = require("rpc")
 local network = require("network")
@@ -55,7 +55,7 @@ function cjdns.requestConnection(sid, name, port, method, options)
 		return { success = false, errorMsg = error, temporaryError = true }
 	end
 	
-	local response, err = cjdnsTunnel.addKey(key, ipv4, ipv6)
+	local response, err = tunnel.addKey(key, ipv4, ipv6)
 	if err then
 		return { success = false, errorMsg = "Error adding cjdns key at gateway: " .. err }
 	else
@@ -94,7 +94,7 @@ function cjdns.releaseConnection(sid)
 			threadman.notify({type = "subscriber.deauth.fail", ["sid"] = sid, method = "cjdns", cjdnskey = key, error = err})
 			return { success = false, errorMsg = "Error releasing connection: " .. err }
 		else
-			local response, err = cjdnsTunnel.deauthorizeKey(key)
+			local response, err = tunnel.deauthorizeKey(key)
 			if err then
 				threadman.notify({type = "subscriber.deauth.fail", ["sid"] = sid, method = "cjdns", cjdnskey = key, error = err})
 				return { success = false, errorMsg = "Error releasing connection: " .. err }
@@ -135,7 +135,7 @@ function cjdns.connectTo(ip, port, method, sid)
 				return {success = false, errorMsg = "Gateway did not send its key"}
 			end
 			
-			local success, err = cjdnsTunnel.connect(result.key)
+			local success, err = tunnel.connect(result.key)
 			if not success then
 				if err then
 					return {success = false, errorMsg = "Failed to get local cjdroute to connect to gateway: "..err}
@@ -172,6 +172,7 @@ function cjdns.connectTo(ip, port, method, sid)
 				if not ipv4gateway then
 					return {success = false, errorMsg = "No gateway IPv4 address provided"}
 				end
+				ipv4gateway = network.ip2string(ipv4gateway)
 			end
 			if result.ipv6 then
 				subnet6, err = network.parseIpv6Subnet(result.ipv6.."/"..result.cidr6)
@@ -188,48 +189,20 @@ function cjdns.connectTo(ip, port, method, sid)
 				if not ipv6gateway then
 					return {success = false, errorMsg = "No gateway IPv6 address provided"}
 				end
+				ipv6gateway = network.ip2string(ipv6gateway)
 			end
 			
-			-- figure out what the cjdns network interface is
-			local cjdnsPrefix, err = network.parseIpv6Subnet(config.cjdns.network)
+			-- overwrite values with parsed data
+			result.ipv4 = ipv4
+			result.ipv6 = ipv6
+			result.cidr4 = cidr4
+			result.cidr6 = cidr6
+			result.ipv4gateway = ipv4gateway
+			result.ipv6gateway = ipv6gateway
+			
+			local ret, err = tunnel.subscriberSetup(result)
 			if err then
-				return {success = false, errorMsg = "Failed to determine cjdns network prefix: "..err}
-			end
-			local cjdnsPrefixIp, cjdnsPrefixCidr = unpack(cjdnsPrefix)
-			local interface, err = network.getInterfaceBySubnet({cjdnsPrefixIp, cjdnsPrefixCidr})
-			if err then
-				return {success = false, errorMsg = "Failed to determine cjdns network interface: "..err}
-			end
-			if not interface then
-				return {success = false, errorMsg = "Failed to determine cjdns network interface"}
-			end
-			
-			-- set up local networking
-			
-			-- this is already done by cjdns
-			--if ipv4 then
-			--	local cmd = "ip addr add "..ipv4.."/"..cidr4.." dev "..interface.name
-			--	local retval = os.execute(cmd)
-			--	if retval ~= 0 then 
-			--		return {success = false, errorMsg = "Failed to set local IPv4 address"}
-			--	end
-			--end
-			--if ipv6 then
-			--	local cmd = "ip addr add "..ipv6.."/"..cidr6.." dev "..interface.name
-			--	local retval = os.execute(cmd)
-			--	if retval ~= 0 then 
-			--		return {success = false, errorMsg = "Failed to set local IPv6 address"}
-			--	end
-			--end
-			
-			-- configure default route
-			local retval = os.execute("ip route del default")
-			if retval ~= 0 then
-				return {success = false, errorMsg = "Failed to remove default route"}
-			end
-			local retval = os.execute("ip route add dev "..interface.name)
-			if retval ~= 0 then
-				return {success = false, errorMsg = "Failed to configure default route"}
+				return {success = false, errorMsg = err}
 			end
 			
 			return result

@@ -62,6 +62,20 @@ threadman.startThread(function()
 	end
 end)
 
+-- configure gateway functionality
+if config.gateway.enabled == "yes" then
+	
+	if config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
+		local tunnel = require("cjdnstools.tunnel")
+		local result, err = tunnel.gatewaySetup()
+		if err then
+			error(err)
+		end
+	end
+	
+end
+
+
 -- TODO: set up SIGTERM callback
 -- send shutdown message
 -- threadman.notify({type="exit"})
