@@ -144,6 +144,7 @@ $ cp mnigs.conf.sample mnigs1.conf
 $ vi mnigs1.conf
 set cjdns.config=....
 set daemon.rpcport=65533
+set daemon.scanports=65533,65534
 set gateway.enabled=yes
 set database.file=mnigs1.db
 $ lua daemon.lua -f ../mnigs1.conf
@@ -156,6 +157,7 @@ $ cp mnigs.conf.sample mnigs2.conf
 $ vi mnigs2.conf
 set cjdns.config=....
 set daemon.rpcport=65534
+set daemon.scanports=65533,65534
 set gateway.enabled=no
 set database.file=mnigs2.db
 $ lua daemon.lua -f ../mnigs2.conf

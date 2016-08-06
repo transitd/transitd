@@ -7,7 +7,7 @@ name=Lua mnigs
 listenIpv6=true
 listenIpv4=true
 rpcport=65533
-scanports=65533,65534
+scanports=65533
 
 [gateway]
 
