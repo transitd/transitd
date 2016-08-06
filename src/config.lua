@@ -42,4 +42,10 @@ if _G.config == nil then
 	_G.config = inifile.parse(configfile)
 end
 
+function save_config()
+	local inifile = require("inifile")
+	local configfile = script_path() .. "../mnigs.conf"
+	inifile.save(configfile, _G.config)
+end
+
 return _G.config
