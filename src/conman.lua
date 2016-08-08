@@ -92,6 +92,10 @@ end
 
 function conman.connectToGateway(ip, port, method, sid)
 	
+	if config.gateway.enabled == "yes" then
+		return nil, "Cannot use connect functionality in gateway mode"
+	end
+	
 	local gateway = rpc.getProxy(ip, port)
 	
 	print("[conman] Checking " .. ip .. "...")
@@ -131,16 +135,14 @@ function conman.connectToGateway(ip, port, method, sid)
 		db.registerGatewaySession(sid, info.name, method, ip, port)
 		result = cjdns.connectTo(ip, port, method, sid)
 		if result.success then
-			print("Registered with gateway at " .. ip .. " port "..port.."!")
-			if result.timeout then
-				if result.ipv4        then print("IPv4:" .. result.ipv4)                        end
-				if result.ipv4gateway then print("IPv4 gateway:" .. result.ipv4gateway)         end
-				if result.ipv6        then print("IPv6:" .. result.ipv6)                        end
-				if result.ipv6gateway then print("IPv6 gateway:" .. result.ipv6gateway)         end
-				if result.dns         then print("IPv6 DNS:" .. result.dns)                     end
-				if result.timeout     then print("Timeout is " .. result.timeout .. " seconds") end
-			end
 			db.updateGatewaySession(sid, true, result.ipv4, result.ipv6, result.timeout)
+			print("Registered with gateway at " .. ip .. " port "..port.."!")
+			if result.ipv4        then print("IPv4:" .. result.ipv4)                        end
+			if result.ipv4gateway then print("IPv4 gateway:" .. result.ipv4gateway)         end
+			if result.ipv6        then print("IPv6:" .. result.ipv6)                        end
+			if result.ipv6gateway then print("IPv6 gateway:" .. result.ipv6gateway)         end
+			if result.dns         then print("IPv6 DNS:" .. result.dns)                     end
+			if result.timeout     then print("Timeout is " .. result.timeout .. " seconds") end
 		end
 		return result, nil
 	else
@@ -154,9 +156,32 @@ function conman.connectToGateway(ip, port, method, sid)
 	end
 end
 
+function conman.disconnectFromGateway(sid)
+	
+	local session, err = db.lookupSession(sid)
+	
+	if session == nil then
+		return nil, "No such session"
+	end
+	
+	if session.subscriber ~= 0 or session.active ~= 1 then
+		return nil, "Not a valid session"
+	end
+	
+	if session.method == "cjdns" then
+		db.deactivateSession(sid)
+		return cjdns.disconnect(sid)
+	end
+
+	return true, nil
+end
+
 local connectionManager = function()
-	subscriberManager()
-	gatewayManager()
+	if config.gateway.enabled == "yes" then
+		subscriberManager()
+	else
+		gatewayManager()
+	end
 end
 
 function conman.startConnectionManager()

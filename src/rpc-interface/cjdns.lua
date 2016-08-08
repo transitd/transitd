@@ -210,4 +210,16 @@ function cjdns.connectTo(ip, port, method, sid)
 	end
 end
 
+function cjdns.disconnect(sid)
+	
+	local session, err = db.lookupSession(sid)
+	
+	local ip = session.meshIP
+	local port = session.port
+	
+	local node = rpc.getProxy(ip, port)
+	
+	return node.releaseConnection(sid)
+end
+
 return cjdns

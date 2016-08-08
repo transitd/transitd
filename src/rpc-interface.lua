@@ -13,6 +13,8 @@ local interface = {
 		
 		local info = { name = config.main.name }
 		
+		info['gateway'] = config.gateway.enabled == "yes"
+		
 		if config.gateway.enabled == "yes" then
 			local methods = {}
 			if config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
@@ -37,7 +39,7 @@ local interface = {
 		-- TODO: check to make sure they are connecting over allowed network
 		
 		-- check maxclients config to make sure we are not registering more clients than needed
-		local activeSubscribers = db.getActiveSubscribers()
+		local activeSubscribers = db.getActiveSessions()
 		if #activeSubscribers > config.gateway.maxConnections then
 			return { success = false, errorMsg = "Too many subscribers", temporaryError = true }
 		end
@@ -78,11 +80,23 @@ local interface = {
 
 	releaseConnection = function(sid)
 		
+		sid = tostring(sid)
+		
 		if config.gateway.enabled ~= "yes" then
 			return { success = false, errorMsg = "No gateway here" }
 		end
 		
-		if method == "cjdns" and config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
+		local session, err = db.lookupSession(sid)
+		
+		if session == nil then
+			return { success = false, errorMsg = "No such session" }
+		end
+		
+		if session.subscriber ~= 1 or session.active ~= 1 then
+			return { success = false, errorMsg = "Not a valid session" }
+		end
+		
+		if session.method == "cjdns" and config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
 			return cjdns.releaseConnection(sid)
 		end
 		
@@ -95,6 +109,10 @@ local interface = {
 		
 		if requestip ~= "127.0.0.1" and requestip ~= "::1" then
 			return { success = false, errorMsg = "Permission denied" }
+		end
+		
+		if config.gateway.enabled == "yes" then
+			return { success = false, errorMsg = "Cannot use connect functionality in gateway mode" }
 		end
 		
 		-- TODO: check network == cjdns
@@ -143,6 +161,55 @@ local interface = {
 		end
 		
 		return { success = false, errorMsg = "Method not supported" }
+	end,
+	
+	disconnect = function(sid)
+		
+		sid = tostring(sid)
+		
+		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		
+		if requestip ~= "127.0.0.1" and requestip ~= "::1" then
+			return { success = false, errorMsg = "Permission denied" }
+		end
+		
+		if config.gateway.enabled == "yes" then
+			return { success = false, errorMsg = "Cannot use connect functionality in gateway mode" }
+		end
+		
+		local cid, err = rpc.allocateCallId()
+		if err ~= nil then
+			return { success = false, errorMsg = err }
+		end
+		
+		-- TODO: switch to using notifications to propagate config variables to threads
+		-- instead of running config code for each thread
+		local cjson_safe = require("cjson.safe")
+		local config_encoded = cjson_safe.encode(config)
+		
+		threadman.startThread(function()
+			-- luaproc doesn't load everything by default
+			io = require("io")
+			os = require("os")
+			table = require("table")
+			string = require("string")
+			math = require("math")
+			debug = require("debug")
+			coroutine = require("coroutine")
+			local luaproc = require("luaproc")
+			
+			local cjson_safe = require("cjson.safe")
+			_G.config = cjson_safe.decode(config_encoded)
+			
+			local conman = require("conman")
+			local result, err = conman.disconnectFromGateway(sid)
+			
+			local threadman = require("threadman")
+			threadman.notify({type="nonblockingcall.complete", callId=cid, ["result"]=result, ["err"]=err})
+		end)
+		
+		return { success = true, callId = cid }
+		
 	end,
     
 	listGateways = function(ip, port, method, sid)

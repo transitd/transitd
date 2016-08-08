@@ -255,7 +255,7 @@ function db.getTimingOutSubscribers(sinceTimestamp)
 	return list, nil
 end
 
-function db.getActiveSubscribers()
+function db.getActiveSessions()
  	local timestamp = os.time()
 	local cur, error = dbc:execute(string.format("SELECT * FROM sessions WHERE '%d' <= timeout_timestamp AND active = 1", timestamp))
 	if cur == nil then
