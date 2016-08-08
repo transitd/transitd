@@ -23,31 +23,15 @@ if optarg.n then
 	local data = optarg.n
 	local setting = string.sub(data, 1, string.find(data,"=")-1)
 	local value = string.sub(data, string.find(data,"=")+1)
-	local con = _G.config
-	local tokens = {}
-	for token in string.gmatch(setting, "%w+") do table.insert(tokens, token) end
-	for num,section in pairs(tokens) do
-		if not con[section] then
-			error("Invalid configuration token '"..section.."'")
-		else
-			if type(con[section]) ~= "table" then
-				if num ~= #tokens then
-					error("Configuration token '"..section.."' does not have subelements")
-				end
-				con[section] = value
-				save_config()
-			else
-				if num == #tokens then
-					error("Configuration token '"..section.."' cannot have a value")
-				else
-					con = con[section]
-				end
-			end
-		end
-	end
+	set_config(setting, value)
+	save_config()
 end
 
 if optarg.c then
+	
+	if config.gateway.enabled == "yes" then
+		error("Cannot use connect functionality in gateway mode")
+	end
 	
 	local ip = optarg.c
 	

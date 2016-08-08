@@ -78,6 +78,10 @@ $ cd mnigs
 $ docker build -t "mnigs:0" .
 $ docker run -it --privileged --rm mnigs:0
 ```
+### Enable gateway functionality
+```
+# mnigs-cli --set gateway.enabled=yes
+```
 
 ### Manual Installation
 ```
@@ -139,27 +143,27 @@ In order to demo the system, you actually need 2 different machines.  You can av
 
 ### Start daemon 1
 ```
-$ cd src
+$ cd mnigs
 $ cp mnigs.conf.sample mnigs1.conf
-$ vi mnigs1.conf
-set cjdns.config=....
-set daemon.rpcport=65533
-set daemon.scanports=65533,65534
-set gateway.enabled=yes
-set database.file=mnigs1.db
+$ cd src
+$ lua cli.lua -f ../mnigs1.conf --set cjdns.config=<path/to/cjdroute.conf>
+$ lua cli.lua -f ../mnigs1.conf --set daemon.rpcport=65533
+$ lua cli.lua -f ../mnigs1.conf --set daemon.scanports=65533,65534
+$ lua cli.lua -f ../mnigs1.conf --set gateway.enabled=yes
+$ lua cli.lua -f ../mnigs1.conf --set database.file=mnigs1.db
 $ lua daemon.lua -f ../mnigs1.conf
 ```
 
 ### Start daemon 2
 ```
+$ cd mnigs
+$ cp mnigs.conf.sample mnigs1.conf
 $ cd src
-$ cp mnigs.conf.sample mnigs2.conf
-$ vi mnigs2.conf
-set cjdns.config=....
-set daemon.rpcport=65534
-set daemon.scanports=65533,65534
-set gateway.enabled=no
-set database.file=mnigs2.db
+$ lua cli.lua -f ../mnigs2.conf --set cjdns.config=<path/to/cjdroute.conf>
+$ lua cli.lua -f ../mnigs2.conf --set daemon.rpcport=65534
+$ lua cli.lua -f ../mnigs2.conf --set daemon.scanports=65533,65534
+$ lua cli.lua -f ../mnigs2.conf --set gateway.enabled=no
+$ lua cli.lua -f ../mnigs2.conf --set database.file=mnigs2.db
 $ lua daemon.lua -f ../mnigs2.conf
 ```
 

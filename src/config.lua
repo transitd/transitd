@@ -32,20 +32,58 @@ if _G.config == nil then
 	
 	if optarg.f then
 		configfile = optarg.f
+	else
+		-- create config file if it doesn't exist
+		local fh = io.open(configfile,"r")
+		if fh ~= nil then fh:close() else
+			local infile = io.open(script_path().."../mnigs.conf.sample", "r")
+			local outfile = io.open(configfile, "w")
+			outfile:write(infile:read("*a"))
+			infile:close()
+			outfile:close()
+		end
 	end
 	
-	if not io.open(configfile,"r") then
-		print("Configuration file '"..configfile.."' not found")
-		os.exit(1)
+	local fh = io.open(configfile,"r")
+	if not fh then
+		error("Configuration file '"..configfile.."' not found")
+	else
+		fh:close()
 	end
 	
 	_G.config = inifile.parse(configfile)
+	_G.configfile = configfile
+end
+
+function set_config(name, value)
+	local con = _G.config
+	local tokens = {}
+	for token in string.gmatch(name, "%w+") do table.insert(tokens, token) end
+	for num,section in pairs(tokens) do
+		if not con[section] then
+			return nil, "Invalid configuration token '"..section.."'"
+		else
+			if type(con[section]) ~= "table" then
+				if num ~= #tokens then
+					return nil, "Configuration token '"..section.."' does not have subelements"
+				end
+				con[section] = value
+				return true, nil
+			else
+				if num == #tokens then
+					return nil, "Configuration token '"..section.."' cannot have a value"
+				else
+					con = con[section]
+				end
+			end
+		end
+	end
+	return true, nil
 end
 
 function save_config()
 	local inifile = require("inifile")
-	local configfile = script_path() .. "../mnigs.conf"
-	inifile.save(configfile, _G.config)
+	inifile.save(_G.configfile, _G.config)
 end
 
 return _G.config
