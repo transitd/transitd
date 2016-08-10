@@ -76,11 +76,21 @@ A fix is required to allow JSON RPC requests to work with IPv6 (see https://gith
 $ git clone --depth=1 git://github.com/pdxmeshnet/mnigs.git
 $ cd mnigs
 $ docker build -t "mnigs:0" .
-$ docker run -it --privileged mnigs:0
 ```
-### Enable gateway functionality
+### Gateway
 ```
+$ docker run -it --privileged --name=mnigs-gateway mnigs:0
 # mnigs-cli --set gateway.enabled=yes
+# exit
+$ docker start -ai mnigs-gateway
+```
+### Subscriber
+```
+$ docker run -it --privileged --name=mnigs-sub mnigs:0
+# ifconfig eth0 down
+# mnigs-cli -s
+# mnigs-cli -l
+# mnigs-cli -c ....
 ```
 
 ### Manual Installation
