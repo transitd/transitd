@@ -83,14 +83,18 @@ $ docker run -it --privileged --name=mnigs-gateway mnigs:0
 # mnigs-cli --set gateway.enabled=yes
 # exit
 $ docker start -ai mnigs-gateway
+# apk update
+# apk add tcpdump
+# tcpdump -i tun0
 ```
 ### Subscriber
 ```
 $ docker run -it --privileged --name=mnigs-sub mnigs:0
-# ifconfig eth0 down
 # mnigs-cli -s
 # mnigs-cli -l
 # mnigs-cli -c ....
+# ip route show
+# ping 8.8.8.8
 ```
 
 ### Manual Installation
