@@ -6,6 +6,41 @@ local httpd = require("httpd")
 
 print("[mnigs]", "starting up...")
 
+-- configure gateway functionality
+if config.gateway.enabled == "yes" then
+	
+	if config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
+		
+		local network = require("network")
+		
+		local interface, err = network.getIpv4TransitInterface()
+		if err then
+			error("Failed to determine IPv4 transit interface! Cannot start in gateway mode. ("..err..")")
+		end
+		if not interface then
+			error("Failed to determine IPv4 transit interface! Cannot start in gateway mode.")
+		end
+		
+		if config.gateway.ipv6support == "yes" then
+			
+			local interface, err = network.getIpv6TransitInterface()
+			if err then
+				error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file. ("..err..")")
+			end
+			if not interface then
+				error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file.")
+			end
+		end
+		
+		local tunnel = require("cjdnstools.tunnel")
+		local result, err = tunnel.gatewaySetup()
+		if err then
+			error("Failed to set up cjdns tunnel gateway: "..err)
+		end
+	end
+	
+end
+
 threadman.setup()
 
 -- TODO: switch to using notifications to propagate config variables to threads
@@ -62,40 +97,6 @@ threadman.startThread(function()
 	end
 end)
 
--- configure gateway functionality
-if config.gateway.enabled == "yes" then
-	
-	if config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
-		
-		local network = require("network")
-		
-		local interface, err = network.getIpv4TransitInterface()
-		if err then
-			error("Failed to determine IPv4 transit interface! Cannot start in gateway mode. ("..err..")")
-		end
-		if not interface then
-			error("Failed to determine IPv4 transit interface! Cannot start in gateway mode.")
-		end
-		
-		if config.gateway.ipv6support == "yes" then
-			
-			local interface, err = network.getIpv6TransitInterface()
-			if err then
-				error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file. ("..err..")")
-			end
-			if not interface then
-				error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file.")
-			end
-		end
-		
-		local tunnel = require("cjdnstools.tunnel")
-		local result, err = tunnel.gatewaySetup()
-		if err then
-			error("Failed to set up cjdns tunnel gateway: "..err)
-		end
-	end
-	
-end
 
 
 -- TODO: set up SIGTERM callback

@@ -92,7 +92,6 @@ function tunnel.addKey(key, ip4, ip6)
 		end
 		return true, nil
 	end
-	
 end
 
 function tunnel.removeConnection(connIndex)
@@ -184,6 +183,7 @@ function tunnel.gatewaySetup()
 			return nil, "Failed to parse IPv4 gateway: "..err
 		end
 		
+		local ipv4prefix
 		ipv4prefix, cidr4 = unpack(subnet4)
 	else
 		local subnet4, err = gateway.allocateIpv4();
@@ -216,7 +216,6 @@ function tunnel.gatewaySetup()
 		
 		-- set up nat
 		local cmd = shell.escape({"iptables","--table","nat","--append","POSTROUTING","--out-interface",transitIf4.name,"-j","MASQUERADE"})
-		print(cmd)
 		local retval = os.execute(cmd)
 		if retval ~= 0 then
 			return nil, "iptables failed"
@@ -229,6 +228,7 @@ function tunnel.gatewaySetup()
 		end
 		
 	else
+		
 		local cmd = "ip route add "..config.gateway.ipv4gateway.." dev "..transitIf4.name
 		local retval = os.execute(cmd)
 		if retval ~= 0 then
@@ -243,24 +243,66 @@ function tunnel.gatewaySetup()
 		if retval ~= 0 then
 			return nil, "Failed to execute "..cmd
 		end
+		
 	end
 	
 	-- IPv6
 	
 	if config.gateway.ipv6support == "yes" then
 		
-		-- TODO
+		local ipv6, cidr6
+		if mode == "nat" then
+			local subnet6, err = network.parseIpv6Subnet(config.gateway.ipv6subnet);
+			if err then
+				return nil, "Failed to parse IPv6 subnet: "..err
+			end
+			ipv6, err = network.parseIpv6(config.gateway.ipv6gateway);
+			if err then
+				return nil, "Failed to parse IPv6 gateway: "..err
+			end
+			
+			local ipv6prefix
+			ipv6prefix, cidr6 = unpack(subnet6)
+		else
+			local subnet6, err = gateway.allocateIpv6();
+			if err then
+				return nil, "Failed to allocate IPv6: "..err
+			end
+			if not subnet6 then
+				return nil, "Failed to allocate IPv6 for interface "..interface
+			end
+			ipv6, cidr6 = unpack(subnet6)
+		end
 		
 		-- determine if we have ipv6 support at all
 		local transitIf6, err = network.getIpv6TransitInterface()
 		if err or not transitIf6 then
 			-- TODO: set up 6in4
 		else
+			
 			-- set up kernel forwarding option
 			local success, err = network.setIpv6Forwading(1)
 			if err then return nil, err end
 			
-			-- TODO
+			if mode == "route" then
+				
+				local cmd = "ip -6 route add "..config.gateway.ipv6gateway.." dev "..transitIf6.name
+				local retval = os.execute(cmd)
+				if retval ~= 0 then
+					return nil, "Failed to execute "..cmd
+				end
+				
+				local prefixMask6 = network.Ipv6cidrToBinaryMask(cidr6)
+				local prefixAddr6 = bit128.band(network.ip2binary(ipv6), prefixMask6)
+				
+				local cmd = "ip -6 route add "..ip2string(prefixAddr6).."/"..cidr6.." dev "..interface.name
+				local retval = os.execute(cmd)
+				if retval ~= 0 then
+					return nil, "Failed to execute "..cmd
+				end
+				
+			end
+			
 		end
 	end
 	
@@ -291,30 +333,38 @@ function tunnel.subscriberSetup(gatewayData)
 	-- configure default route
 	
 	os.execute("ip route del default")
-	os.execute("ip -6 route del default")
+	
+	if gatewayData.ipv6 then
+		os.execute("ip -6 route del default")
+	end
 	
 	local retval = os.execute("ip route add dev "..interface.name)
 	if retval ~= 0 then
 		return nil, "Failed to configure default IPv4 route"
 	end
-	local retval = os.execute("ip -6 route add dev "..interface.name)
-	if retval ~= 0 then
-		return nil, "Failed to configure default IPv6 route"
+	
+	if gatewayData.ipv6 then
+		local retval = os.execute("ip -6 route add dev "..interface.name)
+		if retval ~= 0 then
+			return nil, "Failed to configure default IPv6 route"
+		end
 	end
 	
 	return true
 end
 
-function tunnel.subscriberTeardown()
+function tunnel.subscriberTeardown(session)
 	
 	local retval = os.execute("ip route del default")
 	if retval ~= 0 then
 		return nil, "Failed to remove default IPv4 route"
 	end
 	
-	local retval = os.execute("ip -6 route del default")
-	if retval ~= 0 then
-		return nil, "Failed to remove default IPv6 route"
+	if session.internetIPv6 then
+		local retval = os.execute("ip -6 route del default")
+		if retval ~= 0 then
+			return nil, "Failed to remove default IPv6 route"
+		end
 	end
 	
 	return true

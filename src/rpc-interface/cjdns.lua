@@ -61,28 +61,26 @@ function cjdns.requestConnection(sid, name, port, method, options)
 	local response, err = tunnel.addKey(key, ipv4, ipv6)
 	if err then
 		return { success = false, errorMsg = "Error adding cjdns key at gateway: " .. err }
-	else
-		
-		local timeout = config.gateway.subscriberTimeout
-		
-		db.registerSubscriberSession(sid, name, method, subscriberip, port, ipv4, ipv6, timeout)
-		db.registerSubscriberSessionCjdnsKey(sid, key)
-		
-		threadman.notify({type = "subscriber.auth", ["sid"] = sid, cjdnskey = key})
-		
-		return {
-				success = true,
-				['timeout'] = timeout,
-				['ipv4'] = ipv4,
-				['ipv6'] = ipv6,
-				['cidr4'] = cidr4,
-				['cidr6'] = cidr6,
-				["ipv4gateway"] = config.gateway.ipv4gateway,
-				["ipv6gateway"] = config.gateway.ipv6gateway,
-				["key"] = mykey
-			}
 	end
 	
+	local timeout = config.gateway.subscriberTimeout
+	
+	db.registerSubscriberSession(sid, name, method, subscriberip, port, ipv4, ipv6, timeout)
+	db.registerSubscriberSessionCjdnsKey(sid, key)
+	
+	threadman.notify({type = "subscriber.auth", ["sid"] = sid, cjdnskey = key})
+	
+	return {
+			success = true,
+			['timeout'] = timeout,
+			['ipv4'] = ipv4,
+			['ipv6'] = ipv6,
+			['cidr4'] = cidr4,
+			['cidr6'] = cidr6,
+			["ipv4gateway"] = config.gateway.ipv4gateway,
+			["ipv6gateway"] = config.gateway.ipv6gateway,
+			["key"] = mykey
+		}
 end
 
 function cjdns.renewConnection(sid)
@@ -221,6 +219,10 @@ function cjdns.disconnect(sid)
 	local port = session.port
 	
 	local node = rpc.getProxy(ip, port)
+	
+	if session.method == "cjdns" then
+		tunnel.subscriberTeardown(session)
+	end
 	
 	return node.releaseConnection(sid)
 end
