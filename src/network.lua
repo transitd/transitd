@@ -3,6 +3,7 @@ local network = {}
 
 local bit32 = require("bit32")
 local bit128 = require("bit128")
+local shell = require("lib.shell")
 
 -- There are 3 different representations for IPs
 -- 1. internal {192,168,1,1} and ipv6 {255,...........}
@@ -209,8 +210,16 @@ function network.Ipv6cidrToBinaryMask(cidr)
 	return bit128.lshift(bit128.bnot({0,0,0,0}), 128-cidr)
 end
 
+function network.getInterface(ifname)
+	
+	local ipv4subnets, err = network.getInterfaceIpv4subnets(ifname)
+	local ipv6subnets, err = network.getInterfaceIpv6subnets(ifname)
+	
+	return { ["name"] = ifname, ["ipv4subnets"] = ipv4subnets, ["ipv6subnets"] = ipv6subnets }
+end
+
 function network.getInterfaces()
-	local procnetdev, err = io.open("/proc/net/dev")
+	local procnetdev, err = io.open("/proc/net/dev", "r")
 	if err then
 		return nil, err
 	end
@@ -218,11 +227,7 @@ function network.getInterfaces()
 	for l in procnetdev:lines() do
 		local ifname = string.match(string.lower(l), "^%s*(%w+):")
 		if ifname then
-			
-			local ipv4subnets, err = network.getInterfaceIpv4subnets(ifname)
-			local ipv6subnets, err = network.getInterfaceIpv6subnets(ifname)
-			
-			ifs[ifname] = { ["name"] = ifname, ["ipv4subnets"] = ipv4subnets, ["ipv6subnets"] = ipv6subnets }
+			ifs[ifname] = network.getInterface(ifname)
 		end
 	end
 	procnetdev:close()
@@ -232,7 +237,7 @@ end
 function network.getInterfaceIpv4subnets(interface)
 	interface = string.lower(interface)
 	
-	local ipcmd = io.popen("ip addr show "..interface, 'r')
+	local ipcmd = io.popen(shell.escape({"ip", "addr", "show", interface}), 'r')
 	
 	if not ipcmd then 
 		return nil, "Failed to get IPv4 address for interface "..interface
@@ -331,6 +336,124 @@ function network.getInterfaceBySubnet(subnet)
 	end
 	
 	return nil, nil
+end
+
+function network.getIpv4TransitInterface()
+	
+	local ipcmd = io.popen("ip route show", 'r')
+	
+	if not ipcmd then
+		return nil, "Failed to get routing table"
+	end
+	
+	for l in ipcmd:lines() do
+		local interface = string.match(string.lower(l), "^default%s.*dev%s([^%s]+)%s")
+		if interface then
+			ipcmd:close()
+			return network.getInterface(interface), nil
+		end
+	end
+	
+	ipcmd:close()
+	
+	return nil, nil
+end
+
+function network.getIpv6TransitInterface()
+	
+	local ipcmd = io.popen("ip -6 route show", 'r')
+	
+	if not ipcmd then
+		return nil, "Failed to get routing table"
+	end
+	
+	for l in ipcmd:lines() do
+		local interface = string.match(string.lower(l), "^default%s.*dev%s([^%s]+)%s")
+		if interface then
+			ipcmd:close()
+			return network.getInterface(interface), nil
+		end
+	end
+	
+	ipcmd:close()
+	
+	return nil, nil
+end
+
+function network.ping4(addr)
+	
+	local ipcmd = io.popen(shell.escape({"ping", "-c", 3, "-s", 0, "-W", 1, addr}), 'r')
+	
+	if not ipcmd then
+		return nil, "Failed to execute ping"
+	end
+	
+	for l in ipcmd:lines() do
+		local loss = string.match(string.lower(l), "%s(%d+)%%%s.*loss")
+		if loss then
+			ipcmd:close()
+			if tonumber(loss) < 100 then
+				return true, nil
+			else
+				return false, nil
+			end
+		end
+	end
+	
+	ipcmd:close()
+	
+	return nil, "Failed to determine the number of packets received pinging "..addr
+end
+
+function network.ping6(addr)
+	
+	local ipcmd = io.popen(shell.escape({"ping6", "-c", 3, "-s", 0, "-W", 1, addr}), 'r')
+	
+	if not ipcmd then
+		return nil, "Failed to execute ping"
+	end
+	
+	for l in ipcmd:lines() do
+		local loss = string.match(string.lower(l), "%s(%d+)%%%s.*loss")
+		if loss then
+			ipcmd:close()
+			if tonumber(loss) < 100 then
+				return true, nil
+			else
+				return false, nil
+			end
+		end
+	end
+	
+	ipcmd:close()
+	
+	return nil, "Failed to determine the number of packets received pinging "..addr
+end
+
+function network.setIpv4Forwading(value)
+	
+	local ipforward, err = io.open("/proc/sys/net/ipv4/ip_forward", "w")
+	if err then
+		return nil, err
+	end
+	
+	ipforward:write(tostring(value))
+	ipforward:close()
+	
+	return true, nil
+end
+
+function network.setIpv6Forwading(value)
+	
+	local ipforward, err = io.open("/proc/sys/net/ipv6/conf/all/forwarding", "w")
+	if err then
+		return nil, err
+	end
+	
+	ipforward:write(tostring(value))
+	ipforward:close()
+	
+	return true, nil
 end
 
 return network

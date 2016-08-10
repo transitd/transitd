@@ -29,24 +29,27 @@ function cjdns.requestConnection(sid, name, port, method, options)
 	end
 	
 	-- allocate ips based on settings in config
+	
+	-- IPv4
 	local ipv4, cidr4, ipv6, cidr6
-	local subnet4, error4 = gateway.allocateIpv4();
-	local subnet6, error5 = gateway.allocateIpv6();
-	if error4 ~= nil and error6 ~= nil then
-		if error4 ~= nil then
-			return { success = false, errorMsg = error4 }
+	local subnet4, err = gateway.allocateIpv4();
+	if err then
+		return { success = false, errorMsg = err }
+	end
+	if not subnet4 then
+		return { success = false, errorMsg = "Failed to allocate IPv4 address" }
+	end
+	ipv4, cidr4 = unpack(subnet4)
+	
+	-- IPv6
+	if config.gateway.ipv6support then
+		local subnet6, err = gateway.allocateIpv6();
+		if err then
+			return { success = false, errorMsg = err }
 		end
-		if error6 ~= nil then
-			return { success = false, errorMsg = error6 }
+		if not subnet6 then
+			return { success = false, errorMsg = "Failed to allocate IPv6 address" }
 		end
-	end
-	if not subnet4 and not subnet6 then
-		return { success = false, errorMsg = "Failed to allocate IP address(s)" }
-	end
-	if subnet4 then
-		ipv4, cidr4 = unpack(subnet4)
-	end
-	if subnet6 then
 		ipv6, cidr6 = unpack(subnet6)
 	end
 	
@@ -74,8 +77,8 @@ function cjdns.requestConnection(sid, name, port, method, options)
 				['ipv6'] = ipv6,
 				['cidr4'] = cidr4,
 				['cidr6'] = cidr6,
-				["ipv4gateway"] = config.gateway.subscriberIpv4gateway,
-				["ipv6gateway"] = config.gateway.subscriberIpv6gateway,
+				["ipv4gateway"] = config.gateway.ipv4gateway,
+				["ipv6gateway"] = config.gateway.ipv6gateway,
 				["key"] = mykey
 			}
 	end

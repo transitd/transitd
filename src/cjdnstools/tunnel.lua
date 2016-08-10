@@ -4,6 +4,8 @@ local tunnel = {}
 
 local config = require("config")
 local network = require("network")
+local gateway = require("gateway")
+local shell = require("lib.shell")
 
 package.path = package.path .. ";cjdnstools/contrib/lua/?.lua"
 
@@ -155,15 +157,114 @@ end
 
 function tunnel.gatewaySetup()
 	
+	local mode = config.gateway.routing
+	if mode ~= "nat" and mode ~= "route" then
+		return nil, "Unknown gateway routing mode "..mode
+	end
+	
+	-- IPv4
+	
+	-- set up kernel forwarding option
+	local success, err = network.setIpv4Forwading(1)
+	if err then return nil, err end
+	
+	-- determine cjdns interface
 	local interface, err = tunnel.getInterface()
 	if err then return nil, err end
 	
-	--	local cmd = "ip addr add "..gatewayData.ipv4.."/"..gatewayData.cidr4.." dev "..interface.name
-	--	local retval = os.execute(cmd)
-	--	if retval ~= 0 then
-	--		return nil, "Failed to set local IPv4 address"
-	--	end
+	-- determine ip that will be used on cjdns interface
+	local ipv4, cidr4
+	if mode == "nat" then
+		local subnet4, err = network.parseIpv4Subnet(config.gateway.ipv4subnet);
+		if err then
+			return nil, "Failed to parse IPv4 subnet: "..err
+		end
+		ipv4, err = network.parseIpv4(config.gateway.ipv4gateway);
+		if err then
+			return nil, "Failed to parse IPv4 gateway: "..err
+		end
+		
+		ipv4prefix, cidr4 = unpack(subnet4)
+	else
+		local subnet4, err = gateway.allocateIpv4();
+		if err then
+			return nil, "Failed to allocate IPv4: "..err
+		end
+		if not subnet4 then
+			return nil, "Failed to allocate IPv4 for interface "..interface
+		end
+		ipv4, cidr4 = unpack(subnet4)
+	end
 	
+	-- set up cjdns interface ip address
+	local cmd = shell.escape({"ip","addr","add",network.ip2string(ipv4).."/"..cidr4,"dev",interface.name})
+	local retval = os.execute(cmd)
+	if retval ~= 0 then
+		return nil, "Failed to set local IPv4 address"
+	end
+	
+	-- determine transit interface
+	local transitIf4, err = network.getIpv4TransitInterface()
+	if err then
+		return nil, "Failed to determine IPv4 transit interface: "..err
+	end
+	if not transitIf4 then
+		return nil, "Failed to determine IPv4 transit interface"
+	end
+	
+	if mode == "nat" then
+		
+		-- set up nat
+		local cmd = shell.escape({"iptables","--table","nat","--append","POSTROUTING","--out-interface",transitIf4.name,"-j","MASQUERADE"})
+		print(cmd)
+		local retval = os.execute(cmd)
+		if retval ~= 0 then
+			return nil, "iptables failed"
+		end
+		
+		local cmd = shell.escape({"iptables","--append","FORWARD","--in-interface",interface.name,"-j","ACCEPT"})
+		local retval = os.execute(cmd)
+		if retval ~= 0 then
+			return nil, "iptables failed"
+		end
+		
+	else
+		local cmd = "ip route add "..config.gateway.ipv4gateway.." dev "..transitIf4.name
+		local retval = os.execute(cmd)
+		if retval ~= 0 then
+			return nil, "Failed to execute "..cmd
+		end
+		
+		local prefixMask4 = network.Ipv4cidrToBinaryMask(cidr4)
+		local prefixAddr4 = bit32.band(network.ip2binary(ipv4), prefixMask4)
+		
+		local cmd = "ip route add "..ip2string(prefixAddr4).."/"..cidr4.." dev "..interface.name
+		local retval = os.execute(cmd)
+		if retval ~= 0 then
+			return nil, "Failed to execute "..cmd
+		end
+	end
+	
+	-- IPv6
+	
+	if config.gateway.ipv6support then
+		
+		-- TODO
+		
+		-- determine if we have ipv6 support at all
+		local transitIf6, err = network.getIpv6TransitInterface()
+		if err or not transitIf6 then
+			-- TODO: set up 6in4
+		else
+			-- set up kernel forwarding option
+			local success, err = network.setIpv6Forwading(1)
+			if err then return nil, err end
+			
+			-- TODO
+		end
+	end
+	
+	return true, nil
 end
 
 function tunnel.subscriberSetup(gatewayData)

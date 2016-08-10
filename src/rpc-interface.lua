@@ -14,6 +14,9 @@ local interface = {
 		local info = { name = config.main.name }
 		
 		info['gateway'] = config.gateway.enabled == "yes"
+		if info['gateway'] then
+			info['ipv6support'] = config.gateway.ipv6support == "yes"
+		end
 		
 		if config.gateway.enabled == "yes" then
 			local methods = {}

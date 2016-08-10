@@ -12,7 +12,9 @@ scanports=65533
 [gateway]
 
 # enable gateway function
-enabled=yes
+enabled=no
+
+ipv6support=no
 
 # maximum allowed subscribers
 maxConnections=10
@@ -20,16 +22,19 @@ maxConnections=10
 # automatically disable users after this timeout
 subscriberTimeout=300
 
+# how routing should work
+# nat - set up NAT on gateway side
+# route - set up routing
+routing=nat
+
 # subscriber address allocation
-addressAllocation = static
+addressAllocation=static
 
 # static address allocation subnets
-subscriberAllocationMethod="static"
-subscriberIpv4subnet=10.67.1.0/16
-subscriberIpv4gateway=10.67.1.1
-subscriberIpv6subnet=1111:1111:1111:1111::1111:0/120
-subscriberIpv6gateway=1111:1111:1111:1111::1111:1
-subscriberDns=8.8.8.8,8.8.4.4
+ipv4subnet=10.67.90.0/24
+ipv4gateway=10.67.90.1
+ipv6subnet=fdff:ffff::ff00/120
+ipv6gateway=fdff:ffff::ff01
 
 
 [subscriber]

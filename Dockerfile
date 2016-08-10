@@ -5,7 +5,7 @@ MAINTAINER Alex <alex@maximum.guru>
 # install alpine packages
 RUN { \
 	echo http://dl-cdn.alpinelinux.org/alpine/edge/testing >> /etc/apk/repositories; \
-	apk add --no-cache bash lua5.1 lua5.1-filesystem lua5.1-dev build-base luarocks5.1 git nodejs python linux-headers unzip sqlite-dev sqlite-libs; \
+	apk add --no-cache bash iptables lua5.1 lua5.1-filesystem lua5.1-dev build-base luarocks5.1 git nodejs python linux-headers unzip sqlite-dev sqlite-libs; \
 }
 
 # install lua dependencies
