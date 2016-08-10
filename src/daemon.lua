@@ -77,7 +77,7 @@ if config.gateway.enabled == "yes" then
 			error("Failed to determine IPv4 transit interface! Cannot start in gateway mode.")
 		end
 		
-		if config.gateway.ipv6support then
+		if config.gateway.ipv6support == "yes" then
 			
 			local interface, err = network.getIpv6TransitInterface()
 			if err then

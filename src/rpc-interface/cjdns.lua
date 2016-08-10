@@ -42,7 +42,7 @@ function cjdns.requestConnection(sid, name, port, method, options)
 	ipv4, cidr4 = unpack(subnet4)
 	
 	-- IPv6
-	if config.gateway.ipv6support then
+	if config.gateway.ipv6support == "yes" then
 		local subnet6, err = gateway.allocateIpv6();
 		if err then
 			return { success = false, errorMsg = err }

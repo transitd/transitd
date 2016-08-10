@@ -247,7 +247,7 @@ function tunnel.gatewaySetup()
 	
 	-- IPv6
 	
-	if config.gateway.ipv6support then
+	if config.gateway.ipv6support == "yes" then
 		
 		-- TODO
 		
