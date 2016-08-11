@@ -14,7 +14,28 @@ local shell = require("lib.shell")
 -- string representation is used for user input/output
 
 -- takes string representation and returns internal representation
+function network.parseIp(ip)
+	local data, err = network.parseIpv4(ip)
+	if err then
+		data, err = network.parseIpv6(ip)
+	end
+	if err or not data then
+		return nil, "Failed to parse IP"
+	end
+	return data, nil
+end
+
+function network.canonicalizeIp(ip)
+	local n, err = network.parseIp(ip)
+	if err then return nil, err end
+	if not n then return nil, "Failed to parse IP" end
+	return network.ip2string(n), nil
+end
+
+-- takes string representation and returns internal representation
 function network.parseIpv4(ip)
+	
+	ip = tostring(ip)
 	local matches = {ip:match("^(%d+)%.(%d+)%.(%d+)%.(%d+)$")}
 	
 	for key,value in pairs(matches) do
@@ -24,12 +45,22 @@ function network.parseIpv4(ip)
 		end
 	end
 	
+	if #matches ~= 4 then
+		return nil, "Not a valid IPv4"
+	end
+	
 	return matches, nil
 end
 
 -- takes string representation and returns internal representation
 function network.parseIpv6(ip)
+	
+	ip = tostring(ip)
 	local matches = {ip:match("^([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)$")}
+	
+	if #matches < 3 then
+		return nil, "Not a valid IPv6"
+	end
 	
 	local result = {}
 	

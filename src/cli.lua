@@ -4,6 +4,7 @@ local socket = require("socket")
 local config = require("config")
 local db = require("db")
 local rpc = require("rpc")
+local network = require("network")
 
 local options = require("options")
 local optarg = options.getArguments()
@@ -34,6 +35,8 @@ if optarg.c then
 	end
 	
 	local ip = optarg.c
+	local ip, err = network.canonicalizeIp(ip)
+	if err then error(err) end
 	
 	local daemon = rpc.getProxy("127.0.0.1", config.daemon.rpcport)
 	
@@ -93,5 +96,18 @@ if optarg.d then
 end
 
 if optarg.s then
-	require "scanner"
+	
+	local daemon = rpc.getProxy("127.0.0.1", config.daemon.rpcport)
+	
+	local result, err = daemon.startScan()
+	if err then
+		error(err)
+	else
+		if result.success ~= true then
+			print("Failed: " .. result.errorMsg)
+		else
+			print("Scan "..result.scanId.." started successfully.")
+		end
+	end
+	
 end

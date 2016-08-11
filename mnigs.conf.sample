@@ -2,12 +2,21 @@
 
 name=Lua mnigs
 
+
 [daemon]
 
 listenIpv6=true
 listenIpv4=true
+
+# port to listen on
 rpcport=65533
+
+# ports to scan for
 scanports=65533
+
+# seconds to wait before moving between nodes
+scanDelay=1
+
 
 [gateway]
 
@@ -40,6 +49,7 @@ ipv6gateway=fdff:ffff::ff01
 
 [subscriber]
 
+
 [cjdns]
 
 # don't change this
@@ -57,5 +67,8 @@ subscriberSupport=yes
 # allow the use of built in cjdns tunnel function
 tunnelSupport=yes
 
+
 [database]
+
 file=mnigs.db
+

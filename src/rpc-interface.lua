@@ -5,6 +5,7 @@ local cjdns = require("rpc-interface.cjdns")
 local threadman = require("threadman")
 local rpc = require("rpc")
 local gateway = require("gateway")
+local scanner = require("scanner")
 
 local interface = {
 	echo = function (msg) return msg end,
@@ -52,7 +53,7 @@ local interface = {
 		
 		-- check maxclients config to make sure we are not registering more clients than needed
 		local activeSessions = db.getActiveSessions()
-		if #activeSessions > config.gateway.maxConnections then
+		if #activeSessions >= config.gateway.maxConnections then
 			return { success = false, errorMsg = "Too many sessions", temporaryError = true }
 		end
 		
@@ -62,7 +63,7 @@ local interface = {
 		
 		return { success = false, errorMsg = "Method not supported" }
 	end,
-
+	
 	renewConnection = function(sid)
 		
 		if config.gateway.enabled ~= "yes" then
@@ -80,7 +81,7 @@ local interface = {
 		
 		return { success = true, ["timeout"] = timeout }
 	end,
-
+	
 	releaseConnection = function(sid)
 		
 		sid = tostring(sid)
@@ -214,7 +215,25 @@ local interface = {
 		return { success = true, callId = cid }
 		
 	end,
-    
+	
+	startScan = function()
+		
+		sid = tostring(sid)
+		
+		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		
+		if requestip ~= "127.0.0.1" and requestip ~= "::1" then
+			return { success = false, errorMsg = "Permission denied" }
+		end
+		
+		local scanId, err = scanner.startScan()
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		return { success = true, ["scanId"] = scanId }
+	end,
+	
 	listGateways = function(ip, port, method, sid)
 		
 		local requestip = cgilua.servervariable("REMOTE_ADDR")
@@ -222,15 +241,15 @@ local interface = {
 		if requestip ~= "127.0.0.1" and requestip ~= "::1" then
 			return { success = false, errorMsg = "Permission denied" }
 		end
-        
-        local gateways, err = db.getRecentGateways()
-        
-        if err then
-            return { success = false, errorMsg = err }
-        else
-            return { success = true, ["gateways"] = gateways }
-        end
-        
+		
+		local gateways, err = db.getRecentGateways()
+		
+		if err then
+			return { success = false, errorMsg = err }
+		else
+			return { success = true, ["gateways"] = gateways }
+		end
+		
 	end,
     
 	pollCallStatus = function(callId)

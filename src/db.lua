@@ -2,8 +2,9 @@
 local db = {}
 
 local config = require("config")
+local network = require("network")
 
--- TODO: switch to using ORM library
+-- TODO: switch to using ORM library (https://github.com/itdxer/4DaysORM)
 
 local sqlite3 = require("luasql.sqlite3")
 local env = sqlite3.sqlite3()
@@ -15,12 +16,17 @@ if dbc == nil then
 end
 
 function prepareDatabase()
+	assert(dbc:execute("PRAGMA journal_mode=WAL"))
+
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS nodes(name varchar(255), ip varchar(15), port INTEGER, last_seen_timestamp INTEGER)"))
 	
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS gateways(name varchar(255), ip varchar(15), port INTEGER, last_seen_timestamp INTEGER, method varchar(64))"))
 	
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS sessions(sid varchar(32) PRIMARY KEY, name varchar(255), subscriber INTEGER, method varchar(64), meshIP varchar(45), port INTEGER, internetIPv4 varchar(15), internetIPv6 varchar(45), register_timestamp INTEGER, timeout_timestamp INTEGER, active INTEGER)"))
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS sessions_cjdns(sid varchar(32) PRIMARY KEY, key varchar(255))"))
+	
+	assert(dbc:execute("CREATE TABLE IF NOT EXISTS network_hosts(ip varchar(45), visited INTEGER, scanid INTEGER, network varchar(16), last_seen_timestamp INTEGER)"))
+	assert(dbc:execute("CREATE TABLE IF NOT EXISTS network_links(ip1 varchar(45), ip2 varchar(45), scanid INTEGER, network varchar(16), last_seen_timestamp INTEGER)"))
 	
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS schema_migrations(name varchar(255) PRIMARY KEY, timestamp INTEGER)"))
 	migrateSchema()
@@ -30,12 +36,210 @@ function migrateSchema()
 	-- TODO: code simple schema migration system for painless upgrades
 end
 
+function purge()
+	-- TODO: remove outdated data from database
+end
+
+function db.addNetworkHost(net, ip, scanid)
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
+	local timestamp = os.time()
+	
+	local host, err = db.lookupNetworkHost(net, ip, scanid)
+	if err then return nil, err end
+	if host then
+		-- update last seen timestamp
+		local result, err = dbc:execute(string.format("UPDATE network_hosts SET last_seen_timestamp = '%d' WHERE ip = '%s' AND network = '%s' AND scanid = '%d'", tonumber(timestamp), dbc:escape(ip), dbc:escape(net), tonumber(scanid)))
+		if err ~= nil then
+			return false, err
+		end
+		return true, nil
+	end
+	
+	local query = string.format(
+		"INSERT INTO network_hosts ("
+		.." ip"
+		..",visited"
+		..",last_seen_timestamp"
+		..",network"
+		..",scanid"
+		..") VALUES ("
+		.."'%s'"
+		..",0"
+		..",'%d'"
+		..",'%s'"
+		..",'%d'"
+		..")"
+		,dbc:escape(ip)
+		,tonumber(timestamp)
+		,dbc:escape(net)
+		,tonumber(scanid)
+	)
+	local result, err = dbc:execute(query)
+	if err then return nil, err end
+	if result == nil then
+		return nil, err
+	end
+	return true, nil
+end
+
+function db.lookupNetworkHost(net, ip, scanid)
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
+	local cur, err = dbc:execute(string.format("SELECT * FROM network_hosts WHERE network = '%s' AND scanid = '%d' AND ip = '%s' LIMIT 1", dbc:escape(net), tonumber(scanid), dbc:escape(ip)))
+	if err then return nil, err end
+	local result = cur:fetch ({}, "a")
+	return result, nil
+end
+
+function db.visitNetworkHost(net, ip, scanid)
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
+	local timestamp = os.time()
+	local result, err = dbc:execute(string.format("UPDATE network_hosts SET visited = 1, last_seen_timestamp = '%d' WHERE ip = '%s' AND network = '%s' AND scanid = '%d'", tonumber(timestamp), dbc:escape(ip), dbc:escape(net), tonumber(scanid)))
+	if err then return nil, err end
+	return true, nil
+end
+
+function db.getNextNetworkHost(net, scanid)
+	local cur, err = dbc:execute(string.format("SELECT * FROM network_hosts WHERE network = '%s' AND scanid = '%d' AND visited = 0 LIMIT 1", dbc:escape(net), tonumber(scanid)))
+	if cur == nil then
+		return nil, err
+	end
+	local result = cur:fetch ({}, "a")
+	return result, nil
+end
+
+function db.addNetworkLink(net, ip1, ip2, scanid)
+	
+	local ip1, err = network.canonicalizeIp(ip1)
+	if err then return nil, err end
+	local ip2, err = network.canonicalizeIp(ip2)
+	if err then return nil, err end
+	
+	local timestamp = os.time()
+	
+	local linked, err = db.areLinked(net, ip1, ip2, scanid)
+	if err then return nil, err end
+	if linked then
+		-- update last seen timestamp
+		local result, err = dbc:execute(string.format("UPDATE network_links SET last_seen_timestamp = '%d' WHERE ((ip1 = '%s' AND ip2 = '%s') OR (ip1 = '%s' AND ip2 = '%s')) AND network = '%s' AND scanid = '%d'", tonumber(timestamp), dbc:escape(ip1), dbc:escape(ip2), dbc:escape(ip2), dbc:escape(ip1), dbc:escape(net), tonumber(scanid)))
+		if err then return nil, err end
+		return true, nil
+	end
+	
+	local query = string.format(
+		"INSERT INTO network_links ("
+		.." ip1"
+		..",ip2"
+		..",last_seen_timestamp"
+		..",network"
+		..",scanid"
+		..") VALUES ("
+		.."'%s'"
+		..",'%s'"
+		..",'%d'"
+		..",'%s'"
+		..",'%d'"
+		..")"
+		,dbc:escape(ip1)
+		,dbc:escape(ip2)
+		,tonumber(timestamp)
+		,dbc:escape(net)
+		,tonumber(scanid)
+	)
+	local result, err = dbc:execute(query)
+	if err then return nil, err end
+	if result == nil then
+		return nil, err
+	end
+	return true, nil
+end
+
+function db.areLinked(net, ip1, ip2, scanid)
+	
+	local ip1, err = network.canonicalizeIp(ip1)
+	if err then return nil, err end
+	local ip2, err = network.canonicalizeIp(ip2)
+	if err then return nil, err end
+	
+	local cur, err = dbc:execute(string.format("SELECT * FROM network_links WHERE ((ip1 = '%s' AND ip2 = '%s') OR (ip1 = '%s' AND ip2 = '%s')) AND network = '%s' AND scanid = '%d'", dbc:escape(ip1), dbc:escape(ip2), dbc:escape(ip2), dbc:escape(ip1), dbc:escape(net), tonumber(scanid)))
+	if err then return nil, err end
+	if cur == nil then
+		return nil, err
+	end
+	local result = cur:fetch ({}, "a")
+	if result then
+		return true, nil
+	else
+		return false, nil
+	end
+	
+end
+
+function db.getLinks(net, ip, scanid)
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
+	local cur, err = dbc:execute(string.format("SELECT * FROM network_links WHERE (ip1 = '%s' OR ip2 = '%s') AND network = '%s' AND scanid = '%d'", dbc:escape(ip), dbc:escape(ip), dbc:escape(net), tonumber(scanid)))
+	if cur == nil then
+		return nil, err
+	end
+	local list = {}
+	local row = cur:fetch ({}, "a")
+	while row do
+		local ip2 = row.ip1
+		if ip2 == ip then ip2 = row.ip2 end
+		list[#list+1] = ip2
+		row = cur:fetch ({}, "a")
+	end
+	return list, nil
+end
+
+function db.getLastScanId(net)
+	
+	local cur, err = dbc:execute(string.format("SELECT MAX(scanid) as scanid FROM network_hosts WHERE network = '%s'", dbc:escape(net)))
+	if cur == nil then
+		return nil, err
+	end
+	local result = cur:fetch ({}, "a")
+	if result and result.scanid then
+		return tonumber(result.scanid), nil
+	else
+		return nil, nil
+	end
+	
+end
+
+function db.isScanComplete(net, scanid)
+	
+	local cur, err = dbc:execute(string.format("SELECT * FROM network_hosts WHERE network = '%s' AND scanid = '%d' AND visited = 0 LIMIT 1", dbc:escape(net), tonumber(scanid)))
+	if cur == nil then
+		return nil, err
+	end
+	local result = cur:fetch ({}, "a")
+	if result then
+		return false, nil
+	else
+		return true, nil
+	end
+	
+end
+
+
 -- TODO: add purge function to remove records with expired last_seen_timestamp values
 
 function db.getLastActiveSessions()
-	local cur, error = dbc:execute("SELECT * FROM sessions WHERE active = 1 ORDER BY timeout_timestamp DESC")
+	local cur, err = dbc:execute("SELECT * FROM sessions WHERE active = 1 ORDER BY timeout_timestamp DESC")
 	if cur == nil then
-		return nil, error
+		return nil, err
 	end
 	local list = {}
 	local row = cur:fetch ({}, "a")
@@ -47,6 +251,10 @@ function db.getLastActiveSessions()
 end
 
 function db.registerGatewaySession(sid, name, method, meshIP, port)
+	
+	local meshIP, err = network.canonicalizeIp(meshIP)
+	if err then return nil, err end
+	
 	local timestamp = os.time()
 	local query = string.format(
 		"INSERT INTO sessions ("
@@ -75,14 +283,26 @@ function db.registerGatewaySession(sid, name, method, meshIP, port)
 		,tonumber(port)
 		,timestamp
 	)
-	local result, error = dbc:execute(query)
+	local result, err = dbc:execute(query)
 	if result == nil then
-		return nil, error
+		return nil, err
 	end
 	return true, nil
 end
 
 function db.updateGatewaySession(sid, active, internetIPv4, internetIPv6, timeout)
+	
+	if internetIPv4 then
+		local err
+		internetIPv4, err = network.canonicalizeIp(internetIPv4)
+		if err then return nil, err end
+	end
+	if internetIPv6 then
+		local err
+		internetIPv6, err = network.canonicalizeIp(internetIPv6)
+		if err then return nil, err end
+	end
+	
 	local timestamp = os.time()
 	local act = 0
 	if active==true then act = 1 end
@@ -101,14 +321,28 @@ function db.updateGatewaySession(sid, active, internetIPv4, internetIPv6, timeou
 		,timestamp+tonumber(timeout)
 		,dbc:escape(sid)
 	)
-	local result, error = dbc:execute(query)
+	local result, err = dbc:execute(query)
 	if result == nil then
-		return nil, error
+		return nil, err
 	end
 	return true, nil
 end
 
 function db.registerSubscriberSession(sid, name, method, meshIP, port, internetIPv4, internetIPv6, timeout)
+	
+	local meshIP, err = network.canonicalizeIp(meshIP)
+	if err then return nil, err end
+	if internetIPv4 then
+		local err
+		internetIPv4, err = network.canonicalizeIp(internetIPv4)
+		if err then return nil, err end
+	end
+	if internetIPv6 then
+		local err
+		internetIPv6, err = network.canonicalizeIp(internetIPv6)
+		if err then return nil, err end
+	end
+	
 	local timestamp = os.time()
 	local query = string.format(
 		"INSERT INTO sessions ("
@@ -146,9 +380,9 @@ function db.registerSubscriberSession(sid, name, method, meshIP, port, internetI
 		,timestamp
 		,timestamp+timeout
 	)
-	local result, error = dbc:execute(query)
+	local result, err = dbc:execute(query)
 	if result == nil then
-		return nil, error
+		return nil, err
 	end
 	return true, nil
 end
@@ -165,17 +399,17 @@ function db.registerSubscriberSessionCjdnsKey(sid, key)
 		,dbc:escape(sid)
 		,dbc:escape(key)
 	)
-	local result, error = dbc:execute(query)
+	local result, err = dbc:execute(query)
 	if result == nil then
-		return nil, error
+		return nil, err
 	end
 	return true, nil
 end
 
 function db.getCjdnsSubscriberKey(sid)
-	local cur, error = dbc:execute(string.format("SELECT * FROM sessions_cjdns WHERE sid = '%s'", dbc:escape(sid)))
+	local cur, err = dbc:execute(string.format("SELECT * FROM sessions_cjdns WHERE sid = '%s'", dbc:escape(sid)))
 	if cur == nil then
-		return nil, error
+		return nil, err
 	end
 	local result = cur:fetch ({}, "a")
 	if result and result.key then
@@ -186,39 +420,43 @@ function db.getCjdnsSubscriberKey(sid)
 end
 
 function db.lookupSession(sid)
-	local cur, error = dbc:execute(string.format("SELECT * FROM sessions WHERE sid = '%s'", dbc:escape(sid)))
+	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE sid = '%s'", dbc:escape(sid)))
 	if cur == nil then
-		return nil, error
+		return nil, err
 	end
 	return cur:fetch ({}, "a"), nil
 end
 
 function db.activateSession(sid)
-	local result, error = dbc:execute(string.format("UPDATE sessions SET active = 1 WHERE sid = '%s'", dbc:escape(sid)))
-	if error ~= nil then
-		return false, error
+	local result, err = dbc:execute(string.format("UPDATE sessions SET active = 1 WHERE sid = '%s'", dbc:escape(sid)))
+	if err ~= nil then
+		return false, err
 	end
 	return true, nil
 end
 
 function db.updateSessionTimeout(sid, timeout)
 	local timestamp = os.time()
-	local result, error = dbc:execute(string.format("UPDATE sessions SET timeout_timestamp = '%d' WHERE sid = '%s' AND active = 1", timestamp+tonumber(timeout), dbc:escape(sid)))
-	if error ~= nil then
-		return false, error
+	local result, err = dbc:execute(string.format("UPDATE sessions SET timeout_timestamp = '%d' WHERE sid = '%s' AND active = 1", timestamp+tonumber(timeout), dbc:escape(sid)))
+	if err ~= nil then
+		return false, err
 	end
 	return true, nil
 end
 
 function db.deactivateSession(sid)
-	local result, error = dbc:execute(string.format("UPDATE sessions SET active = 0 WHERE sid = '%s'", dbc:escape(sid)))
-	if error ~= nil then
-		return false, error
+	local result, err = dbc:execute(string.format("UPDATE sessions SET active = 0 WHERE sid = '%s'", dbc:escape(sid)))
+	if err ~= nil then
+		return false, err
 	end
 	return true, nil
 end
 
 function db.lookupActiveSubscriberSessionByIp(ip, port)
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
  	local timestamp = os.time()
 	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND meshIP = '%s' AND port = '%d' AND '%d' <= timeout_timestamp AND active = 1", dbc:escape(ip), tonumber(port), timestamp))
 	if err then
@@ -228,6 +466,10 @@ function db.lookupActiveSubscriberSessionByIp(ip, port)
 end
 
 function db.lookupActiveSubscriberSessionByInternetIp(ip)
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
  	local timestamp = os.time()
 	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND (internetIPv4 = '%s' OR internetIPv6 = '%s') AND '%d' <= timeout_timestamp AND active = 1", dbc:escape(ip), dbc:escape(ip), timestamp))
 	if err then
@@ -242,9 +484,9 @@ function db.getTimingOutSubscribers(sinceTimestamp)
 	if sinceTimestamp >= timestamp then
 		return nil, "Timestamp must be in the past"
 	end
-	local cur, error = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND '%d' <= timeout_timestamp AND timeout_timestamp < '%d' AND active = 1", sinceTimestamp, timestamp))
+	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND '%d' <= timeout_timestamp AND timeout_timestamp < '%d' AND active = 1", sinceTimestamp, timestamp))
 	if cur == nil then
-		return nil, error
+		return nil, err
 	end
 	local list = {}
 	local row = cur:fetch ({}, "a")
@@ -257,9 +499,9 @@ end
 
 function db.getActiveSessions()
  	local timestamp = os.time()
-	local cur, error = dbc:execute(string.format("SELECT * FROM sessions WHERE '%d' <= timeout_timestamp AND active = 1", timestamp))
+	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE '%d' <= timeout_timestamp AND active = 1", timestamp))
 	if cur == nil then
-		return nil, error
+		return nil, err
 	end
 	local list = {}
 	local row = cur:fetch ({}, "a")
@@ -271,6 +513,10 @@ function db.getActiveSessions()
 end
 
 function db.registerNode(name, ip, port)
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
 	local timestamp = os.time()
 	
 	local query
@@ -303,26 +549,30 @@ function db.registerNode(name, ip, port)
 			,tonumber(timestamp)
 		)
 	end
-	local result, error = dbc:execute(query)
+	local result, err = dbc:execute(query)
 	if result == nil then
-		return nil, error
+		return nil, err
 	end
 	return true, nil
 end
 
 function db.lookupNode(ip, port)
-	local cur, error = dbc:execute(string.format("SELECT * FROM nodes WHERE ip = '%s' AND port = '%d'",dbc:escape(ip),tonumber(port)))
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
+	local cur, err = dbc:execute(string.format("SELECT * FROM nodes WHERE ip = '%s' AND port = '%d'",dbc:escape(ip),tonumber(port)))
 	if cur == nil then
-		return nil, error
+		return nil, err
 	end
-	return cur:fetch ({}, "a")
+	return cur:fetch ({}, "a"), nil
 end
 
 function db.getRecentNodes()
  	local timestamp = os.time() - 30*24*60*60
-	local cur, error = dbc:execute(string.format("SELECT * FROM nodes WHERE last_seen_timestamp > '%d'", timestamp))
+	local cur, err = dbc:execute(string.format("SELECT * FROM nodes WHERE last_seen_timestamp > '%d'", timestamp))
 	if cur == nil then
-		return nil, error
+		return nil, err
 	end
 	local list = {}
 	local row = cur:fetch ({}, "a")
@@ -334,6 +584,10 @@ function db.getRecentNodes()
 end
 
 function db.registerGateway(name, ip, port, method)
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
 	local timestamp = os.time()
 	
 	local query
@@ -371,26 +625,30 @@ function db.registerGateway(name, ip, port, method)
 		)
 	end
 	
-	local result, error = dbc:execute(query)
+	local result, err = dbc:execute(query)
 	if result == nil then
-		return nil, error
+		return nil, err
 	end
 	return true, nil
 end
 
 function db.lookupGateway(ip, port, method)
-	local cur, error = dbc:execute(string.format("SELECT * FROM gateways WHERE ip = '%s' AND port = '%d' AND method = '%s'",dbc:escape(ip),tonumber(port),dbc:escape(method)))
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
+	local cur, err = dbc:execute(string.format("SELECT * FROM gateways WHERE ip = '%s' AND port = '%d' AND method = '%s'",dbc:escape(ip),tonumber(port),dbc:escape(method)))
 	if cur == nil then
-		return nil, error
+		return nil, err
 	end
-	return cur:fetch ({}, "a")
+	return cur:fetch ({}, "a"), nil
 end
 
 function db.getRecentGateways()
  	local timestamp = os.time() - 30*24*60*60
-	local cur, error = dbc:execute(string.format("SELECT * FROM gateways WHERE last_seen_timestamp > '%d'", timestamp))
+	local cur, err = dbc:execute(string.format("SELECT * FROM gateways WHERE last_seen_timestamp > '%d'", timestamp))
 	if cur == nil then
-		return nil, error
+		return nil, err
 	end
 	local list = {}
 	local row = cur:fetch ({}, "a")
