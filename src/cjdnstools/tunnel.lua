@@ -155,6 +155,11 @@ end
 function tunnel.gatewaySetup()
 	
 	local mode = config.gateway.routing
+	
+	if mode == "none" then
+		return true, nil
+	end
+	
 	if mode ~= "nat" and mode ~= "route" then
 		return nil, "Unknown gateway routing mode "..mode
 	end

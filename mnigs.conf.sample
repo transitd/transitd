@@ -25,6 +25,7 @@ subscriberTimeout=300
 # how routing should work
 # nat - set up NAT on gateway side
 # route - set up routing
+# none - don't set up routing
 routing=nat
 
 # subscriber address allocation
