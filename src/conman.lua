@@ -7,6 +7,7 @@ local db = require("db")
 local cjdns = require("rpc-interface.cjdns")
 local threadman = require("threadman")
 local rpc = require("rpc")
+local tunnel = require("cjdnstools.tunnel")
 
 local conManTs = 0
 
@@ -15,6 +16,48 @@ local subscriberManager = function()
 	local sinceTimestamp = conManTs
 	conManTs = os.time()
 	
+	-- add active sessions keys into cjdroute (if not there because of cjdroute restart)
+	local sessions, err = db.getActiveSessions()
+	if err then
+		threadman.notify({type = "error", module = "conman", error = err})
+	else
+		local connections, err = tunnel.listConnections()
+		if err then
+			threadman.notify({type = "error", module = "conman", error = err})
+		else
+			for k,session in pairs(sessions) do
+				if session.active == 1 and session.subscriber == 1 then
+					local key, err = db.getCjdnsSubscriberKey(session.sid)
+					if err or not key then
+						threadman.notify({type = "error", module = "conman", error = err})
+					else
+						local exists = false
+						for k,connIndex in pairs(connections) do
+							local connection, err = tunnel.showConnection(connIndex)
+							if err then
+								threadman.notify({type = "error", module = "conman", error = err})
+							else
+								if connection.key == key then
+									exists = true
+									break
+								end
+							end
+						end
+						if not exists then
+							local response, err = tunnel.addKey(key, session.internetIPv4, session.internetIPv6)
+							if err then
+								threadman.notify({type = "error", module = "conman", error = err})
+							else
+								threadman.notify({type = "warning", module = "conman", warning = "Warning: added missing key "..key.." in cjdroute"})
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	-- remove timed out subscriber keys from cjdroute
 	local subscribers, err = db.getTimingOutSubscribers(sinceTimestamp)
 	if err == nil and subscribers == nil then
 		err = "Unexpected subscriber list query result"

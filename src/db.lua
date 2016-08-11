@@ -264,7 +264,7 @@ function db.getActiveSessions()
 	local list = {}
 	local row = cur:fetch ({}, "a")
 	while row do
-		list[#list+1] = row.sid
+		list[#list+1] = row
 		row = cur:fetch ({}, "a")
 	end
 	return list, nil

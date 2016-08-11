@@ -80,7 +80,7 @@ if optarg.d then
 	
 	local session = sessions[1]
 	
-	local result, err = daemon.disconnect(session)
+	local result, err = daemon.disconnect(session.sid)
 	if err then
 		error(err)
 	else
