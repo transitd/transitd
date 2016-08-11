@@ -6,6 +6,7 @@ local config = require("config")
 local network = require("network")
 local gateway = require("gateway")
 local shell = require("lib.shell")
+local threadman = require("threadman")
 
 package.path = package.path .. ";cjdnstools/contrib/lua/?.lua"
 
@@ -45,8 +46,6 @@ function tunnel.showConnection(connIndex)
 end
 
 function tunnel.connect(key)
-	print("Connecting to " .. key)
-	
 	local response, err = ai:auth({
 			q = "IpTunnel_connectTo",
 			publicKeyOfNodeToConnectTo = key,
@@ -57,6 +56,7 @@ function tunnel.connect(key)
 		if response.error and response.error ~= "none" then
 			return nil, "Error connecting to " .. key .. ": " .. response.error
 		end
+		threadman.notify({type = "info", module = "cjdnstools.tunnel", info = "Connected to "..key})
 		return true, nil
 	end
 end
@@ -68,8 +68,6 @@ function tunnel.addKey(key, ip4, ip6)
 	if ip4 == nil and ip6 == nil then
 		return nil, "At least IPv4 or IPv6 address is required"
 	end
-	
-	print("Adding key " .. key)
 	
 	local req = {
 			q = "IpTunnel_allowConnection",
@@ -90,13 +88,12 @@ function tunnel.addKey(key, ip4, ip6)
 		if response.error and response.error ~= "none" then
 			return nil, "Error adding tunnel key " .. key .. ": " .. response.error
 		end
+		threadman.notify({type = "info", module = "cjdnstools.tunnel", info = "Added key "..key})
 		return true, nil
 	end
 end
 
 function tunnel.removeConnection(connIndex)
-	print("Removing connection " .. connIndex) 
-	
 	local response, err = ai:auth({
 			q = "IpTunnel_removeConnection",
 			connection = connIndex,
@@ -107,6 +104,7 @@ function tunnel.removeConnection(connIndex)
 		if response.error and response.error ~= "none" then
 			return nil, "Error removing tunnel key " .. connIndex .. ": " .. response.error
 		end
+		threadman.notify({type = "info", module = "cjdnstools.tunnel", info = "Removed connection "..connIndex})
 		return true, nil
 	end
 	

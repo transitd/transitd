@@ -41,12 +41,6 @@ local interface = {
 		
 		-- TODO: check to make sure they are connecting over allowed network
 		
-		-- check maxclients config to make sure we are not registering more clients than needed
-		local activeSubscribers = db.getActiveSessions()
-		if #activeSubscribers > config.gateway.maxConnections then
-			return { success = false, errorMsg = "Too many subscribers", temporaryError = true }
-		end
-		
 		-- check to make sure the user isn't already registered
 		local activeSubscriber, err = db.lookupActiveSubscriberSessionByIp(subscriberip, port)
 		if err then
@@ -54,6 +48,12 @@ local interface = {
 		end
 		if activeSubscriber ~= nil then
 			return { success = false, errorMsg = "Already registered", temporaryError = true }
+		end
+		
+		-- check maxclients config to make sure we are not registering more clients than needed
+		local activeSessions = db.getActiveSessions()
+		if #activeSessions > config.gateway.maxConnections then
+			return { success = false, errorMsg = "Too many sessions", temporaryError = true }
 		end
 		
 		if method == "cjdns" and config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
