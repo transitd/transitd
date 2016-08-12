@@ -17,6 +17,9 @@ scanports=65533
 # seconds to wait before moving between nodes
 scanDelay=1
 
+# networks which should have full access
+authorizedNetworks=127.0.0.1/8,::1/128
+
 
 [gateway]
 

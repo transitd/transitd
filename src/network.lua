@@ -13,6 +13,14 @@ local shell = require("lib.shell")
 -- binary representation is used for binary operations
 -- string representation is used for user input/output
 
+-- takes a string and returns a string with an ip that has been standardized
+function network.canonicalizeIp(ip)
+	local n, err = network.parseIp(ip)
+	if err then return nil, err end
+	if not n then return nil, "Failed to parse IP" end
+	return network.ip2string(n), nil
+end
+
 -- takes string representation and returns internal representation
 function network.parseIp(ip)
 	local data, err = network.parseIpv4(ip)
@@ -20,16 +28,21 @@ function network.parseIp(ip)
 		data, err = network.parseIpv6(ip)
 	end
 	if err or not data then
-		return nil, "Failed to parse IP"
+		return nil, "Failed to parse IP '"..ip.."'"
 	end
 	return data, nil
 end
 
-function network.canonicalizeIp(ip)
-	local n, err = network.parseIp(ip)
-	if err then return nil, err end
-	if not n then return nil, "Failed to parse IP" end
-	return network.ip2string(n), nil
+-- takes string representation and returns internal representation and cidr
+function network.parseSubnet(subnet)
+	local data, err = network.parseIpv4Subnet(subnet)
+	if err then
+		data, err = network.parseIpv6Subnet(subnet)
+	end
+	if err or not data then
+		return nil, "Failed to parse subnet '"..subnet.."'"
+	end
+	return data, nil
 end
 
 -- takes string representation and returns internal representation
@@ -59,7 +72,11 @@ function network.parseIpv6(ip)
 	local matches = {ip:match("^([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)$")}
 	
 	if #matches < 3 then
-		return nil, "Not a valid IPv6"
+		return nil, "Not a valid IPv6 '"..ip.."'"
+	end
+	
+	if matches[1] == "" then
+		matches[1] = "0000"
 	end
 	
 	local result = {}
@@ -69,7 +86,7 @@ function network.parseIpv6(ip)
 	for key,value in pairs(matches) do
 		if value ~= ":" and value ~= "" then
 			if #value > 4 then
-				return nil, "Failed to parse IPv6"
+				return nil, "Failed to parse IPv6 '"..ip.."'"
 			end
 			value = string.rep("0", 4-#value)..value
 			table.insert(result, string.lower(value));
@@ -85,7 +102,7 @@ function network.parseIpv6(ip)
 	if #result < 8 then
 		
 		local result2 = {}
-		prev = nul
+		prev = nil
 		local begin = false
 		for key,value in pairs(matches) do
 			if begin and value ~= ":" and value ~= "" then
@@ -98,7 +115,7 @@ function network.parseIpv6(ip)
 			if prev then
 				if prev=="" and value==":" then
 					if begin then
-						return nil, "Failed to parse IPv6"
+						return nil, "Failed to parse IPv6 '"..ip.."'"
 					end
 					begin = true
 				end
@@ -128,7 +145,13 @@ end
 -- takes string representation of ip and cidr and returns internal representation and cidr
 function network.parseIpv4Subnet(subnet)
 	
-	local ip, cidr = subnet:match("^(%d+%.%d+%.%d+%.%d+)/(%d+)$")
+	local ip, cidr = subnet:match("^(%d+%.%d+%.%d+%.%d+)(/?%d*)$")
+	
+	if ip == nil and cidr == nil then return nil, "Not a valid subnet" end
+	if cidr == "" then cidr = "/32" end
+	if cidr:sub(1,1) ~= "/" then return nil, "Not a valid CIDR" end
+	cidr = cidr:sub(2)
+	if #cidr == 0 then return nil, "Not a valid CIDR" end
 	
 	local ip, err = network.parseIpv4(ip)
 	
@@ -147,7 +170,13 @@ end
 -- takes string representation of ip and cidr and returns internal representation and cidr
 function network.parseIpv6Subnet(subnet)
 	
-	local ip, cidr = subnet:match("^([0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*)/(%d+)$")
+	local ip, cidr = subnet:match("^([0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*)(/?%d*)$")
+	
+	if ip == nil and cidr == nil then return nil, "Not a valid subnet" end
+	if cidr == "" then cidr = "/128" end
+	if cidr:sub(1,1) ~= "/" then return nil, "Not a valid CIDR" end
+	cidr = cidr:sub(2)
+	if #cidr == 0 then return nil, "Not a valid CIDR" end
 	
 	local ip, err = network.parseIpv6(ip)
 	
@@ -315,6 +344,7 @@ function network.getInterfaceIpv6subnets(interface)
 	return subnets, nil
 end
 
+-- returns subnet prefix address
 function network.subnetAddr(subnet)
 	local ip, cidr = unpack(subnet)
 	local v6 = #ip > 4
@@ -337,6 +367,13 @@ function network.compareSubnet(subnet1, subnet2)
 	if cidr1 ~= cidr2 then return false end
 	
 	return network.ip2string(network.subnetAddr(subnet1)) == network.ip2string(network.subnetAddr(subnet2))
+end
+
+function network.isIpInSubnet(ip, subnet)
+	
+	local prefixip, cidr = unpack(subnet)
+	
+	return network.compareSubnet({ip, cidr}, subnet)
 end
 
 function network.getInterfaceBySubnet(subnet)
@@ -485,6 +522,25 @@ function network.setIpv6Forwading(value)
 	ipforward:close()
 	
 	return true, nil
+end
+
+-- takes a string, returns boolean
+function network.isAuthorizedIp(ip)
+	
+	local ip, err = network.parseIp(ip)
+	if err then return nil, err end
+	
+	local v6 = #ip > 4
+	
+	for subnetStr in string.gmatch(config.daemon.authorizedNetworks, ",?([^,]+),?") do
+		local subnet, err = network.parseSubnet(subnetStr)
+		if err then return nil, "Failed to parse authorizedNetworks setting in config: "..err end
+		if network.isIpInSubnet(ip, subnet) then
+			return true, nil
+		end
+	end
+	
+	return false, nil
 end
 
 return network

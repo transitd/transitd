@@ -6,6 +6,7 @@ local threadman = require("threadman")
 local rpc = require("rpc")
 local gateway = require("gateway")
 local scanner = require("scanner")
+local network = require("network")
 
 local interface = {
 	echo = function (msg) return msg end,
@@ -111,7 +112,12 @@ local interface = {
 		
 		local requestip = cgilua.servervariable("REMOTE_ADDR")
 		
-		if requestip ~= "127.0.0.1" and requestip ~= "::1" then
+		local authorized, err = network.isAuthorizedIp(requestip)
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		if not authorized then
 			return { success = false, errorMsg = "Permission denied" }
 		end
 		
@@ -173,7 +179,12 @@ local interface = {
 		
 		local requestip = cgilua.servervariable("REMOTE_ADDR")
 		
-		if requestip ~= "127.0.0.1" and requestip ~= "::1" then
+		local authorized, err = network.isAuthorizedIp(requestip)
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		if not authorized then
 			return { success = false, errorMsg = "Permission denied" }
 		end
 		
@@ -222,7 +233,12 @@ local interface = {
 		
 		local requestip = cgilua.servervariable("REMOTE_ADDR")
 		
-		if requestip ~= "127.0.0.1" and requestip ~= "::1" then
+		local authorized, err = network.isAuthorizedIp(requestip)
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		if not authorized then
 			return { success = false, errorMsg = "Permission denied" }
 		end
 		
@@ -238,7 +254,12 @@ local interface = {
 		
 		local requestip = cgilua.servervariable("REMOTE_ADDR")
 		
-		if requestip ~= "127.0.0.1" and requestip ~= "::1" then
+		local authorized, err = network.isAuthorizedIp(requestip)
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		if not authorized then
 			return { success = false, errorMsg = "Permission denied" }
 		end
 		
@@ -256,7 +277,12 @@ local interface = {
 		
 		local requestip = cgilua.servervariable("REMOTE_ADDR")
 		
-		if requestip ~= "127.0.0.1" and requestip ~= "::1" then
+		local authorized, err = network.isAuthorizedIp(requestip)
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		if not authorized then
 			return { success = false, errorMsg = "Permission denied" }
 		end
 		
