@@ -15,6 +15,15 @@ local interface = {
 		
 		local info = { name = config.main.name }
 		
+		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		
+		local authorized, err = network.isAuthorizedIp(requestip)
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		info['authorized'] = authorized
+		
 		info['gateway'] = config.gateway.enabled == "yes"
 		if info['gateway'] then
 			info['ipv6support'] = config.gateway.ipv6support == "yes"
