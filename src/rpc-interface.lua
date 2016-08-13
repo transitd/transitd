@@ -259,6 +259,71 @@ local interface = {
 		return { success = true, ["scanId"] = scanId }
 	end,
 	
+	getGraphSince = function(timestamp)
+		
+		local net = 'cjdns'
+		
+		local lastScanId, err = db.getLastScanId(net)
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		local hosts, err = db.getNetworkHostsSince(net, timestamp, lastScanId)
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		local links, err = db.getLinksSince(net, timestamp, lastScanId)
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		local interfaces, err = network.getInterfaces();
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		for k,host in pairs(hosts) do
+			host.type = 'none'
+			
+			local ip, err = network.parseIp(host.ip)
+			if ip then
+				local v6 = #ip > 4
+				local ifsubnets
+				for ik,interface in pairs(interfaces) do
+					if v6 then
+						ifsubnets = interface.ipv6subnets
+					else
+						ifsubnets = interface.ipv4subnets
+					end
+					for k,ifsubnet in pairs(ifsubnets) do
+						local addr, cidr = unpack(ifsubnet)
+						if host.ip == network.ip2string(addr) then
+							host.type = 'self'
+							break
+						end
+					end
+				end
+			end
+			
+			if host.type == 'none' then
+				local gateway, err = db.lookupGatewayByIp(host.ip)
+				if gateway then
+					host.type = 'gateway'
+				end
+			end
+			
+			if host.type == 'none' then
+				local gateway, err = db.lookupNodeByIp(host.ip)
+				if gateway then
+					host.type = 'node'
+				end
+			end
+		end
+		
+		return { success = true, scanId = lastScanId, sinceTimestamp = timestamp, ["hosts"] = hosts, ["links"] = links }
+	end,
+	
 	listGateways = function(ip, port, method, sid)
 		
 		local requestip = cgilua.servervariable("REMOTE_ADDR")

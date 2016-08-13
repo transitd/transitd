@@ -69,13 +69,15 @@ function scanner.processLinks(ip, net, scanId)
 			return
 		end
 		for k,newIp in pairs(links) do
-			local result, err = db.addNetworkHost(net, newIp, scanId)
-			if err then
-				threadman.notify({type = "error", module = "scanner", error = "Failed to add network host: "..err})
-			end
-			local result, err = db.addNetworkLink(net, ip, newIp, scanId)
-			if err then
-				threadman.notify({type = "error", module = "scanner", error = "Failed to add network link: "..err})
+			if newIp ~= ip then
+				local result, err = db.addNetworkHost(net, newIp, scanId)
+				if err then
+					threadman.notify({type = "error", module = "scanner", error = "Failed to add network host: "..err})
+				end
+				local result, err = db.addNetworkLink(net, ip, newIp, scanId)
+				if err then
+					threadman.notify({type = "error", module = "scanner", error = "Failed to add network link: "..err})
+				end
 			end
 		end
 	end

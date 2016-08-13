@@ -123,6 +123,21 @@ function db.visitAllNetworkHosts(net, scanid)
 	return true, nil
 end
 
+function db.getNetworkHostsSince(net, timestamp, scanid)
+	
+	local cur, err = dbc:execute(string.format("SELECT * FROM network_hosts WHERE network = '%s' AND scanid = '%d' AND last_seen_timestamp >= '%d'", dbc:escape(net), tonumber(scanid), tonumber(timestamp)))
+	if cur == nil then
+		return nil, err
+	end
+	local list = {}
+	local row = cur:fetch ({}, "a")
+	while row do
+		list[#list+1] = row
+		row = cur:fetch ({}, "a")
+	end
+	return list, nil
+end
+
 function db.addNetworkLink(net, ip1, ip2, scanid)
 	
 	local ip1, err = network.canonicalizeIp(ip1)
@@ -205,6 +220,21 @@ function db.getLinks(net, ip, scanid)
 		local ip2 = row.ip1
 		if ip2 == ip then ip2 = row.ip2 end
 		list[#list+1] = ip2
+		row = cur:fetch ({}, "a")
+	end
+	return list, nil
+end
+
+function db.getLinksSince(net, timestamp, scanid)
+	
+	local cur, err = dbc:execute(string.format("SELECT * FROM network_links WHERE network = '%s' AND scanid = '%d' AND last_seen_timestamp >= '%d'", dbc:escape(net), tonumber(scanid), tonumber(timestamp)))
+	if cur == nil then
+		return nil, err
+	end
+	local list = {}
+	local row = cur:fetch ({}, "a")
+	while row do
+		list[#list+1] = row
 		row = cur:fetch ({}, "a")
 	end
 	return list, nil
@@ -575,6 +605,18 @@ function db.lookupNode(ip, port)
 	return cur:fetch ({}, "a"), nil
 end
 
+function db.lookupNodeByIp(ip)
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
+	local cur, err = dbc:execute(string.format("SELECT * FROM nodes WHERE ip = '%s'",dbc:escape(ip)))
+	if cur == nil then
+		return nil, err
+	end
+	return cur:fetch ({}, "a"), nil
+end
+
 function db.getRecentNodes()
  	local timestamp = os.time() - 30*24*60*60
 	local cur, err = dbc:execute(string.format("SELECT * FROM nodes WHERE last_seen_timestamp > '%d'", timestamp))
@@ -645,6 +687,18 @@ function db.lookupGateway(ip, port, method)
 	if err then return nil, err end
 	
 	local cur, err = dbc:execute(string.format("SELECT * FROM gateways WHERE ip = '%s' AND port = '%d' AND method = '%s'",dbc:escape(ip),tonumber(port),dbc:escape(method)))
+	if cur == nil then
+		return nil, err
+	end
+	return cur:fetch ({}, "a"), nil
+end
+
+function db.lookupGatewayByIp(ip)
+	
+	local ip, err = network.canonicalizeIp(ip)
+	if err then return nil, err end
+	
+	local cur, err = dbc:execute(string.format("SELECT * FROM gateways WHERE ip = '%s'",dbc:escape(ip)))
 	if cur == nil then
 		return nil, err
 	end
