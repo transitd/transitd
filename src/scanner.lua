@@ -85,7 +85,10 @@ function scanner.processHost(ip, net, scanId)
 	threadman.notify({type = "info", module = "scanner", info = "Processing "..ip})
 	scanner.processLinks(ip, net, scanId)
 	scanner.processPorts(ip, net, scanId)
-	db.visitNetworkHost(net, ip, scanId)
+	local result, err = db.visitNetworkHost(net, ip, scanId)
+	if err then
+		threadman.notify({type = "error", module = "scanner", error = "Failed to mark host visited: "..err})
+	end
 	socket.sleep(tonumber(config.daemon.scanDelay))
 end
 
@@ -118,6 +121,12 @@ function scanner.scan(net, scanId)
 				threadman.notify({type = "error", module = "scanner", error = "Failed to get next host: "..err})
 				break
 			end
+			-- stop the scan if another scan has started
+			local lastScanId, err = db.getLastScanId(net)
+			if err then
+				threadman.notify({type = "error", module = "scanner", error = "Failed to get scan id: "..err})
+			end
+			if lastScanId > scanId then break end
 		end
 	end
 	
@@ -141,7 +150,8 @@ function scanner.startScan()
 		end
 		
 		if not isComplete then
-			return nil, "Scan "..lastScanId.." is already in progress"
+			scanner.stopScan()
+			lastScanId = lastScanId + 1
 		end
 	end
 	
@@ -172,6 +182,41 @@ function scanner.startScan()
 	end)
 	
 	return scanId, nil
+end
+
+function scanner.stopScan()
+	
+	local net = "cjdns"
+	
+	local lastScanId, err = db.getLastScanId(net)
+	if err then
+		return nil, err
+	end
+	
+	local isComplete, err = db.isScanComplete(net, lastScanId)
+	if err then
+		return nil, err
+	end
+	
+	if not isComplete then
+		-- start another fake scan
+		local result, err = db.addNetworkHost(net, "0.0.0.0", lastScanId+1)
+		if err then
+			return nil, err
+		end
+		
+		local result, err = db.visitNetworkHost(net, "0.0.0.0", lastScanId+1)
+		if err then
+			return nil, err
+		end
+		
+		local result, err = db.visitAllNetworkHosts(net, lastScanId)
+		if err then
+			return nil, err
+		end
+	end
+	
+	return true, nil
 end
 
 return scanner

@@ -116,6 +116,13 @@ function db.getNextNetworkHost(net, scanid)
 	return result, nil
 end
 
+function db.visitAllNetworkHosts(net, scanid)
+	
+	local result, err = dbc:execute(string.format("UPDATE network_hosts SET visited = 1 WHERE network = '%s' AND scanid = '%d'", dbc:escape(net), tonumber(scanid)))
+	if err then return nil, err end
+	return true, nil
+end
+
 function db.addNetworkLink(net, ip1, ip2, scanid)
 	
 	local ip1, err = network.canonicalizeIp(ip1)
