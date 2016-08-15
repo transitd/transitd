@@ -69,7 +69,7 @@ RUN { \
 mnigs-cli --set "`ip route|awk \'/default/ { print "daemon.authorizedNetworks=127.0.0.1/8,::1/128," $3 }\'`" \n\
 /cjdns.sh & \n\
 /mnigs.sh & \n\
-echo "Web UI available at http://`awk \'NR==1 {print $1}\' /etc/hosts`:65533/" \n\
+echo "Web UI available at http://`hostname -i`:65533/" \n\
 echo "# mnigs-cli -h" \n\
 mnigs-cli -h \n\
 bash \n\
