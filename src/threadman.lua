@@ -9,7 +9,7 @@ function threadman.setup()
 	-- TODO: catch errors
 	
 	-- set number of worker threads, most not be too low or deadlocks will occur
-	luaproc.setnumworkers(10)
+	luaproc.setnumworkers(20)
 	
 	-- create message channel (for passing messages between threads)
 	luaproc.newchannel("master")

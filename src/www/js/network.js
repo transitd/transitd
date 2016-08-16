@@ -78,13 +78,17 @@ function addLink(id1, id2)
 		edges.add({id:id1+'-'+id2, from: id1, to: id2});
 }
 
+var networkGraphTimeout;
+
 function loadNetworkGraph()
 {
+	if(networkGraphTimeout)
+		clearTimeout(networkGraphTimeout);
 	service.getGraphSince({
 		params: [sinceTimestamp],
 		onSuccess: function(result) {
-			clearSessionList();
 			nonBlockingCallWrapper(result, function(result) {
+				networkGraphTimeout = setTimeout(loadNetworkGraph,5000);
 				if(result.success==true)
 				{
 					sinceTimestamp = Math.floor(Date.now() / 1000);
@@ -115,6 +119,7 @@ function loadNetworkGraph()
 		},
 		onException: function(e) {
 			logAppendMessage('danger', e);
+			networkGraphTimeout = setTimeout(loadNetworkGraph,5000);
 			return true;
 		}
 	});	

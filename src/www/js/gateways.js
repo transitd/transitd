@@ -36,13 +36,18 @@ function insertGateway(name, ip, port, method)
 	$("#gateways").append(row);
 }
 
+var gatewaysTimeout;
+
 function reloadGateways()
 {
+	if(gatewaysTimeout)
+		clearTimeout(gatewaysTimeout);
 	service.listGateways({
 		params: [],
 		onSuccess: function(result) {
-			clearGatewayList();
 			nonBlockingCallWrapper(result, function(result) {
+				clearGatewayList();
+				gatewaysTimeout = setTimeout(reloadGateways,5000);
 				if(result.success==true)
 				{
 					var gateways = result.gateways;
@@ -61,6 +66,7 @@ function reloadGateways()
 		},
 		onException: function(e) {
 			logAppendMessage('danger', e);
+			gatewaysTimeout = setTimeout(reloadGateways,5000);
 			return true;
 		}
 	});

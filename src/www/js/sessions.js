@@ -15,7 +15,7 @@ function insertSession(sid, name, meshIP, port, method, internetIPv4, internetIP
 				+"<td class='internetIPv4'></td>"
 				+"<td class='internetIPv6'></td>"
 				+"<td class='timeout_timestamp'></td>"
-				+"<button class='disconnect' id='disconnect'>Disconnect</button></td>"
+				+"<td><button class='disconnect' id='disconnect'>Disconnect</button></td>"
 				+"</tr>");
 	sRow.find(".sid").text(sid);
 	sRow.find(".name").text(name);
@@ -33,13 +33,18 @@ function insertSession(sid, name, meshIP, port, method, internetIPv4, internetIP
 	$("#sessions").append(sRow);
 }
 
+var sessionsTimeout;
+
 function reloadSessions()
 {
+	if(sessionsTimeout)
+		clearTimeout(sessionsTimeout);
 	service.listSessions({
 		params: [],
 		onSuccess: function(result) {
-			clearSessionList();
 			nonBlockingCallWrapper(result, function(result) {
+				clearSessionList();
+				sessionsTimeout = setTimeout(reloadSessions,5000);
 				if(result.success==true)
 				{
 					var activeSessions = result.sessions;
@@ -62,6 +67,7 @@ function reloadSessions()
 		},
 		onException: function(e) {
 			logAppendMessage('danger', e);
+			sessionsTimeout = setTimeout(reloadSessions,5000);
 			return true;
 		}
 	});	

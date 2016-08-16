@@ -31,20 +31,11 @@ function nonBlockingCallWrapper(result, callback)
 
 $(document).ready(function(){
 	if($("#gateways").length>0)
-	{
 		reloadGateways();
-		setInterval(reloadGateways,5000);
-	}
 	if($("#sessions").length>0)
-	{
 		reloadSessions();
-		setInterval(reloadSessions,5000);
-	}
 	if($("#status").length>0)
-	{
 		reloadStatus();
-		setInterval(reloadStatus,5000);
-	}
 	if($("#startScan").length>0)
 		$("#startScan").click(startScan);
 	if($("#network").length>0)

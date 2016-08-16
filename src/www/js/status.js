@@ -1,10 +1,14 @@
+var statusTimeout;
 
 function reloadStatus()
 {
+	if(statusTimeout)
+		clearTimeout(statusTimeout);
 	service.status({
 		params: [],
 		onSuccess: function(result) {
 			nonBlockingCallWrapper(result, function(result) {
+				statusTimeout = setTimeout(reloadStatus,5000);
 				if(result.success==true)
 				{
 					var html = '';
@@ -26,6 +30,7 @@ function reloadStatus()
 		},
 		onException: function(e) {
 			logAppendMessage('danger', e);
+			statusTimeout = setTimeout(reloadStatus,5000);
 			return true;
 		}
 	});

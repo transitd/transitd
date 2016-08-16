@@ -450,52 +450,78 @@ end
 
 function network.ping4(addr)
 	
-	local ipcmd = io.popen(shell.escape({"ping", "-c", 3, "-s", 0, "-W", 1, addr}), 'r')
-	
-	if not ipcmd then
-		return nil, "Failed to execute ping"
-	end
-	
-	for l in ipcmd:lines() do
-		local loss = string.match(string.lower(l), "%s(%d+)%%%s.*loss")
-		if loss then
-			ipcmd:close()
-			if tonumber(loss) < 100 then
-				return true, nil
-			else
-				return false, nil
+	for k,i in pairs({1,2,3}) do
+		
+		local ipcmd = io.popen(shell.escape({"ping", "-c", i, "-s", 0, "-W", 1, addr}), 'r')
+		
+		if not ipcmd then
+			return nil, "Failed to execute ping"
+		end
+		
+		local pings = nil
+		local works = false
+		for l in ipcmd:lines() do
+			local loss = string.match(string.lower(l), "%s(%d+)%%%s.*loss")
+			if loss then
+				works = true
+				if tonumber(loss) < 100 then
+					pings = true
+					break
+				else
+					pings = false
+					break
+				end
 			end
 		end
+		
+		ipcmd:close()
+		
+		if not works then 
+			return nil, "Failed to determine the number of packets received pinging "..addr
+		end
+		
+		if pings then return true, nil end
 	end
 	
-	ipcmd:close()
-	
-	return nil, "Failed to determine the number of packets received pinging "..addr
+	return false, nil
 end
 
 function network.ping6(addr)
 	
-	local ipcmd = io.popen(shell.escape({"ping6", "-c", 3, "-s", 0, "-W", 1, addr}), 'r')
-	
-	if not ipcmd then
-		return nil, "Failed to execute ping"
-	end
-	
-	for l in ipcmd:lines() do
-		local loss = string.match(string.lower(l), "%s(%d+)%%%s.*loss")
-		if loss then
-			ipcmd:close()
-			if tonumber(loss) < 100 then
-				return true, nil
-			else
-				return false, nil
+	for k,i in pairs({1,2,3}) do
+		
+		local ipcmd = io.popen(shell.escape({"ping6", "-c", i, "-s", 0, "-W", 1, addr}), 'r')
+		
+		if not ipcmd then
+			return nil, "Failed to execute ping"
+		end
+		
+		local pings = nil
+		local works = false
+		for l in ipcmd:lines() do
+			local loss = string.match(string.lower(l), "%s(%d+)%%%s.*loss")
+			if loss then
+				works = true
+				if tonumber(loss) < 100 then
+					pings = true
+					break
+				else
+					pings = false
+					break
+				end
 			end
 		end
+		
+		ipcmd:close()
+	
+		if not works then 
+			return nil, "Failed to determine the number of packets received pinging "..addr
+		end
+		
+		if pings then return true, nil end
 	end
 	
-	ipcmd:close()
-	
-	return nil, "Failed to determine the number of packets received pinging "..addr
+	return false, nil
 end
 
 function network.setIpv4Forwading(value)
