@@ -1,4 +1,4 @@
-var service = new rpc.ServiceProxy("/jsonrpc", {methods: ['connectTo','listGateways','pollCallStatus','listSessions','startScan','getGraphSince']});
+var service = new rpc.ServiceProxy("/jsonrpc", {methods: ['connectTo','listGateways','pollCallStatus','listSessions','startScan','getGraphSince','status']});
 
 function logAppendMessage(type, msg)
 {
@@ -40,6 +40,13 @@ $(document).ready(function(){
 		reloadSessions();
 		setInterval(reloadSessions,5000);
 	}
-	$("#startScan").click(startScan);
-	startNetworkGraph();
+	if($("#status").length>0)
+	{
+		reloadStatus();
+		setInterval(reloadStatus,5000);
+	}
+	if($("#startScan").length>0)
+		$("#startScan").click(startScan);
+	if($("#network").length>0)
+		startNetworkGraph();
 });

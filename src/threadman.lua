@@ -81,6 +81,7 @@ function threadman.startThread(func)
 		print("[threadman]", "Error: failed to start thread: "..err)
 		os.exit(1)
 	end
+	return started, err
 end
 
 function threadman.notify(msg)

@@ -21,7 +21,7 @@
 		<script src="js/vendor/modernizr-2.8.3-respond-1.4.2.min.js"></script>
 	</head>
 	<body>
-		<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+		<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
 			<div class="container">
 				<div class="navbar-header">
 					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
@@ -30,9 +30,14 @@
 						<span class="icon-bar"></span>
 					</button>
 					<a class="navbar-brand" href="index.html">Mesh Network Internet Gateway System</a>
+				</div>
+				<div id="navbar" class="collapse navbar-collapse">
 					<ul class="nav navbar-nav">
 						<li class="active"><a href="index.html">Home <span class="sr-only">(current)</span></a></li>
 						<li><a href="about.html">About</a></li>
+					</ul>
+					<ul class="nav navbar-nav navbar-right">
+						<li><p class="navbar-text" id="status"></p></li>
 					</ul>
 				</div>
 			</div>
@@ -72,5 +77,6 @@
 		<script src="js/gateways.js"></script>
 		<script src="js/connection.js"></script>
 		<script src="js/network.js"></script>
+		<script src="js/status.js"></script>
 	</body>
 </html>

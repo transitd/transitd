@@ -6,4 +6,4 @@ lfs.chdir("..")
 
 local rpcserver = require('json.rpcserver')
 local rpcInterface = require('rpc-interface')
-rpcserver.serve(rpcInterface)
+rpcserver.serve(rpcInterface.getInterface())

@@ -1,3 +1,5 @@
+--- @module rpc-interface
+local rpcInterface = {}
 
 local config = require("config")
 local db = require("db")
@@ -8,8 +10,8 @@ local gateway = require("gateway")
 local scanner = require("scanner")
 local network = require("network")
 
-local interface = {
-	echo = function (msg) return msg end,
+function rpcInterface.getInterface()
+	return {
 	
 	nodeInfo = function()
 		
@@ -261,67 +263,12 @@ local interface = {
 	
 	getGraphSince = function(timestamp)
 		
-		local net = 'cjdns'
-		
-		local lastScanId, err = db.getLastScanId(net)
+		local callId, err = rpc.wrapBlockingCall('rpc-interface', 'getGraphSince', timestamp)
 		if err then
 			return { success = false, errorMsg = err }
 		end
 		
-		local hosts, err = db.getNetworkHostsSince(net, timestamp, lastScanId)
-		if err then
-			return { success = false, errorMsg = err }
-		end
-		
-		local links, err = db.getLinksSince(net, timestamp, lastScanId)
-		if err then
-			return { success = false, errorMsg = err }
-		end
-		
-		local interfaces, err = network.getInterfaces();
-		if err then
-			return { success = false, errorMsg = err }
-		end
-		
-		for k,host in pairs(hosts) do
-			host.type = 'none'
-			
-			local ip, err = network.parseIp(host.ip)
-			if ip then
-				local v6 = #ip > 4
-				local ifsubnets
-				for ik,interface in pairs(interfaces) do
-					if v6 then
-						ifsubnets = interface.ipv6subnets
-					else
-						ifsubnets = interface.ipv4subnets
-					end
-					for k,ifsubnet in pairs(ifsubnets) do
-						local addr, cidr = unpack(ifsubnet)
-						if host.ip == network.ip2string(addr) then
-							host.type = 'self'
-							break
-						end
-					end
-				end
-			end
-			
-			if host.type == 'none' then
-				local gateway, err = db.lookupGatewayByIp(host.ip)
-				if gateway then
-					host.type = 'gateway'
-				end
-			end
-			
-			if host.type == 'none' then
-				local gateway, err = db.lookupNodeByIp(host.ip)
-				if gateway then
-					host.type = 'node'
-				end
-			end
-		end
-		
-		return { success = true, scanId = lastScanId, sinceTimestamp = timestamp, ["hosts"] = hosts, ["links"] = links }
+		return { success = true, ["callId"] = callId }
 	end,
 	
 	listGateways = function(ip, port, method, sid)
@@ -369,6 +316,27 @@ local interface = {
 		end
 	end,
 	
+	status = function()
+		
+		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		
+		local authorized, err = network.isAuthorizedIp(requestip)
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		if not authorized then
+			return { success = false, errorMsg = "Permission denied" }
+		end
+		
+		local callId, err = rpc.wrapBlockingCall('rpc-interface', 'status')
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		return { success = true, ["callId"] = callId }
+	end,
+	
 	pollCallStatus = function(callId)
 		if rpc.isBlockingCallDone(callId) then
 			local result, err = rpc.returnBlockingCallResult(callId)
@@ -382,6 +350,95 @@ local interface = {
 		end
 	end,
 	
-}
+	}
+end
 
-return interface
+function rpcInterface.getGraphSince(timestamp)
+	local net = 'cjdns'
+	
+	local lastScanId, err = db.getLastScanId(net)
+	if err then
+		return { success = false, errorMsg = err }
+	end
+	
+	local hosts, err = db.getNetworkHostsSince(net, timestamp, lastScanId)
+	if err then
+		return { success = false, errorMsg = err }
+	end
+	
+	local links, err = db.getLinksSince(net, timestamp, lastScanId)
+	if err then
+		return { success = false, errorMsg = err }
+	end
+	
+	local interfaces, err = network.getInterfaces();
+	if err then
+		return { success = false, errorMsg = err }
+	end
+	
+	for k,host in pairs(hosts) do
+		host.type = 'none'
+		
+		local ip, err = network.parseIp(host.ip)
+		if ip then
+			local v6 = #ip > 4
+			local ifsubnets
+			for ik,interface in pairs(interfaces) do
+				if v6 then
+					ifsubnets = interface.ipv6subnets
+				else
+					ifsubnets = interface.ipv4subnets
+				end
+				for k,ifsubnet in pairs(ifsubnets) do
+					local addr, cidr = unpack(ifsubnet)
+					if host.ip == network.ip2string(addr) then
+						host.type = 'self'
+						break
+					end
+				end
+			end
+		end
+		
+		if host.type == 'none' then
+			local gateway, err = db.lookupGatewayByIp(host.ip)
+			if gateway then
+				host.type = 'gateway'
+			end
+		end
+		
+		if host.type == 'none' then
+			local gateway, err = db.lookupNodeByIp(host.ip)
+			if gateway then
+				host.type = 'node'
+			end
+		end
+	end
+	
+	return { success = true, scanId = lastScanId, sinceTimestamp = timestamp, ["hosts"] = hosts, ["links"] = links }
+end
+
+function rpcInterface.status()
+	
+	local result = { success = true }
+	
+	local online, err = network.ping4('8.8.8.8')
+	if not err then
+		result.online = online
+	end
+	
+	local if4, err = network.getIpv4TransitInterface()
+	if not err and if4 and #(if4.ipv4subnets) > 0 then
+		local subnet = if4.ipv4subnets[1]
+		result.ipv4 = {ip = network.ip2string(subnet[1]), cidr = subnet[2]}
+	end
+	
+	local if6, err = network.getIpv6TransitInterface()
+	if not err and if6 and #(if6.ipv6subnets) > 0 then
+		local subnet = if6.ipv4subnets[1]
+		result.ipv6 = {ip = network.ip2string(subnet[1]), cidr = subnet[2]}
+	end
+	
+	return result, nil
+end
+
+return rpcInterface
