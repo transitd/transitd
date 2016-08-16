@@ -93,6 +93,7 @@ function db.lookupNetworkHost(net, ip, scanid)
 	local cur, err = dbc:execute(string.format("SELECT * FROM network_hosts WHERE network = '%s' AND scanid = '%d' AND ip = '%s' LIMIT 1", dbc:escape(net), tonumber(scanid), dbc:escape(ip)))
 	if err then return nil, err end
 	local result = cur:fetch ({}, "a")
+	cur:close()
 	return result, nil
 end
 
@@ -113,6 +114,7 @@ function db.getNextNetworkHost(net, scanid)
 		return nil, err
 	end
 	local result = cur:fetch ({}, "a")
+	cur:close()
 	return result, nil
 end
 
@@ -135,6 +137,7 @@ function db.getNetworkHostsSince(net, timestamp, scanid)
 		list[#list+1] = row
 		row = cur:fetch ({}, "a")
 	end
+	cur:close()
 	return list, nil
 end
 
@@ -197,6 +200,7 @@ function db.areLinked(net, ip1, ip2, scanid)
 		return nil, err
 	end
 	local result = cur:fetch ({}, "a")
+	cur:close()
 	if result then
 		return true, nil
 	else
@@ -222,6 +226,7 @@ function db.getLinks(net, ip, scanid)
 		list[#list+1] = ip2
 		row = cur:fetch ({}, "a")
 	end
+	cur:close()
 	return list, nil
 end
 
@@ -237,6 +242,7 @@ function db.getLinksSince(net, timestamp, scanid)
 		list[#list+1] = row
 		row = cur:fetch ({}, "a")
 	end
+	cur:close()
 	return list, nil
 end
 
@@ -247,6 +253,7 @@ function db.getLastScanId(net)
 		return nil, err
 	end
 	local result = cur:fetch ({}, "a")
+	cur:close()
 	if result and result.scanid then
 		return tonumber(result.scanid), nil
 	else
@@ -262,6 +269,7 @@ function db.isScanComplete(net, scanid)
 		return nil, err
 	end
 	local result = cur:fetch ({}, "a")
+	cur:close()
 	if result then
 		return false, nil
 	else
@@ -284,6 +292,7 @@ function db.getLastActiveSessions()
 		list[#list+1] = row
 		row = cur:fetch ({}, "a")
 	end
+	cur:close()
 	return list, nil
 end
 
@@ -449,6 +458,7 @@ function db.getCjdnsSubscriberKey(sid)
 		return nil, err
 	end
 	local result = cur:fetch ({}, "a")
+	cur:close()
 	if result and result.key then
 		return result.key, nil
 	else
@@ -461,7 +471,12 @@ function db.lookupSession(sid)
 	if cur == nil then
 		return nil, err
 	end
-	return cur:fetch ({}, "a"), nil
+	local result, err = cur:fetch ({}, "a")
+	if err then
+		return nil, err
+	end
+	cur:close()
+	return result, nil
 end
 
 function db.activateSession(sid)
@@ -499,7 +514,12 @@ function db.lookupActiveSubscriberSessionByIp(ip, port)
 	if err then
 		return nil, err
 	end
-	return cur:fetch ({}, "a"), nil
+	local result, err = cur:fetch ({}, "a")
+	if err then
+		return nil, err
+	end
+	cur:close()
+	return result, nil
 end
 
 function db.lookupActiveSubscriberSessionByInternetIp(ip)
@@ -512,7 +532,12 @@ function db.lookupActiveSubscriberSessionByInternetIp(ip)
 	if err then
 		return nil, err
 	end
-	return cur:fetch ({}, "a"), nil
+	local result, err = cur:fetch ({}, "a")
+	if err then
+		return nil, err
+	end
+	cur:close()
+	return result, nil
 end
 
 function db.getTimingOutSubscribers(sinceTimestamp)
@@ -531,6 +556,7 @@ function db.getTimingOutSubscribers(sinceTimestamp)
 		list[#list+1] = row
 		row = cur:fetch ({}, "a")
 	end
+	cur:close()
 	return list, nil
 end
 
@@ -546,6 +572,7 @@ function db.getActiveSessions()
 		list[#list+1] = row
 		row = cur:fetch ({}, "a")
 	end
+	cur:close()
 	return list, nil
 end
 
@@ -602,7 +629,12 @@ function db.lookupNode(ip, port)
 	if cur == nil then
 		return nil, err
 	end
-	return cur:fetch ({}, "a"), nil
+	local result, err = cur:fetch ({}, "a")
+	if err then
+		return nil, err
+	end
+	cur:close()
+	return result, nil
 end
 
 function db.lookupNodeByIp(ip)
@@ -614,7 +646,12 @@ function db.lookupNodeByIp(ip)
 	if cur == nil then
 		return nil, err
 	end
-	return cur:fetch ({}, "a"), nil
+	local result, err = cur:fetch ({}, "a")
+	if err then
+		return nil, err
+	end
+	cur:close()
+	return result, nil
 end
 
 function db.getRecentNodes()
@@ -629,6 +666,7 @@ function db.getRecentNodes()
 		list[#list+1] = row
 		row = cur:fetch ({}, "a")
 	end
+	cur:close()
 	return list, nil
 end
 
@@ -690,7 +728,12 @@ function db.lookupGateway(ip, port, method)
 	if cur == nil then
 		return nil, err
 	end
-	return cur:fetch ({}, "a"), nil
+	local result, err = cur:fetch ({}, "a")
+	if err then
+		return nil, err
+	end
+	cur:close()
+	return result, nil
 end
 
 function db.lookupGatewayByIp(ip)
@@ -702,7 +745,12 @@ function db.lookupGatewayByIp(ip)
 	if cur == nil then
 		return nil, err
 	end
-	return cur:fetch ({}, "a"), nil
+	local result, err = cur:fetch ({}, "a")
+	if err then
+		return nil, err
+	end
+	cur:close()
+	return result, nil
 end
 
 function db.getRecentGateways()
@@ -717,6 +765,7 @@ function db.getRecentGateways()
 		list[#list+1] = row
 		row = cur:fetch ({}, "a")
 	end
+	cur:close()
 	return list, nil
 end
 
