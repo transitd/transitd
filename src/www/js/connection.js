@@ -13,12 +13,14 @@ function connectTo(ip, port, method, successCallback, failureCallback)
 						message += "IPv6: "+result.ipv6+"\n";
 					message += "Timeout: "+result.timeout+"\n";
 					logAppendMessage('success', message);
-					successCallback();
+					if(successCallback)
+						successCallback();
 				}
 				else
 				{
 					logAppendMessage('danger', result.errorMsg);
-					failureCallback();
+					if(failureCallback)
+						failureCallback();
 				}
 			});
 		},
@@ -39,12 +41,14 @@ function disconnect(sid, successCallback, failureCallback)
 				{
 					var message = "Disconnected!";
 					logAppendMessage('success', message);
-					successCallback();
+					if(successCallback)
+						successCallback();
 				}
 				else
 				{
 					logAppendMessage('danger', result.errorMsg);
-					failureCallback();
+					if(failureCallback)
+						failureCallback();
 				}
 			});
 		},
