@@ -17,6 +17,8 @@ function rpcInterface.getInterface()
 		
 		local info = { name = config.main.name }
 		
+		info['version'] = 'prototype'
+		
 		local requestip = cgilua.servervariable("REMOTE_ADDR")
 		
 		local authorized, err = network.isAuthorizedIp(requestip)
