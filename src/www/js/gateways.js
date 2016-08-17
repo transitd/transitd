@@ -1,5 +1,11 @@
 function clearGatewayList() {
 	$("#gateways").empty();
+	$("#gateways").append("<tr>"
+				+"<th class='name'>Name</th>"
+				+"<th class='ip'>IP</th>"
+				+"<th class='port'>Port</th>"
+				+"<th class='method'>Method</th>"
+				+"</tr>");
 }
 
 function insertGateway(name, ip, port, method)
@@ -9,7 +15,7 @@ function insertGateway(name, ip, port, method)
 				+"<td class='ip'></td>"
 				+"<td class='port'></td>"
 				+"<td class='method'></td>"
-				+"<td><button class='connect' id='connect'>Connect</button></td>"
+				+"<td><button class='connect btn btn-primary' id='connect'>Connect</button></td>"
 				+"</tr>");
 	row.find(".name").text(name);
 	row.find(".ip").text(ip);
@@ -61,7 +67,10 @@ function reloadGateways()
 					}
 				}
 				else
+				{
+					gatewaysTimeout = setTimeout(reloadGateways,5000);
 					logAppendMessage('danger', result.errorMsg);
+				}
 			});
 		},
 		onException: function(e) {

@@ -114,7 +114,10 @@ function loadNetworkGraph()
 					lastScanId = result.scanId;
 				}
 				else
+				{
+					networkGraphTimeout = setTimeout(loadNetworkGraph,5000);
 					logAppendMessage('danger', result.errorMsg);
+				}
 			});
 		},
 		onException: function(e) {

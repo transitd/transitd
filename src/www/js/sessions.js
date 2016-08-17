@@ -2,6 +2,15 @@ var activeSessions = [];
 
 function clearSessionList() {
 	$("#sessions").empty();
+	$("#sessions").append("<tr>"
+				+"<th class='sid'>ID</th>"
+				+"<th class='name'>Gateway</th>"
+				+"<th class='meshIP'>Mesh IP</th>"
+				+"<th class='port'>Port</th>"
+				+"<th class='method'>Method</th>"
+				+"<th class='internetIPv4'>IPv4</th>"
+				+"<th class='internetIPv6'>IPv6</th>"
+				+"<th class='timeout_timestamp'>Timeout</th>");
 }
 
 function insertSession(sid, name, meshIP, port, method, internetIPv4, internetIPv6, timeout_timestamp)
@@ -15,7 +24,7 @@ function insertSession(sid, name, meshIP, port, method, internetIPv4, internetIP
 				+"<td class='internetIPv4'></td>"
 				+"<td class='internetIPv6'></td>"
 				+"<td class='timeout_timestamp'></td>"
-				+"<td><button class='disconnect' id='disconnect'>Disconnect</button></td>"
+				+"<td><button class='disconnect btn btn-primary' id='disconnect'>Disconnect</button></td>"
 				+"</tr>");
 	sRow.find(".sid").text(sid);
 	sRow.find(".name").text(name);
@@ -62,7 +71,10 @@ function reloadSessions()
 					}
 				}
 				else
+				{
+					sessionsTimeout = setTimeout(reloadSessions,5000);
 					logAppendMessage('danger', result.errorMsg);
+				}
 			});
 		},
 		onException: function(e) {

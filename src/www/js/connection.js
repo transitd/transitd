@@ -15,6 +15,8 @@ function connectTo(ip, port, method, successCallback, failureCallback)
 					logAppendMessage('success', message);
 					if(successCallback)
 						successCallback();
+					reloadSessions();
+					reloadStatus();
 				}
 				else
 				{
@@ -43,6 +45,8 @@ function disconnect(sid, successCallback, failureCallback)
 					logAppendMessage('success', message);
 					if(successCallback)
 						successCallback();
+					reloadSessions();
+					reloadStatus();
 				}
 				else
 				{

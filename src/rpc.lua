@@ -118,6 +118,8 @@ function rpc.wrapBlockingCall(modname, funcname, ...)
 	local config_encoded = cjson_safe.encode(config)
 	local args_encoded = cjson_safe.encode({...})
 	
+	threadman.notify({type="nonblockingcall.started", ["callId"]=callId, ["func"]=modname..'.'..funcname, ["args"] = {...}})
+	
 	threadman.startThread(function()
 		-- luaproc doesn't load everything by default
 		_G.io = require("io")

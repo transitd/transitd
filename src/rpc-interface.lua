@@ -17,7 +17,7 @@ function rpcInterface.getInterface()
 		
 		local info = { name = config.main.name }
 		
-		info['version'] = 'prototype'
+		info.version = 'prototype'
 		
 		local requestip = cgilua.servervariable("REMOTE_ADDR")
 		
@@ -26,11 +26,11 @@ function rpcInterface.getInterface()
 			return { success = false, errorMsg = err }
 		end
 		
-		info['authorized'] = authorized
+		info.authorized = authorized
 		
-		info['gateway'] = config.gateway.enabled == "yes"
-		if info['gateway'] then
-			info['ipv6support'] = config.gateway.ipv6support == "yes"
+		info.gateway = config.gateway.enabled == "yes"
+		if info.gateway then
+			info.ipv6support = config.gateway.ipv6support == "yes"
 		end
 		
 		if config.gateway.enabled == "yes" then
@@ -38,8 +38,10 @@ function rpcInterface.getInterface()
 			if config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
 				methods[#methods+1] = {name = "cjdns"}
 			end
-			info['methods'] = methods
+			info.methods = methods
 		end
+		
+		info.success = true
 		
 		return info
 	end,
@@ -141,11 +143,6 @@ function rpcInterface.getInterface()
 		-- TODO: check network == cjdns
 		if method == "cjdns" and config.cjdns.subscriberSupport == "yes" and config.cjdns.tunnelSupport == "yes" then
 			
-			local cid, err = rpc.allocateCallId()
-			if err ~= nil then
-				return { success = false, errorMsg = err }
-			end
-			
 			local err = nil
 			if sid == nil then
 				sid, err = gateway.allocateSid()
@@ -154,33 +151,12 @@ function rpcInterface.getInterface()
 				return { success = false, errorMsg = err }
 			end
 			
-			-- TODO: switch to using notifications to propagate config variables to threads
-			-- instead of running config code for each thread
-			local cjson_safe = require("cjson.safe")
-			local config_encoded = cjson_safe.encode(config)
+			local callId, err = rpc.wrapBlockingCall('rpc-interface', 'connectTo', ip, port, method, sid)
+			if err then
+				return { success = false, errorMsg = err }
+			end
 			
-			threadman.startThread(function()
-				-- luaproc doesn't load everything by default
-				io = require("io")
-				os = require("os")
-				table = require("table")
-				string = require("string")
-				math = require("math")
-				debug = require("debug")
-				coroutine = require("coroutine")
-				local luaproc = require("luaproc")
-				
-				local cjson_safe = require("cjson.safe")
-				_G.config = cjson_safe.decode(config_encoded)
-				
-				local conman = require("conman")
-				local result, err = conman.connectToGateway(ip, port, method, sid)
-				
-				local threadman = require("threadman")
-				threadman.notify({type="nonblockingcall.complete", callId=cid, ["result"]=result, ["err"]=err})
-			end)
-			
-			return { success = true, callId = cid }
+			return { success = true, ["callId"] = callId }
 		end
 		
 		return { success = false, errorMsg = "Method not supported" }
@@ -210,33 +186,12 @@ function rpcInterface.getInterface()
 			return { success = false, errorMsg = err }
 		end
 		
-		-- TODO: switch to using notifications to propagate config variables to threads
-		-- instead of running config code for each thread
-		local cjson_safe = require("cjson.safe")
-		local config_encoded = cjson_safe.encode(config)
+		local callId, err = rpc.wrapBlockingCall('rpc-interface', 'disconnect', sid)
+		if err then
+			return { success = false, errorMsg = err }
+		end
 		
-		threadman.startThread(function()
-			-- luaproc doesn't load everything by default
-			io = require("io")
-			os = require("os")
-			table = require("table")
-			string = require("string")
-			math = require("math")
-			debug = require("debug")
-			coroutine = require("coroutine")
-			local luaproc = require("luaproc")
-			
-			local cjson_safe = require("cjson.safe")
-			_G.config = cjson_safe.decode(config_encoded)
-			
-			local conman = require("conman")
-			local result, err = conman.disconnectFromGateway(sid)
-			
-			local threadman = require("threadman")
-			threadman.notify({type="nonblockingcall.complete", callId=cid, ["result"]=result, ["err"]=err})
-		end)
-		
-		return { success = true, callId = cid }
+		return { success = true, ["callId"] = callId }
 		
 	end,
 	
@@ -286,13 +241,12 @@ function rpcInterface.getInterface()
 			return { success = false, errorMsg = "Permission denied" }
 		end
 		
-		local gateways, err = db.getRecentGateways()
-		
+		local callId, err = rpc.wrapBlockingCall('rpc-interface', 'listGateways')
 		if err then
 			return { success = false, errorMsg = err }
-		else
-			return { success = true, ["gateways"] = gateways }
 		end
+		
+		return { success = true, ["callId"] = callId }
 		
 	end,
 	
@@ -309,13 +263,13 @@ function rpcInterface.getInterface()
 			return { success = false, errorMsg = "Permission denied" }
 		end
 		
-		local sessions, err = db.getActiveSessions()
-		
+		local callId, err = rpc.wrapBlockingCall('rpc-interface', 'listSessions')
 		if err then
 			return { success = false, errorMsg = err }
-		else
-			return { success = true, ["sessions"] = sessions }
 		end
+		
+		return { success = true, ["callId"] = callId }
+		
 	end,
 	
 	status = function()
@@ -337,6 +291,7 @@ function rpcInterface.getInterface()
 		end
 		
 		return { success = true, ["callId"] = callId }
+		
 	end,
 	
 	pollCallStatus = function(callId)
@@ -419,12 +374,45 @@ function rpcInterface.getGraphSince(timestamp)
 	return { success = true, scanId = lastScanId, sinceTimestamp = timestamp, ["hosts"] = hosts, ["links"] = links }
 end
 
+function rpcInterface.connectTo(ip, port, method, sid)
+	local conman = require("conman")
+	return conman.connectToGateway(ip, port, method, sid)
+end
+
+function rpcInterface.disconnect(sid)
+	local conman = require("conman")
+	return conman.disconnectFromGateway(sid)
+end
+
+function rpcInterface.listGateways()
+	
+	local gateways, err = db.getRecentGateways()
+	
+	if err then
+		return { success = false, errorMsg = err }
+	else
+		return { success = true, ["gateways"] = gateways }
+	end
+	
+end
+
+function rpcInterface.listSessions()
+	
+	local sessions, err = db.getActiveSessions()
+	
+	if err then
+		return { success = false, errorMsg = err }
+	else
+		return { success = true, ["sessions"] = sessions }
+	end
+	
+end
+
 function rpcInterface.status()
 	
 	local result = { success = true }
 	
-	-- TODO: fix hanging
-	--local online, err = network.ping4('8.8.8.8')
+	local online, err = network.ping4('8.8.8.8')
 	if err then
 		return { success = false, errorMsg = err }
 	end

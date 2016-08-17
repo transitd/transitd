@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-		<title>Mesh Network Internet Gateway System</title>
+		<title>Mnigs</title>
 		<meta name="description" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -29,7 +29,7 @@
 						<span class="icon-bar"></span>
 						<span class="icon-bar"></span>
 					</button>
-					<a class="navbar-brand" href="index.html">Mesh Network Internet Gateway System</a>
+					<a class="navbar-brand" href="index.html">Mnigs</a>
 				</div>
 				<div id="navbar" class="collapse navbar-collapse">
 					<ul class="nav navbar-nav">
@@ -38,6 +38,7 @@
 					</ul>
 					<ul class="nav navbar-nav navbar-right">
 						<li><p class="navbar-text" id="status"></p></li>
+						<li><p class="navbar-text"><button id="startScan" type="button" class="btn btn-primary btn-xs">Rescan</button></p></li>
 					</ul>
 				</div>
 			</div>
@@ -45,22 +46,19 @@
 		
 		<div class="container">
 			<div class="row">
-				<div class="col-md-8">
+				<div class="col-md-12">
 					<h2>Sessions</h2>
 					<table class='table' id="sessions"></table>
 				</div>
 			</div>
-		</div>
-		
-		<div class="container">
 			<div class="row">
-				<div class="col-md-8">
-					<button id="startScan" type="button" class="btn btn-secondary pull-right">Rescan</button>
+				<div class="col-md-12">
 					<h2>Gateways</h2>
 					<table class='table' id="gateways"></table>
 				</div>
-				<div class="col-md-4">
-					<h3>Log</h3>
+			</div>
+			<div class="row">
+				<div class="col-md-12">
 					<div id="log"></div>
 				</div>
 			</div>

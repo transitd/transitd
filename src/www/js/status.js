@@ -13,9 +13,9 @@ function reloadStatus()
 				{
 					var html = '';
 					if(result.online)
-						 html += '<span class="glyphicon glyphicon-globe" aria-hidden="true"></span> ';
+						 html += '<span class="glyphicon glyphicon-globe text-success" aria-hidden="true"></span> ';
 					else
-						 html += '<span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span> ';
+						 html += '<span class="glyphicon glyphicon-remove-sign text-danger" aria-hidden="true"></span> ';
 					if(result.ipv4)
 						html += result.ipv4.ip + "/" + result.ipv4.cidr + ' ';
 					if(result.ipv6)
@@ -24,6 +24,7 @@ function reloadStatus()
 				}
 				else
 				{
+					statusTimeout = setTimeout(reloadStatus,5000);
 					logAppendMessage('danger', result.errorMsg);
 				}
 			});

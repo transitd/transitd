@@ -1,4 +1,4 @@
-var service = new rpc.ServiceProxy("/jsonrpc", {methods: ['connectTo','listGateways','pollCallStatus','listSessions','startScan','getGraphSince','status']});
+var service = new rpc.ServiceProxy("/jsonrpc", {methods: ['nodeInfo','connectTo','listGateways','pollCallStatus','listSessions','startScan','getGraphSince','status']});
 
 function logAppendMessage(type, msg)
 {
@@ -29,7 +29,8 @@ function nonBlockingCallWrapper(result, callback)
 		callback(result);
 }
 
-$(document).ready(function(){
+function bootstrap()
+{
 	if($("#gateways").length>0)
 		reloadGateways();
 	if($("#sessions").length>0)
@@ -40,4 +41,52 @@ $(document).ready(function(){
 		$("#startScan").click(startScan);
 	if($("#network").length>0)
 		startNetworkGraph();
+}
+
+var nodeInfo;
+$(document).ready(function(){
+	$("#gateways").hide();
+	$("#sessions").hide();
+	service.nodeInfo({
+		params: [],
+		onSuccess: function(result) {
+			nonBlockingCallWrapper(result, function(result) {
+				if(result.success==true)
+				{
+					nodeInfo = result;
+					
+					$(document).prop('title', nodeInfo.name);
+					$('.navbar-brand').text(nodeInfo.name);
+					
+					if(nodeInfo.gateway || !nodeInfo.authorized)
+					{
+						$("#gateways").closest('.row').remove();
+					}
+					else
+					{
+						$("#gateways").show();
+					}
+					
+					if(nodeInfo.authorized)
+					{
+						$("#sessions").show();
+					}
+					else
+					{
+						$("#sessions").closest('.row').remove();
+					}
+					
+					bootstrap();
+				}
+				else
+				{
+					logAppendMessage('danger', result.errorMsg);
+				}
+			});
+		},
+		onException: function(e) {
+			logAppendMessage('danger', e);
+			return true;
+		}
+	});
 });
