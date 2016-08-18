@@ -68,7 +68,7 @@ function cjdns.requestConnection(sid, name, port, method, options)
 	db.registerSubscriberSession(sid, name, method, subscriberip, port, ipv4, ipv6, timeout)
 	db.registerSubscriberSessionCjdnsKey(sid, key)
 	
-	threadman.notify({type = "subscriber.auth", ["sid"] = sid, cjdnskey = key})
+	threadman.notify({type = "registered", ["sid"] = sid})
 	
 	return {
 			success = true,
@@ -92,7 +92,7 @@ function cjdns.releaseConnection(sid)
 	if sid then
 		local key, err = db.getCjdnsSubscriberKey(sid)
 		if err then
-			threadman.notify({type = "subscriber.deauth.fail", ["sid"] = sid, method = "cjdns", cjdnskey = key, error = err})
+			threadman.notify({type = "error", module = "cjdns", ["function"] = "releaseConnection", ["sid"] = sid, error = err})
 			return { success = false, errorMsg = "Error releasing connection: " .. err }
 		else
 			local response, err = tunnel.deauthorizeKey(key)
@@ -101,13 +101,13 @@ function cjdns.releaseConnection(sid)
 				return { success = false, errorMsg = "Error releasing connection: " .. err }
 			else
 				db.deactivateSession(sid)
-				threadman.notify({type = "subscriber.deauth", ["sid"] = sid, method = "cjdns", cjdnskey = key})
+				threadman.notify({type = "released", ["sid"] = sid})
 				return { success = true }
 			end
 		end
 	else
 		local err = "'sid' option is invalid"
-		threadman.notify({type = "subscriber.deauth.fail", ["sid"] = sid, method = "cjdns", error = err})
+		threadman.notify({type = "error", module = "cjdns", ["function"] = "releaseConnection", ["sid"] = sid, error = err})
 		return { success = false, errorMsg = err }
 	end
 end

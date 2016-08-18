@@ -178,6 +178,7 @@ function scanner.startScan()
 		
 		local cjson_safe = require("cjson.safe")
 		_G.config = cjson_safe.decode(config_encoded)
+		local config = require("config")
 		
 		local scanner = require("scanner")
 		scanner.scan(net, scanId)

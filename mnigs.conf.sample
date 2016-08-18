@@ -49,8 +49,18 @@ ipv4gateway=10.67.90.1
 ipv6subnet=fdff:ffff::ff00/120
 ipv6gateway=fdff:ffff::ff01
 
+# shell scripts to run on certain events
+# arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6"
+onRegister=
+onRelease=
+
 
 [subscriber]
+
+# shell scripts to run on certain events
+# arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6"
+onConnect=
+onDisconnect=
 
 
 [cjdns]

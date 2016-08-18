@@ -87,6 +87,7 @@ local subscriberManager = function()
 		end
 		
 		threadman.notify({type = "subscriberSessionTimedOut", ["sid"] = subscriber.sid})
+		threadman.notify({type = "released", ["sid"] = sid})
 	end
 end
 
@@ -110,6 +111,7 @@ local gatewayManager = function()
 				
 				db.deactivateSession(session.sid)
 				threadman.notify({type = "gatewaySessionTimedOut", ["sid"] = session.sid})
+				threadman.notify({type = "disconnected", ["sid"] = sid})
 				
 			elseif currentTimestamp > session.timeout_timestamp-gracePeriod then
 				
@@ -179,12 +181,12 @@ function conman.connectToGateway(ip, port, method, sid)
 		result = cjdns.connectTo(ip, port, method, sid)
 		if result.success then
 			db.updateGatewaySession(sid, true, result.ipv4, result.ipv6, result.timeout)
+			threadman.notify({type = "connected", ["sid"] = sid})
 			print("Registered with gateway at " .. ip .. " port "..port.."!")
 			if result.ipv4        then print("IPv4:" .. result.ipv4)                        end
 			if result.ipv4gateway then print("IPv4 gateway:" .. result.ipv4gateway)         end
 			if result.ipv6        then print("IPv6:" .. result.ipv6)                        end
 			if result.ipv6gateway then print("IPv6 gateway:" .. result.ipv6gateway)         end
-			if result.dns         then print("IPv6 DNS:" .. result.dns)                     end
 			if result.timeout     then print("Timeout is " .. result.timeout .. " seconds") end
 		end
 		return result, nil
@@ -213,7 +215,11 @@ function conman.disconnectFromGateway(sid)
 	
 	if session.method == "cjdns" then
 		db.deactivateSession(sid)
-		return cjdns.disconnect(sid)
+		local result = cjdns.disconnect(sid)
+		if result.success then
+			threadman.notify({type = "disconnected", ["sid"] = sid})
+		end
+		return result
 	end
 
 	return true, nil

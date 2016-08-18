@@ -58,7 +58,6 @@ if optarg.c then
 			if result.ipv4gateway then print("IPv4 gateway:" .. result.ipv4gateway)         end
 			if result.ipv6        then print("IPv6:" .. result.ipv6)                        end
 			if result.ipv6gateway then print("IPv6 gateway:" .. result.ipv6gateway)         end
-			if result.dns         then print("IPv6 DNS:" .. result.dns)                     end
 			if result.timeout     then print("Timeout is " .. result.timeout .. " seconds") end
 		end
 	end
