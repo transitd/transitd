@@ -35,36 +35,31 @@ function rpc.allocateCallId()
 			local char = math.random(1,string.len(idchars))
 			id = id .. string.sub(idchars,char,char)
 		end
-		if blockingCalls[id] ~= nil then
-			id = ""
-		else
-			break
-		end
 	end
 	if id == "" then
 		return nil, "Failed to come up with an unused call id"
 	end
-	
-	blockingCalls[id] = {callId = id}
 	
 	return id, nil
 end
 
 function rpc.processBlockingCallMsg(msg)
 	local id = msg.callId
-	if blockingCalls[id] and msg.type=="nonblockingcall.complete" then
-		blockingCalls[id]["result"] = msg.result
-		blockingCalls[id]["err"] = msg.err
+	if msg.type=="nonblockingcall.complete" then
+		blockingCalls[id] = {callId = id, result = msg.result, msg.err}
 	end
 end
 
 function rpc.isBlockingCallDone(id)
-	return blockingCalls[id] and (blockingCalls[id].result ~= nil or blockingCalls[id].err ~= nil)
+	return blockingCalls[id] ~= nil
 end
 
 function rpc.returnBlockingCallResult(id)
-	if blockingCalls[id] and rpc.isBlockingCallDone(id) then
-		return blockingCalls[id].result, blockingCalls[id].err
+	if rpc.isBlockingCallDone(id) then
+		local result = blockingCalls[id].result
+		local err = blockingCalls[id].err
+		blockingCalls[id] = nil
+		return result, err
 	end
 	return nil
 end
@@ -133,6 +128,7 @@ function rpc.wrapBlockingCall(modname, funcname, ...)
 		
 		local cjson_safe = require("cjson.safe")
 		_G.config = cjson_safe.decode(config_encoded)
+		local config = require("config")
 		local args = cjson_safe.decode(args_encoded)
 		
 		local module = require(modname)
