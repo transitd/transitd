@@ -45,16 +45,42 @@
 		</nav>
 		
 		<div class="container">
-			<div class="row">
+			<div class="row" id="sessions">
 				<div class="col-md-12">
 					<h2>Sessions</h2>
-					<table class='table' id="sessions"></table>
+					<table class='table'>
+						<thead>
+							<tr>
+								<th>ID</th>
+								<th>Gateway</th>
+								<th>Mesh IP</th>
+								<th>Port</th>
+								<th>Method</th>
+								<th>IPv4</th>
+								<th>IPv6</th>
+								<th>Timeout</th>
+							</tr>
+						</thead>
+						<tbody>
+						</tbody>
+					</table>
 				</div>
 			</div>
 			<div class="row">
-				<div class="col-md-12">
+				<div class="col-md-12" id="gateways">
 					<h2>Gateways</h2>
-					<table class='table' id="gateways"></table>
+					<table class='table'>
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>IP</th>
+							<th>Port</th>
+							<th>Method</th>
+						</tr>
+						</thead>
+						<tbody>
+						</tbody>
+					</table>
 				</div>
 			</div>
 			<div class="row">

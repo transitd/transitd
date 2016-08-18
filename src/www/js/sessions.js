@@ -1,16 +1,7 @@
 var activeSessions = [];
 
 function clearSessionList() {
-	$("#sessions").empty();
-	$("#sessions").append("<tr>"
-				+"<th class='sid'>ID</th>"
-				+"<th class='name'>Gateway</th>"
-				+"<th class='meshIP'>Mesh IP</th>"
-				+"<th class='port'>Port</th>"
-				+"<th class='method'>Method</th>"
-				+"<th class='internetIPv4'>IPv4</th>"
-				+"<th class='internetIPv6'>IPv6</th>"
-				+"<th class='timeout_timestamp'>Timeout</th>");
+	$("#sessions tbody").empty();
 }
 
 function insertSession(sid, name, meshIP, port, method, internetIPv4, internetIPv6, timeout_timestamp)
@@ -39,7 +30,7 @@ function insertSession(sid, name, meshIP, port, method, internetIPv4, internetIP
 		disconnect(sid);
 	});
  
-	$("#sessions").append(sRow);
+	$("#sessions tbody").append(sRow);
 }
 
 var sessionsTimeout;

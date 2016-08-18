@@ -1,11 +1,5 @@
 function clearGatewayList() {
-	$("#gateways").empty();
-	$("#gateways").append("<tr>"
-				+"<th class='name'>Name</th>"
-				+"<th class='ip'>IP</th>"
-				+"<th class='port'>Port</th>"
-				+"<th class='method'>Method</th>"
-				+"</tr>");
+	$("#gateways tbody").empty();
 }
 
 function insertGateway(name, ip, port, method)
@@ -39,7 +33,7 @@ function insertGateway(name, ip, port, method)
 		});
 	}
 	
-	$("#gateways").append(row);
+	$("#gateways tbody").append(row);
 }
 
 var gatewaysTimeout;

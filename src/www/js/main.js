@@ -60,7 +60,7 @@ $(document).ready(function(){
 					
 					if(nodeInfo.gateway || !nodeInfo.authorized)
 					{
-						$("#gateways").closest('.row').remove();
+						$("#gateways").remove();
 					}
 					else
 					{
@@ -73,7 +73,7 @@ $(document).ready(function(){
 					}
 					else
 					{
-						$("#sessions").closest('.row').remove();
+						$("#sessions").remove();
 					}
 					
 					bootstrap();
