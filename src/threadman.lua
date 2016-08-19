@@ -76,12 +76,60 @@ function threadman.teardown()
 end
 
 function threadman.startThread(func)
-	local started, err = luaproc.newproc(func)
-	if started ~= true then
-		print("[threadman]", "Error: failed to start thread: "..err)
-		os.exit(1)
+	return assert(luaproc.newproc(func))
+end
+
+function threadman.threadWrapper(modname, funcname, ...)
+	
+	threadman.notify({type="thread.started", ["module"]=modname, ["function"]=funcname, ["args"] = {...}})
+	
+	local coxpcall = require("coxpcall")
+	local result = {coxpcall.pcall(require, modname)}
+	if result[1] then
+		local module = result[2]
+		result = {coxpcall.pcall(module[funcname], ...)}
 	end
-	return started, err
+	if result[1] then
+		table.remove(result,1)
+		threadman.notify({type="thread.finished", ["module"]=modname, ["function"]=funcname, ["retvals"]=result})
+	else
+		local err = result[2]
+		print("!!!! ERROR !!!!")
+		print(err)
+		print("!!!! ERROR !!!!")
+		threadman.notify({type="thread.crashed", ["module"]=modname, ["function"]=funcname, ["error"]=err})
+		threadman.notify({type="error", ["module"]=modname, ["function"]=funcname, ["error"]=err})
+	end
+	
+end
+
+function threadman.startThreadInFunction(modname, funcname, ...)
+	
+	-- TODO: switch to using notifications to propagate config variables to threads
+	-- instead of running config code for each thread
+	local cjson_safe = require("cjson.safe")
+	local config_encoded = cjson_safe.encode(_G.config)
+	local args_encoded = cjson_safe.encode({...})
+	
+	return threadman.startThread(function()
+		-- luaproc doesn't load everything by default
+		_G.io = require("io")
+		_G.os = require("os")
+		_G.table = require("table")
+		_G.string = require("string")
+		_G.math = require("math")
+		_G.debug = require("debug")
+		_G.coroutine = require("coroutine")
+		local luaproc = require("luaproc")
+		
+		-- restore config global
+		local cjson_safe = require("cjson.safe")
+		_G.config = cjson_safe.decode(config_encoded)
+		local args = cjson_safe.decode(args_encoded)
+		
+		local threadman = require("threadman")
+		threadman.threadWrapper(modname, funcname, unpack(args))
+	end)
 end
 
 function threadman.notify(msg)

@@ -64,6 +64,7 @@ Although it is possible for community network users to set up Internet connectiv
 * luasql-sqlite3
 * alt-getopt
 * luaproc
+* coxpcall
 
 A fix is required to allow CGILua to accept JSON-RPC content type (see https://github.com/keplerproject/cgilua/pull/9).  The fix has been merged into CGILua master branch, however, no stable release is available as of this writing.
 
@@ -113,6 +114,7 @@ $ sudo luarocks install dkjson
 $ sudo luarocks install bit32
 $ sudo luarocks install alt-getopt
 $ sudo luarocks install luaproc
+$ sudo luarocks install coxpcall
 $ sudo apt-get install libsqlite3-dev
 $ sudo luarocks install luasql-sqlite3
 $ sudo patch -p0 /usr/share/lua/5.1/cgilua/post.lua patches/cgilua-content-type-fix.patch

@@ -159,30 +159,7 @@ function scanner.startScan()
 	
 	local scanId = lastScanId + 1
 	
-	-- TODO: switch to using notifications to propagate config variables to threads
-	-- instead of running config code for each thread
-	local cjson_safe = require("cjson.safe")
-	local config_encoded = cjson_safe.encode(config)
-	
-	-- start the scanner thread
-	threadman.startThread(function()
-		-- luaproc doesn't load everything by default
-		io = require("io")
-		os = require("os")
-		table = require("table")
-		string = require("string")
-		math = require("math")
-		debug = require("debug")
-		coroutine = require("coroutine")
-		local luaproc = require("luaproc")
-		
-		local cjson_safe = require("cjson.safe")
-		_G.config = cjson_safe.decode(config_encoded)
-		local config = require("config")
-		
-		local scanner = require("scanner")
-		scanner.scan(net, scanId)
-	end)
+	threadman.startThreadInFunction('scanner', 'scan', net, scanId)
 	
 	return scanId, nil
 end

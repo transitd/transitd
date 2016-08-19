@@ -107,38 +107,34 @@ function rpc.wrapBlockingCall(modname, funcname, ...)
 		return nil, err
 	end
 	
-	-- TODO: switch to using notifications to propagate config variables to threads
-	-- instead of running config code for each thread
-	local cjson_safe = require("cjson.safe")
-	local config_encoded = cjson_safe.encode(config)
-	local args_encoded = cjson_safe.encode({...})
-	
-	threadman.notify({type="nonblockingcall.started", ["callId"]=callId, ["func"]=modname..'.'..funcname, ["args"] = {...}})
-	
-	threadman.startThread(function()
-		-- luaproc doesn't load everything by default
-		_G.io = require("io")
-		_G.os = require("os")
-		_G.table = require("table")
-		_G.string = require("string")
-		_G.math = require("math")
-		_G.debug = require("debug")
-		_G.coroutine = require("coroutine")
-		local luaproc = require("luaproc")
-		
-		local cjson_safe = require("cjson.safe")
-		_G.config = cjson_safe.decode(config_encoded)
-		local config = require("config")
-		local args = cjson_safe.decode(args_encoded)
-		
-		local module = require(modname)
-		local result, err = module[funcname](unpack(args))
-		
-		local threadman = require("threadman")
-		threadman.notify({type="nonblockingcall.complete", ["callId"]=callId, ["result"]=result, ["err"]=err})
-	end)
+	threadman.startThreadInFunction('rpc', 'blockingCallWrapper', callId, modname, funcname, ...)
 	
 	return callId, nil
+end
+
+function rpc.blockingCallWrapper(callId, modname, funcname, ...)
+	
+	local threadman = require("threadman")
+	
+	threadman.notify({type="nonblockingcall.started", ["callId"]=callId, ["module"]=modname, ["function"]=funcname, ["args"] = {...}})
+	
+	local coxpcall = require("coxpcall")
+	local result = {coxpcall.pcall(require, modname)}
+	if result[1] then
+		local module = result[2]
+		result = {coxpcall.pcall(module[funcname], ...)}
+	end
+	if result[1] then
+		threadman.notify({type="nonblockingcall.complete", ["callId"]=callId, ["result"]=result[2], ["err"]=result[3]})
+	else
+		local err = result[2]
+		print("!!!! ERROR !!!!")
+		print(err)
+		print("!!!! ERROR !!!!")
+		threadman.notify({type="nonblockingcall.complete", ["callId"]=callId, ["result"]=nil, ["err"]=err})
+		threadman.notify({type="error", ["module"]=modname, ["function"]=funcname, ["error"]=err})
+	end
+	
 end
 
 return rpc

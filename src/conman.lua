@@ -233,7 +233,7 @@ local connectionManager = function()
 	end
 end
 
-function conman.startConnectionManager()
+function conman.run()
 	local socket = require("socket")
 	local listener = threadman.registerListener("conman")
 	while true do
