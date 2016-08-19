@@ -1,4 +1,4 @@
-var service = new rpc.ServiceProxy("/jsonrpc", {methods: ['nodeInfo','connectTo','listGateways','pollCallStatus','listSessions','startScan','getGraphSince','status']});
+var service = new rpc.ServiceProxy("/jsonrpc", {methods: ['nodeInfo','connectTo','disconnect','listGateways','pollCallStatus','listSessions','startScan','getGraphSince','status']});
 
 function logAppendMessage(type, msg)
 {
