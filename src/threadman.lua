@@ -14,7 +14,7 @@ function threadman.setup()
 	-- create message channel (for passing messages between threads)
 	luaproc.newchannel("master")
 	
-	threadman.startThread(function()
+	assert(luaproc.newproc(function()
 		
 		-- luaproc doesn't load everything by default
 		io = require("io")
@@ -29,22 +29,23 @@ function threadman.setup()
 		local cjson_safe = require("cjson.safe")
 		
 		local listeners = {}
+		local numlisteners = 0
 		
 		print("[dispatcher]", "started")
 		
 		local msg
-		while true do
+		local doexit = false
+		while not doexit or numlisteners > 0 do
 			msg = luaproc.receive("master")
-			--print("[dispatcher]", "message: "..msg)
+			print("[dispatcher]", "msg = "..msg)
 			msg = cjson_safe.decode(msg)
 			if msg ~= nil then
 				if msg["type"] == "removedListener" then
 					listeners[msg["name"]] = nil
+					numlisteners = numlisteners - 1
 					print("[dispatcher]", "removed listener "..msg["name"])
 				end
-				--print("[dispatcher]", "started dispatching")
 				for k, listener in pairs(listeners) do
-					--print("[dispatcher]", "dispatching "..cjson_safe.encode(msg).." to "..listener)
 					-- TODO: catch errors
 					local emsg = cjson_safe.encode(msg)
 					-- send message in another thread to prevent deadlocks
@@ -52,27 +53,28 @@ function threadman.setup()
 						local luaproc = require("luaproc")
 						luaproc.send(listener, emsg)
 					end)
-					--print("[dispatcher]", "done dispatching "..cjson_safe.encode(msg).." to "..listener)
 				end
-				--print("[dispatcher]", "done dispatching")
 				if msg["type"] == "newListener" then
 					listeners[msg["name"]] = msg["name"]
+					numlisteners = numlisteners + 1
 					print("[dispatcher]", "added listener "..msg["name"])
 				end
 				if msg["type"] == "exit" then
-					print("[dispatcher]", "exiting")
-					return
+					doexit = true
 				end
 			end
 		end
-	end)
+		luaproc.delchannel("master")
+		print("[dispatcher]", "exiting")
+	end))
 end
 
 function threadman.teardown()
 	-- TODO: catch errors
 	-- wait for workers to finish
-	luaproc.wait()
-	luaproc.delchannel("master")
+	-- TODO: figure out why normal exit hangs
+	-- luaproc.wait()
+	require('socket').sleep(5)
 end
 
 function threadman.startThread(func)
@@ -94,11 +96,12 @@ function threadman.threadWrapper(modname, funcname, ...)
 		threadman.notify({type="thread.finished", ["module"]=modname, ["function"]=funcname, ["retvals"]=result})
 	else
 		local err = result[2]
-		print("!!!! ERROR !!!!")
+		print("!!!! THREAD CRASHED !!!!")
 		print(err)
-		print("!!!! ERROR !!!!")
+		print("!!!! THREAD CRASHED !!!!")
 		threadman.notify({type="thread.crashed", ["module"]=modname, ["function"]=funcname, ["error"]=err})
 		threadman.notify({type="error", ["module"]=modname, ["function"]=funcname, ["error"]=err})
+		threadman.notify({type="exit",retval=1})
 	end
 	
 end
@@ -167,7 +170,7 @@ end
 
 function threadman.ThreadListener:unregister()
 	-- TODO: catch errors
-	threadman.notify({type="removedListener",name=n})
+	threadman.notify({type="removedListener",name=self.channel})
 	luaproc.delchannel(self.channel)
 end
 

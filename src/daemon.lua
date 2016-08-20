@@ -43,9 +43,6 @@ end
 
 threadman.setup()
 
--- start interthread message queue monitor (for debugging purposes only)
-threadman.startThreadInFunction('monitor', 'run')
-
 -- start conneciton manager
 threadman.startThreadInFunction('conman', 'run')
 
@@ -58,16 +55,31 @@ end
 -- start network scan if one hasn't already been started
 scanner.startScan()
 
-
-
 -- TODO: set up SIGTERM callback
 -- send shutdown message
 -- threadman.notify({type="exit"})
 
+-- start http server
+threadman.startThreadInFunction('httpd', 'run')
 
-httpd.run()
+-- wait until exit message is issued
+local retval = 0
+local listener = threadman.registerListener("main")
+while true do
+	local msg = listener:listen()
+	if msg ~= nil then
+		if msg["type"] == "exit" then
+			if msg["retval"] then retval = msg["retval"] end
+			break
+		end
+	end
+end
+threadman.unregisterListener(listener)
 
+print("[mnigs]", "shutting down...")
 
 threadman.teardown()
 
-print("[mnigs]", "shutting down...")
+print("[mnigs]", "exiting.")
+
+os.exit(retval)

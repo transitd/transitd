@@ -128,11 +128,12 @@ function rpc.blockingCallWrapper(callId, modname, funcname, ...)
 		threadman.notify({type="nonblockingcall.complete", ["callId"]=callId, ["result"]=result[2], ["err"]=result[3]})
 	else
 		local err = result[2]
-		print("!!!! ERROR !!!!")
+		print("!!!! NON BLOCKING CALL THREAD CRASHED !!!!")
 		print(err)
-		print("!!!! ERROR !!!!")
+		print("!!!! NON BLOCKING CALL THREAD CRASHED !!!!")
 		threadman.notify({type="nonblockingcall.complete", ["callId"]=callId, ["result"]=nil, ["err"]=err})
 		threadman.notify({type="error", ["module"]=modname, ["function"]=funcname, ["error"]=err})
+		threadman.notify({type="exit",retval=1})
 	end
 	
 end
