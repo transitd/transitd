@@ -30,11 +30,9 @@ function rpc.allocateCallId()
 	
 	local idchars = "1234567890abcdefghijklmnopqrstuvwxyz"
 	local id = ""
-	for t=0,5 do
-		for i=1,32 do
-			local char = math.random(1,string.len(idchars))
-			id = id .. string.sub(idchars,char,char)
-		end
+	for i=1,32 do
+		local char = math.random(1,string.len(idchars))
+		id = id .. string.sub(idchars,char,char)
 	end
 	if id == "" then
 		return nil, "Failed to come up with an unused call id"
