@@ -12,6 +12,7 @@ local rpc = require("rpc")
 
 -- Define here where Xavante HTTP documents scripts are located
 local webDir = script_path().."www"
+local luaDir = script_path()
 
 local rules = {}
 
@@ -41,7 +42,7 @@ local launcher_params = {
 -- custom lua handler that executes lua scripts within the same lua state as the main daemon process
 function lua_handler(env)
 	local sapi = require "wsapi.sapi"
-	local filepath = webDir..env["PATH_INFO"];
+	local filepath = luaDir..env["PATH_INFO"];
 	local lfs = require('lfs')
 	if lfs.attributes(filepath) then
 		env["PATH_TRANSLATED"] = filepath
@@ -52,10 +53,10 @@ function lua_handler(env)
 	end
 end
 
--- lua cgi
+-- jsonrpc.lua
 table.insert(rules, {
-	match = "%.lua$",
-	with = wsapixavante.makeHandler(lua_handler, nil, webDir, nil, nil)
+	match  = "^/jsonrpc.lua$",
+	with = wsapixavante.makeHandler(lua_handler, nil, luaDir, nil, nil),
 })
 
 -- static content
