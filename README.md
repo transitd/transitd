@@ -1,4 +1,4 @@
-# transitd
+# Transit Daemon (transitd)
 Transit Daemon is an automated Internet gateway publish, search and connect tool for community networks.
 
 The goal of this package is to provide to gateway operators the ability to automatically run and advertise their Internet gateway / VPN on a community network and to provide to subscribers the automated gateway search and connect functionality.
@@ -201,7 +201,7 @@ Knowledge of available gateways on a network is gained by occasionally scanning 
 
 ![Design](docs/design.png?raw=true)
 
-### HTTP RPC JSON API
+### HTTP JSON RPC API
 
 All interactions with the daemon and between daemon instances are done through HTTP JSON RPC API.
 
