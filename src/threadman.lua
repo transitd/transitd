@@ -29,38 +29,50 @@ function threadman.setup()
 		local cjson_safe = require("cjson.safe")
 		
 		local listeners = {}
-		local numlisteners = 0
+		local numListeners = 0
 		
 		print("[dispatcher]", "started")
 		
 		local msg
-		local doexit = false
-		while not doexit or numlisteners > 0 do
+		local doExit = false
+		while not doExit or numListeners > 0 do
 			msg = luaproc.receive("master")
 			print("[dispatcher]", "msg = "..msg)
 			msg = cjson_safe.decode(msg)
 			if msg ~= nil then
 				if msg["type"] == "removedListener" then
 					listeners[msg["name"]] = nil
-					numlisteners = numlisteners - 1
+					numListeners = numListeners - 1
 					print("[dispatcher]", "removed listener "..msg["name"])
 				end
-				for k, listener in pairs(listeners) do
-					-- TODO: catch errors
-					local emsg = cjson_safe.encode(msg)
-					-- send message in another thread to prevent deadlocks
-					luaproc.newproc(function()
-						local luaproc = require("luaproc")
-						luaproc.send(listener, emsg)
-					end)
+				for name, listener in pairs(listeners) do
+					local doSend = false
+					if listener.types then
+						for k,type in pairs(listener.types) do
+							if type == msg["type"] then
+								doSend = true
+							end
+						end
+					else
+						doSend = true
+					end
+					if doSend then
+						-- TODO: catch errors
+						local emsg = cjson_safe.encode(msg)
+						-- send message in another thread to prevent deadlocks
+						luaproc.newproc(function()
+							local luaproc = require("luaproc")
+							luaproc.send(name, emsg)
+						end)
+					end
 				end
 				if msg["type"] == "newListener" then
-					listeners[msg["name"]] = msg["name"]
-					numlisteners = numlisteners + 1
+					listeners[msg["name"]] = {name = msg["name"], types = msg["types"]}
+					numListeners = numListeners + 1
 					print("[dispatcher]", "added listener "..msg["name"])
 				end
 				if msg["type"] == "exit" then
-					doexit = true
+					doExit = true
 				end
 			end
 		end
@@ -145,10 +157,10 @@ function threadman.notify(msg)
 	end)
 end
 
-threadman.ThreadListener = {channel = nil}
+threadman.ThreadListener = {channel = nil, types = {}}
 
-function threadman.ThreadListener:new(c)
-	o = {channel = c}
+function threadman.ThreadListener:new(c, t)
+	o = {channel = c, types = t}
 	setmetatable(o, self)
 	self.__index = self
 	return o
@@ -174,11 +186,12 @@ function threadman.ThreadListener:unregister()
 	luaproc.delchannel(self.channel)
 end
 
-function threadman.registerListener(n)
+function threadman.registerListener(name, types)
+	if types and type(types) ~= "table" then types = {types} end
 	-- TODO: catch errors
-	luaproc.newchannel(n)
-	threadman.notify({type="newListener",name=n})
-	return threadman.ThreadListener:new(n)
+	luaproc.newchannel(name)
+	threadman.notify({type = "newListener", ["name"] = name, ["types"] = types})
+	return threadman.ThreadListener:new(name, types)
 end
 
 function threadman.unregisterListener(l)

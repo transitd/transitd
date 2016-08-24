@@ -94,7 +94,7 @@ function httpd.run()
 	
 	end
 	
-	local listener = threadman.registerListener("xavante")
+	local listener = threadman.registerListener("xavante", {"nonblockingcall.complete","exit"})
 	
 	xavante.start(function()
 		local msg = "";

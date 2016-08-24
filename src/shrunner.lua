@@ -10,7 +10,7 @@ local threadman = require("threadman")
 
 function shrunner.run()
 	
-	local listener = threadman.registerListener("shrunner")
+	local listener = threadman.registerListener("shrunner",{"exit", "registered", "released", "connected", "disconnected"})
 	
 	while true do
 		local msg = listener:listen()

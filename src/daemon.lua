@@ -64,13 +64,21 @@ threadman.startThreadInFunction('httpd', 'run')
 
 -- wait until exit message is issued
 local retval = 0
-local listener = threadman.registerListener("main")
+local listener = threadman.registerListener("main",{"exit","error","info"})
 while true do
 	local msg = listener:listen()
 	if msg ~= nil then
 		if msg["type"] == "exit" then
 			if msg["retval"] then retval = msg["retval"] end
 			break
+		end
+		if msg["type"] == "error" or msg["type"] == "info" then
+			print("[mnigs]", msg["type"])
+			for k,v in pairs(msg) do
+				if k ~= "type" then
+					print("["..msg["type"].."]", k, v)
+				end
+			end
 		end
 	end
 end
