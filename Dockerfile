@@ -40,22 +40,22 @@ cjdroute --nobg < /etc/cjdroute.conf >/var/log/cjdns.log 2>&1 \n\
 	chmod a+x /cjdns.sh; \
 }
 
-# install mnigs and patch dependencies
+# install transitd and patch dependencies
 RUN { \
-	git clone --depth=1 https://github.com/pdxmeshnet/mnigs.git; \
-	patch -p0 /usr/share/lua/5.1/socket/http.lua /mnigs/patches/luasocket-ipv6-fix.patch; \
-	patch -p0 /usr/share/lua/5.1/cgilua/post.lua /mnigs/patches/cgilua-content-type-fix.patch; \
+	git clone --depth=1 https://github.com/intermesh-networks/transitd.git; \
+	patch -p0 /usr/share/lua/5.1/socket/http.lua /transitd/patches/luasocket-ipv6-fix.patch; \
+	patch -p0 /usr/share/lua/5.1/cgilua/post.lua /transitd/patches/cgilua-content-type-fix.patch; \
 	echo $'#!/bin/bash \n\
-if [ ! -f /mnigs/mnigs.conf ]; then \n\
-	 cp /mnigs/mnigs.conf.sample /mnigs/mnigs.conf; \n\
+if [ ! -f /transitd/transitd.conf ]; then \n\
+	 cp /transitd/transitd.conf.sample /transitd/transitd.conf; \n\
 fi \n\
-cd /mnigs/src/; sleep 3; lua5.1 daemon.lua -f ../mnigs.conf >/var/log/mnigs.log 2>&1 \n\
-' > /mnigs.sh; \
-	chmod a+x /mnigs.sh; \
+cd /transitd/src/; sleep 3; lua5.1 daemon.lua -f ../transitd.conf >/var/log/transitd.log 2>&1 \n\
+' > /transitd.sh; \
+	chmod a+x /transitd.sh; \
 	echo $'#!/bin/bash \n\
-cd /mnigs/src/; lua5.1 cli.lua "$@" \n\
-' > /usr/sbin/mnigs-cli; \
-	chmod a+x /usr/sbin/mnigs-cli; \
+cd /transitd/src/; lua5.1 cli.lua "$@" \n\
+' > /usr/sbin/transitd-cli; \
+	chmod a+x /usr/sbin/transitd-cli; \
 }
 
 # cleanup
@@ -66,12 +66,12 @@ RUN { \
 # startup script
 RUN { \
 	echo $'#!/bin/bash \n\
-mnigs-cli --set "`ip route|awk \'/default/ { print "daemon.authorizedNetworks=127.0.0.1/8,::1/128," $3 }\'`" \n\
+transitd-cli --set "`ip route|awk \'/default/ { print "daemon.authorizedNetworks=127.0.0.1/8,::1/128," $3 }\'`" \n\
 /cjdns.sh & \n\
-/mnigs.sh & \n\
+/transitd.sh & \n\
 echo "Web UI available at http://`hostname -i`:65533/" \n\
-echo "# mnigs-cli -h" \n\
-mnigs-cli -h \n\
+echo "# transitd-cli -h" \n\
+transitd-cli -h \n\
 bash \n\
 ' > /start.sh; \
 	chmod a+x /start.sh; \

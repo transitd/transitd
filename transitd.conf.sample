@@ -1,6 +1,6 @@
 [main]
 
-name=Lua mnigs
+name=lua-transitd
 
 
 [daemon]
@@ -83,5 +83,5 @@ tunnelSupport=yes
 
 [database]
 
-file=mnigs.db
+file=transitd.db
 

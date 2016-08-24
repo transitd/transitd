@@ -4,7 +4,7 @@ local threadman = require("threadman")
 local httpd = require("httpd")
 local scanner = require("scanner")
 
-print("[mnigs]", "starting up...")
+print("[transitd]", "starting up...")
 
 -- configure gateway functionality
 if config.gateway.enabled == "yes" then
@@ -73,7 +73,7 @@ while true do
 			break
 		end
 		if msg["type"] == "error" or msg["type"] == "info" then
-			print("[mnigs]", msg["type"])
+			print("[transitd]", msg["type"])
 			for k,v in pairs(msg) do
 				if k ~= "type" then
 					print("["..msg["type"].."]", k, v)
@@ -84,10 +84,10 @@ while true do
 end
 threadman.unregisterListener(listener)
 
-print("[mnigs]", "shutting down...")
+print("[transitd]", "shutting down...")
 
 threadman.teardown()
 
-print("[mnigs]", "exiting.")
+print("[transitd]", "exiting.")
 
 os.exit(retval)

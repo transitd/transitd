@@ -25,7 +25,7 @@ lfs.chdir(script_path())
 if _G.config == nil then
 	local inifile = require("inifile")
 	
-	local configfile = script_path() .. "../mnigs.conf"
+	local configfile = script_path() .. "../transitd.conf"
 	
 	local options = require("options")
 	local optarg = options.getArguments()
@@ -36,7 +36,7 @@ if _G.config == nil then
 		-- create config file if it doesn't exist
 		local fh = io.open(configfile,"r")
 		if fh ~= nil then fh:close() else
-			local infile = io.open(script_path().."../mnigs.conf.sample", "r")
+			local infile = io.open(script_path().."../transitd.conf.sample", "r")
 			local outfile = io.open(configfile, "w")
 			outfile:write(infile:read("*a"))
 			infile:close()
