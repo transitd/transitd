@@ -87,7 +87,7 @@ local subscriberManager = function()
 		end
 		
 		threadman.notify({type = "subscriberSessionTimedOut", ["sid"] = subscriber.sid})
-		threadman.notify({type = "released", ["sid"] = sid})
+		threadman.notify({type = "released", ["sid"] = subscriber.sid})
 	end
 end
 
@@ -111,7 +111,7 @@ local gatewayManager = function()
 				
 				db.deactivateSession(session.sid)
 				threadman.notify({type = "gatewaySessionTimedOut", ["sid"] = session.sid})
-				threadman.notify({type = "disconnected", ["sid"] = sid})
+				threadman.notify({type = "disconnected", ["sid"] = session.sid})
 				
 			elseif currentTimestamp > session.timeout_timestamp-gracePeriod then
 				
@@ -235,7 +235,7 @@ end
 
 function conman.run()
 	local socket = require("socket")
-	local listener = threadman.registerListener("conman")
+	local listener = threadman.registerListener("conman",{"exit"})
 	while true do
 		socket.sleep(2)
 		connectionManager()
