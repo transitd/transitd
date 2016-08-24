@@ -1,6 +1,17 @@
 #log
 {
     white-space: pre;
+	position:fixed;
+	top: 5%;
+	left: 5%;
+	right: 5%;
+	z-index:9999;
+	border-radius:0px;
+}
+
+.alert
+{
+	box-shadow: 5px 5px 5px rgba(100,100,100,0.5);
 }
 
 #network

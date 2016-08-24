@@ -4,7 +4,10 @@ function logAppendMessage(type, msg)
 {
 	if($("#log div").length >= 5)
 		$("#log").children().first().remove();
-	$("#log").append($("<div class='alert alert-"+type+"'\>").text(msg));
+	var div = $("<div class='alert alert-"+type+" fade in'><a href='#' class='close' data-dismiss='alert' aria-label='close'>&times;</a><span class='logmsg'/></div>");
+	div.find(".logmsg").text(msg);
+	div.fadeIn(500).delay(10000).fadeOut(1000);
+	$("#log").append(div);
 }
 
 function nonBlockingCallWrapper(result, callback)
