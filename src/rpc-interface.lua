@@ -423,7 +423,7 @@ function rpcInterface.status()
 	
 	local online, err = network.ping4('8.8.8.8')
 	if err then
-		return { success = false, errorMsg = err }
+		return { success = true, ["online"] = false }
 	end
 	result.online = online
 	
