@@ -1,3 +1,10 @@
+--[[
+@file db.lua
+@license The MIT License (MIT)
+@author Alex <alex@maximum.guru>
+@copyright 2016 Alex
+--]]
+
 --- @module db
 local db = {}
 

@@ -1,3 +1,13 @@
+--[[
+
+transitd CLI main file
+
+@file cli.lua
+@license The MIT License (MIT)
+@author Alex <alex@maximum.guru>
+@copyright 2016 Alex
+
+--]]
 
 local socket = require("socket")
 

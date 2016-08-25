@@ -1,3 +1,14 @@
+/*
+
+transitd web UI network graph js file
+
+@license The MIT License (MIT)
+@author Alex <alex@maximum.guru>
+@author Serg <sklassen410@gmail.com>
+@copyright 2016 Alex
+@copyright 2016 Serg
+
+*/
 
 function startScan()
 {

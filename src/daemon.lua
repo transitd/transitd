@@ -1,3 +1,17 @@
+--[[
+
+transitd daemon main file
+
+@file daemon.lua
+@license The MIT License (MIT)
+@author Alex <alex@maximum.guru>
+@author William Fleurant <william@netblazr.com>
+@author Serg <sklassen410@gmail.com>
+@copyright 2016 Alex
+@copyright 2016 William Fleurant
+@copyright 2016 Serg
+
+--]]
 
 local config = require("config")
 local threadman = require("threadman")

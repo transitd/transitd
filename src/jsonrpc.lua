@@ -1,3 +1,9 @@
+--[[
+@file jsonrpc.lua
+@license The MIT License (MIT)
+@author Alex <alex@maximum.guru>
+@copyright 2016 Alex
+--]]
 
 local threadman = require("threadman")
 

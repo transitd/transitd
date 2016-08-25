@@ -1,3 +1,7 @@
+# @file Dockerfile
+# @license The MIT License (MIT)
+# @copyright 2016 Alex <alex@maximum.guru>
+
 FROM alpine:3.3
 
 MAINTAINER Alex <alex@maximum.guru>

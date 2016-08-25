@@ -1,3 +1,13 @@
+/*
+
+transitd web UI status js file
+
+@license The MIT License (MIT)
+@author Alex <alex@maximum.guru>
+@copyright 2016 Alex
+
+*/
+
 var statusTimeout;
 
 function reloadStatus()

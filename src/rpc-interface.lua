@@ -1,3 +1,12 @@
+--[[
+@file rpc-interface.lua
+@license The MIT License (MIT)
+@author Alex <alex@maximum.guru>
+@author Serg <sklassen410@gmail.com>
+@copyright 2016 Alex
+@copyright 2016 Serg
+--]]
+
 --- @module rpc-interface
 local rpcInterface = {}
 

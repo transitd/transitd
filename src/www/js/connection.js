@@ -1,3 +1,15 @@
+/*
+
+transitd web UI connection js file
+
+@license The MIT License (MIT)
+@author Alex <alex@maximum.guru>
+@author Serg <sklassen410@gmail.com>
+@copyright 2016 Alex
+@copyright 2016 Serg
+
+*/
+
 function connectTo(ip, port, method, successCallback, failureCallback)
 {
 	service.connectTo({

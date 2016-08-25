@@ -1,3 +1,13 @@
+; transitd config file
+
+; file transit.conf.sample
+; license The MIT License (MIT)
+; author Alex <alex@maximum.guru>
+; author William Fleurant <william@netblazr.com>
+; copyright 2016 Alex
+; copyright 2016 William Fleurant
+
+
 [main]
 
 name=lua-transitd
@@ -8,76 +18,76 @@ name=lua-transitd
 listenIpv6=true
 listenIpv4=true
 
-# port to listen on
+; port to listen on
 rpcport=65533
 
-# ports to scan for
+; ports to scan for
 scanports=65533
 
-# seconds to wait before moving between nodes
+; seconds to wait before moving between nodes
 scanDelay=1
 
-# networks which should have full access
+; networks which should have full access
 authorizedNetworks=127.0.0.1/8,::1/128
 
 
 [gateway]
 
-# enable gateway function
+; enable gateway function
 enabled=no
 
 ipv6support=no
 
-# maximum allowed subscribers
+; maximum allowed subscribers
 maxConnections=10
 
-# automatically disable users after this timeout
+; automatically disable users after this timeout
 subscriberTimeout=300
 
-# how routing should work
-# nat - set up NAT on gateway side
-# route - set up routing
-# none - don't set up routing
+; how routing should work
+; nat - set up NAT on gateway side
+; route - set up routing
+; none - don't set up routing
 routing=nat
 
-# subscriber address allocation
+; subscriber address allocation
 addressAllocation=static
 
-# static address allocation subnets
+; static address allocation subnets
 ipv4subnet=10.67.90.0/24
 ipv4gateway=10.67.90.1
 ipv6subnet=fdff:ffff::ff00/120
 ipv6gateway=fdff:ffff::ff01
 
-# shell scripts to run on certain events
-# arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6"
+; shell scripts to run on certain events
+; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6"
 onRegister=
 onRelease=
 
 
 [subscriber]
 
-# shell scripts to run on certain events
-# arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6"
+; shell scripts to run on certain events
+; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6"
 onConnect=
 onDisconnect=
 
 
 [cjdns]
 
-# don't change this
+; don't change this
 network=fc00::/8
 
-# path to main cjdns config file
+; path to main cjdns config file
 config=/etc/cjdroute.conf
 
-# publish gateway on this network
+; publish gateway on this network
 gatewaySupport=yes
 
-# subscribe over this network
+; subscribe over this network
 subscriberSupport=yes
 
-# allow the use of built in cjdns tunnel function
+; allow the use of built in cjdns tunnel function
 tunnelSupport=yes
 
 

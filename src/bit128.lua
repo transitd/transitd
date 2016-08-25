@@ -1,3 +1,14 @@
+--[[
+
+bit32 wrapper module for working on 128-bit numbers
+
+@file bit128.lua
+@license The MIT License (MIT)
+@author Alex <alex@maximum.guru>
+@copyright 2016 Alex
+
+--]]
+
 --- @module bit128
 local bit128 = {}
 
