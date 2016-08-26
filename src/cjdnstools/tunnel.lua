@@ -354,13 +354,13 @@ function tunnel.subscriberSetup(gatewayData)
 			os.execute("ip -6 route del default")
 		end
 		
-		local retval = os.execute("ip route add dev "..interface.name)
+		local retval = os.execute("ip route add default dev "..interface.name)
 		if retval ~= 0 then
 			return nil, "Failed to configure default IPv4 route"
 		end
 		
 		if gatewayData.ipv6 then
-			local retval = os.execute("ip -6 route add dev "..interface.name)
+			local retval = os.execute("ip -6 route add default dev "..interface.name)
 			if retval ~= 0 then
 				return nil, "Failed to configure default IPv6 route"
 			end
