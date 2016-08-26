@@ -60,7 +60,7 @@ ipv6subnet=fdff:ffff::ff00/120
 ipv6gateway=fdff:ffff::ff01
 
 ; shell scripts to run on certain events
-; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6"
+; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6" "$interface"
 onRegister=
 onRelease=
 
@@ -73,7 +73,7 @@ onRelease=
 routing=route
 
 ; shell scripts to run on certain events
-; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6"
+; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6" "$interface"
 onConnect=
 onDisconnect=
 

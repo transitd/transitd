@@ -74,7 +74,9 @@ function cjdns.requestConnection(sid, name, port, method, options)
 	db.registerSubscriberSession(sid, name, method, subscriberip, port, ipv4, ipv6, timeout)
 	db.registerSubscriberSessionCjdnsKey(sid, key)
 	
-	threadman.notify({type = "registered", ["sid"] = sid})
+	local interface, err = tunnel.getInterface()
+	if interface then interface = interface.name end
+	threadman.notify({type = "registered", ["sid"] = sid, ["interface"] = interface})
 	
 	return {
 			success = true,
@@ -101,13 +103,17 @@ function cjdns.releaseConnection(sid)
 			threadman.notify({type = "error", module = "cjdns", ["function"] = "releaseConnection", ["sid"] = sid, error = err})
 			return { success = false, errorMsg = "Error releasing connection: " .. err }
 		else
+			db.deactivateSession(sid)
+			
+			local interface, err = tunnel.getInterface()
+			if interface then interface = interface.name end
+			threadman.notify({type = "released", ["sid"] = sid, ["interface"] = interface})
+			
 			local response, err = tunnel.deauthorizeKey(key)
 			if err then
 				threadman.notify({type = "subscriber.deauth.fail", ["sid"] = sid, method = "cjdns", cjdnskey = key, error = err})
 				return { success = false, errorMsg = "Error releasing connection: " .. err }
 			else
-				db.deactivateSession(sid)
-				threadman.notify({type = "released", ["sid"] = sid})
 				return { success = true }
 			end
 		end

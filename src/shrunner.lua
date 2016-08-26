@@ -34,14 +34,16 @@ function shrunner.run()
 				if msg.type=="released" then exe = config.gateway.onRelease end
 				if msg.type=="connected" then exe = config.subscriber.onConnect end
 				if msg.type=="disconnected" then exe = config.subscriber.onDisconnect end
-				local session = db.lookupSession(msg.sid)
-				if session and exe then
-					cmd = shell.escape({exe, session.sid, session.meshIP, session.internetIPv4, internetIPv6})
-					local result = os.execute(cmd)
-					if result then
-						threadman.notify({type = "info", module = "daemon", info = "Command `"..cmd.."` successfully executed"})
-					else
-						threadman.notify({type = "error", module = "daemon", error = "Command `"..cmd.."` failed"})
+				if msg.sid then
+					local session = db.lookupSession(msg.sid)
+					if session and exe then
+						cmd = shell.escape({exe, session.sid, session.meshIP, session.internetIPv4, session.internetIPv6, msg.interface})
+						local result = os.execute(cmd)
+						if result then
+							threadman.notify({type = "info", module = "daemon", info = "Command `"..cmd.."` successfully executed"})
+						else
+							threadman.notify({type = "error", module = "daemon", error = "Command `"..cmd.."` failed"})
+						end
 					end
 				end
 			end
