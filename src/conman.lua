@@ -114,7 +114,7 @@ local gatewayManager = function()
 		if session.subscriber == 0 and session.active == 1 then
 			if currentTimestamp > session.timeout_timestamp then
 				
-				conman.disconnectFromGateway(session.sid)
+				conman.disconnect(session.sid)
 				
 			elseif currentTimestamp > session.timeout_timestamp-gracePeriod then
 				
@@ -146,7 +146,6 @@ function conman.connectToGateway(ip, port, method, sid)
 	
 	local gateway = rpc.getProxy(ip, port)
 	
-	print("[conman] Checking " .. ip .. "...")
 	local info, err = gateway.nodeInfo()
 	if err then
 		return nil, "Failed to connect to " .. ip .. ": " .. err
@@ -174,14 +173,10 @@ function conman.connectToGateway(ip, port, method, sid)
 		return nil, "No supported connection methods at " .. ip
 	end
 	
-	print("[conman] Connecting to gateway '" .. info.name .. "' at " .. ip)
-	
-	local result
-	
 	if method == "cjdns" then
-		print("[conman] Connecting to " .. ip .. " port " .. port)
 		db.registerGatewaySession(sid, info.name, method, ip, port)
-		result = cjdns.connectTo(ip, port, method, sid)
+		local result, err = cjdns.connectTo(ip, port, method, sid)
+		if err then return nil, err end
 		if result.success then
 			db.updateGatewaySession(sid, true, result.ipv4, result.ipv6, result.timeout)
 			
@@ -194,14 +189,10 @@ function conman.connectToGateway(ip, port, method, sid)
 		return nil, "Unsupported method"
 	end
 	
-	if result.success then
-		return true
-	else
-		return nil, result.errorMsg
-	end
+	return nil, "Unknown method"
 end
 
-function conman.disconnectFromGateway(sid)
+function conman.disconnect(sid)
 	
 	local session, err = db.lookupSession(sid)
 	
@@ -209,22 +200,26 @@ function conman.disconnectFromGateway(sid)
 		return nil, "No such session"
 	end
 	
-	if session.subscriber ~= 0 or session.active ~= 1 then
+	if session.active ~= 1 then
 		return nil, "Not a valid session"
 	end
 	
 	if session.method == "cjdns" then
 		
-		db.deactivateSession(sid)
-		
-		local interface, err = tunnel.getInterface()
-		if interface then interface = interface.name end
-		threadman.notify({type = "disconnected", ["sid"] = sid, ["interface"] = interface})
-		
-		return cjdns.disconnect(sid)
+		if session.subscriber == 0 then
+			local result, err = cjdns.disconnect(sid)
+			if err then return nil, err end
+			if not result.success then return nil, result.errorMsg end
+			return true, nil
+		else
+			local result, err = cjdns.releaseConnection(sid)
+			if err then return nil, err end
+			if not result.success then return nil, result.errorMsg end
+			return true, nil
+		end
 	end
-
-	return true, nil
+	
+	return nil, "Unknown method"
 end
 
 local connectionManager = function()

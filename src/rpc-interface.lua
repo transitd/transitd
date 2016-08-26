@@ -18,6 +18,7 @@ local rpc = require("rpc")
 local gateway = require("gateway")
 local scanner = require("scanner")
 local network = require("network")
+local conman = require("conman")
 
 function rpcInterface.getInterface()
 	return {
@@ -184,10 +185,6 @@ function rpcInterface.getInterface()
 		
 		if not authorized then
 			return { success = false, errorMsg = "Permission denied" }
-		end
-		
-		if config.gateway.enabled == "yes" then
-			return { success = false, errorMsg = "Cannot use connect functionality in gateway mode" }
 		end
 		
 		local cid, err = rpc.allocateCallId()
@@ -384,13 +381,24 @@ function rpcInterface.getGraphSince(timestamp)
 end
 
 function rpcInterface.connectTo(ip, port, method, sid)
-	local conman = require("conman")
-	return conman.connectToGateway(ip, port, method, sid)
+	
+	local result, err = conman.connectToGateway(ip, port, method, sid)
+	if err then
+		return { success = false, errorMsg = err }
+	end
+	
+	return result
 end
 
 function rpcInterface.disconnect(sid)
-	local conman = require("conman")
-	return conman.disconnectFromGateway(sid)
+	
+	local result, err = conman.disconnect(sid)
+	if err then
+		return { success = false, errorMsg = err }
+	end
+	
+	return { success = true }
+	
 end
 
 function rpcInterface.listGateways()

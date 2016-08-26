@@ -226,16 +226,20 @@ end
 function cjdns.disconnect(sid)
 	
 	local session, err = db.lookupSession(sid)
+	if err then return { success = false, errorMsg = err } end
 	
+	db.deactivateSession(sid)
+	
+	local interface, err = tunnel.getInterface()
+	if interface then interface = interface.name end
+	threadman.notify({type = "disconnected", ["sid"] = sid, ["interface"] = interface})
+	
+	tunnel.subscriberTeardown(session)
+	
+	-- notify the gateway
 	local ip = session.meshIP
 	local port = session.port
-	
 	local node = rpc.getProxy(ip, port)
-	
-	if session.method == "cjdns" then
-		tunnel.subscriberTeardown(session)
-	end
-	
 	return node.releaseConnection(sid)
 end
 
