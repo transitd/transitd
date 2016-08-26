@@ -44,7 +44,7 @@ maxConnections=10
 ; automatically disable users after this timeout
 subscriberTimeout=300
 
-; how routing should work
+; how routing should be set up
 ; nat - set up NAT on gateway side
 ; route - set up routing
 ; none - don't set up routing
@@ -66,6 +66,11 @@ onRelease=
 
 
 [subscriber]
+
+; how routing should be set up
+; route - set up / replace the default route
+; none - don't set up routing
+routing=route
 
 ; shell scripts to run on certain events
 ; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6"

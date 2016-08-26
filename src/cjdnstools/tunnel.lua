@@ -319,6 +319,12 @@ end
 
 function tunnel.subscriberSetup(gatewayData)
 	
+	local mode = config.subscriber.routing
+	
+	if mode ~= "route" and mode ~= "none" then
+		return nil, "Unknown subscriber routing mode "..mode
+	end
+	
 	local interface, err = tunnel.getInterface()
 	if err then return nil, err end
 	
@@ -338,24 +344,28 @@ function tunnel.subscriberSetup(gatewayData)
 	--	end
 	--end
 	
-	-- configure default route
-	
-	os.execute("ip route del default")
-	
-	if gatewayData.ipv6 then
-		os.execute("ip -6 route del default")
-	end
-	
-	local retval = os.execute("ip route add dev "..interface.name)
-	if retval ~= 0 then
-		return nil, "Failed to configure default IPv4 route"
-	end
-	
-	if gatewayData.ipv6 then
-		local retval = os.execute("ip -6 route add dev "..interface.name)
-		if retval ~= 0 then
-			return nil, "Failed to configure default IPv6 route"
+	if mode == "route" then
+		
+		-- configure default route
+		
+		os.execute("ip route del default")
+		
+		if gatewayData.ipv6 then
+			os.execute("ip -6 route del default")
 		end
+		
+		local retval = os.execute("ip route add dev "..interface.name)
+		if retval ~= 0 then
+			return nil, "Failed to configure default IPv4 route"
+		end
+		
+		if gatewayData.ipv6 then
+			local retval = os.execute("ip -6 route add dev "..interface.name)
+			if retval ~= 0 then
+				return nil, "Failed to configure default IPv6 route"
+			end
+		end
+		
 	end
 	
 	return true
