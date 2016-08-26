@@ -19,7 +19,6 @@ function clearSessionList() {
 function insertSession(sid, name, meshIP, port, method, internetIPv4, internetIPv6, timeout_timestamp)
 {
 	var sRow = $( "<tr>"
-				+"<td class='sid'></td>"
 				+"<td class='name'></td>"
 				+"<td class='meshIP'></td>"
 				+"<td class='port'></td>"
@@ -29,7 +28,6 @@ function insertSession(sid, name, meshIP, port, method, internetIPv4, internetIP
 				+"<td class='timeout_timestamp'></td>"
 				+"<td><button class='disconnect btn btn-primary' id='disconnect'>Disconnect</button></td>"
 				+"</tr>");
-	sRow.find(".sid").text(sid);
 	sRow.find(".name").text(name);
 	sRow.find(".meshIP").text(meshIP);
 	sRow.find(".port").text(port);
