@@ -37,7 +37,12 @@ function shrunner.run()
 				if msg.sid then
 					local session = db.lookupSession(msg.sid)
 					if session and exe then
-						cmd = shell.escape({exe, session.sid, session.meshIP, session.internetIPv4, session.internetIPv6, msg.interface})
+						local sid = session.sid or " "
+						local meshIp = session.meshIP or " "
+						local ipv4 = session.internetIPv4 or " "
+						local ipv6 = session.internetIPv6 or " "
+						local interface = msg.interface or " "
+						cmd = shell.escape({exe, sid, meshIp, ipv4, ipv6, interface})
 						local result = os.execute(cmd)
 						if result then
 							threadman.notify({type = "info", module = "daemon", info = "Command `"..cmd.."` successfully executed"})

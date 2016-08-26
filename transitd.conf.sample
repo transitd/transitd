@@ -61,6 +61,7 @@ ipv6gateway=fdff:ffff::ff01
 
 ; shell scripts to run on certain events
 ; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6" "$interface"
+; arguments are passed as ' ' when no value is available
 onRegister=
 onRelease=
 
@@ -74,6 +75,7 @@ routing=route
 
 ; shell scripts to run on certain events
 ; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv6" "$interface"
+; arguments are passed as ' ' when no value is available
 onConnect=
 onDisconnect=
 
