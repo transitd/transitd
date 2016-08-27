@@ -34,8 +34,13 @@ if optarg.n then
 	local data = optarg.n
 	local setting = string.sub(data, 1, string.find(data,"=")-1)
 	local value = string.sub(data, string.find(data,"=")+1)
-	set_config(setting, value)
-	save_config()
+	local result, err = set_config(setting, value)
+	if err then
+		print(err)
+		os.exit(1)
+	else
+		save_config()
+	end
 end
 
 if optarg.c then

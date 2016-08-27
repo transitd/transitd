@@ -65,25 +65,10 @@ function set_config(name, value)
 	local con = _G.config
 	local tokens = {}
 	for token in string.gmatch(name, "%w+") do table.insert(tokens, token) end
-	for num,section in pairs(tokens) do
-		if not con[section] then
-			return nil, "Invalid configuration token '"..section.."'"
-		else
-			if type(con[section]) ~= "table" then
-				if num ~= #tokens then
-					return nil, "Configuration token '"..section.."' does not have subelements"
-				end
-				con[section] = value
-				return true, nil
-			else
-				if num == #tokens then
-					return nil, "Configuration token '"..section.."' cannot have a value"
-				else
-					con = con[section]
-				end
-			end
-		end
+	if #tokens ~= 2 or (not tokens[1]) or (not tokens[2]) then 
+		return nil, "Required format: section.field"
 	end
+	con[tokens[1]][tokens[2]] = value
 	return true, nil
 end
 
