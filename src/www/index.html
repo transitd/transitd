@@ -40,11 +40,12 @@ transitd web UI main html file
 						<span class="icon-bar"></span>
 						<span class="icon-bar"></span>
 					</button>
-					<a class="navbar-brand" href="index.html">transitd</a>
+					<a class="navbar-brand" href="">transitd</a>
 				</div>
 				<div id="navbar" class="collapse navbar-collapse">
 					<ul class="nav navbar-nav">
-						<li class="active"><a href="#">Home <span class="sr-only">(current)</span></a></li>
+						<li class="home"><a href="#home">Home</a><span class="sr-only"></span></li>
+						<li class="about"><a href="#about">About</a><span class="sr-only"></span></li>
 					</ul>
 					<ul class="nav navbar-nav navbar-right">
 						<li><p class="navbar-text" id="status"></p></li>
@@ -54,7 +55,7 @@ transitd web UI main html file
 			</div>
 		</nav>
 		
-		<div class="container">
+		<div class="container" id="home">
 			<div class="row" id="sessions">
 				<div class="col-md-12">
 					<h2>Sessions</h2>
@@ -100,6 +101,13 @@ transitd web UI main html file
 		</div>
 		
 		<div id="network"></div>
+		
+		<div class="container" id="about" style="display:none;">
+			<div id="section">
+				<h3>About</h3>
+				<p>Transit Daemon is an automated Internet gateway publish, search and connect tool for community networks. The goal of this package is to provide to gateway operators the ability to automatically run and advertise their Internet gateway / VPN on a community network and to provide to subscribers the automated gateway search and connect functionality. Emerging community mesh networks seek to provide free and open access to a network built by its users. Implementations of such networks may not necessarily provide transit to the rest of the Internet. Access to the traditional Internet has a recurring cost (paid to transit providers), which someone has to pay. In the case where someone does pay for it, service type/quality may not suit all users. This makes Internet access incompatible with the open/free nature of community networks. In most cases, one cannot simply assume that access to such networks will grant them access to the traditional Internet. There may be multiple available Internet gateways on a particular community network, some free of charge to use and some that may come at a cost. In all cases, setting up connection to the traditional Internet through community network gateways is a manual process. Transitd makes the process of getting and having Internet access via a community network easy.</p>
+			</div>
+		</div>
 		
 		<script src="js/vendor/jquery-1.11.2.min.js"></script>
 		<script src="js/vendor/bootstrap.min.js"></script>

@@ -62,6 +62,17 @@ var nodeInfo;
 $(document).ready(function(){
 	$("#gateways").hide();
 	$("#sessions").hide();
+	
+	$("li.home").click(function () {
+		$("#about").hide();
+		$("#home").show();
+	});
+
+	$("li.about").click(function () {
+		$("#home").hide();
+		$("#about").show();
+	});
+	
 	service.nodeInfo({
 		params: [],
 		onSuccess: function(result) {
