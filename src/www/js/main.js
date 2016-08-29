@@ -63,7 +63,7 @@ $(document).ready(function(){
 	$("#gateways").hide();
 	$("#sessions").hide();
 	
-	$("li.title").click(function(event) {
+	$(".navbar li.title").click(function(event) {
 		event.preventDefault();
 		$("#pageone-about").hide();
 		$("#pageone-home").show();
