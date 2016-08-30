@@ -322,7 +322,7 @@ function tunnel.subscriberSetup(gatewayData)
 	local mode = config.subscriber.routing
 	
 	if mode ~= "route" and mode ~= "none" then
-		return nil, "Unknown subscriber routing mode "..mode
+		return nil, "Unknown subscriber routing mode"
 	end
 	
 	local interface, err = tunnel.getInterface()
