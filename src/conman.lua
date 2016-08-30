@@ -78,13 +78,6 @@ local subscriberManager = function()
 		if subscriber.meshIP ~= nil then
 			at = at..subscriber.method.."::"..subscriber.meshIP.." "
 		end
-		local addr = ""
-		if subscriber.internetIPv4 ~= nil then
-			addr = addr..subscriber.internetIPv4.." "
-		end
-		if subscriber.internetIPv6 ~= nil then
-			addr = addr..subscriber.internetIPv6.." "
-		end
 		
 		if subscriber.method == "cjdns" then
 			cjdns.releaseConnection(subscriber.sid)
