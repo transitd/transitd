@@ -62,6 +62,31 @@ var nodeInfo;
 $(document).ready(function(){
 	$("#gateways").hide();
 	$("#sessions").hide();
+	
+	$(".navbar li.title").click(function(event) {
+		event.preventDefault();
+		$("#pageone-about").hide();
+		$("#pageone-home").show();
+		$(".navbar li.active").removeClass("active");
+		$(".navbar li.home").addClass("active");
+	});
+	
+	$(".navbar li.home").click(function(event) {
+		event.preventDefault();
+		$("#pageone-about").hide();
+		$("#pageone-home").show();
+		$(".navbar li.active").removeClass("active");
+		$(".navbar li.home").addClass("active");
+	});
+
+	$(".navbar li.about").click(function(event) {
+		event.preventDefault();
+		$("#pageone-home").hide();
+		$("#pageone-about").show();
+		$(".navbar li.active").removeClass("active");
+		$(".navbar li.about").addClass("active");
+	});
+	
 	service.nodeInfo({
 		params: [],
 		onSuccess: function(result) {
