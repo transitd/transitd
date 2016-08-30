@@ -20,21 +20,23 @@ Although it is possible for community network users to set up Internet connectiv
 
 ### Network configuration support
 * cjdns
-* babel
-* batman-adv
-* olsr
-* plain layer 2 network with switches
+* babel <sup>to be implemented</sup>
+* batman-adv <sup>to be implemented</sup>
+* olsr <sup>to be implemented</sup>
+* layer 2 networks <sup>to be implemented</sup>
 
 ### Tunneling configuration support
 * cjdns tunneling
-* openvpn/softether
-* ipip/gre
-* tun2socks?
-* simple forwarding
+* openvpn/softether <sup>to be implemented</sup>
+* tinc <sup>to be implemented</sup>
+* ipip/gre <sup>to be implemented</sup>
+* tun2socks? <sup>to be implemented</sup>
+* layer 2 forwarding <sup>to be implemented</sup>
 
 ### Payment method support
 * free
-* gateway-hosted web page
+* cryptocurrency microtransactions <sup>to be implemented</sup>
+* commercial payment processor + vpn service provider <sup>to be implemented</sup>
 
 ## Gateway functions
 1. participate in general node interactions (scan network, bootstrap DHT, etc)
