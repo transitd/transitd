@@ -25,17 +25,60 @@ end
 function prepareDatabase()
 	assert(dbc:execute("PRAGMA journal_mode=WAL"))
 
-	assert(dbc:execute("CREATE TABLE IF NOT EXISTS nodes(name varchar(255), ip varchar(15), port INTEGER, last_seen_timestamp INTEGER)"))
+	assert(dbc:execute("CREATE TABLE IF NOT EXISTS nodes( \
+	name varchar(255), \
+	ip varchar(15), \
+	port INTEGER, \
+	last_seen_timestamp INTEGER \
+	)"))
 	
-	assert(dbc:execute("CREATE TABLE IF NOT EXISTS gateways(name varchar(255), ip varchar(15), port INTEGER, last_seen_timestamp INTEGER, method varchar(64))"))
+	assert(dbc:execute("CREATE TABLE IF NOT EXISTS gateways( \
+	name varchar(255), \
+	ip varchar(15), \
+	port INTEGER, \
+	last_seen_timestamp INTEGER, \
+	method varchar(64) \
+	)"))
 	
-	assert(dbc:execute("CREATE TABLE IF NOT EXISTS sessions(sid varchar(32) PRIMARY KEY, name varchar(255), subscriber INTEGER, method varchar(64), meshIP varchar(45), port INTEGER, internetIPv4 varchar(15), internetIPv6 varchar(45), register_timestamp INTEGER, timeout_timestamp INTEGER, active INTEGER)"))
-	assert(dbc:execute("CREATE TABLE IF NOT EXISTS sessions_cjdns(sid varchar(32) PRIMARY KEY, key varchar(255))"))
+	assert(dbc:execute("CREATE TABLE IF NOT EXISTS sessions( \
+	sid varchar(32) PRIMARY KEY, \
+	name varchar(255), \
+	subscriber INTEGER, \
+	method varchar(64), \
+	meshIP varchar(45), \
+	port INTEGER, \
+	internetIPv4 varchar(18), \
+	internetIPv4gateway varchar(15), \
+	internetIPv6 varchar(49), \
+	internetIPv6gateway varchar(45), \
+	register_timestamp INTEGER, \
+	timeout_timestamp INTEGER, active INTEGER \
+	)"))
 	
-	assert(dbc:execute("CREATE TABLE IF NOT EXISTS network_hosts(ip varchar(45), visited INTEGER, scanid INTEGER, network varchar(16), last_seen_timestamp INTEGER)"))
-	assert(dbc:execute("CREATE TABLE IF NOT EXISTS network_links(ip1 varchar(45), ip2 varchar(45), scanid INTEGER, network varchar(16), last_seen_timestamp INTEGER)"))
+	assert(dbc:execute("CREATE TABLE IF NOT EXISTS sessions_cjdns( \
+	sid varchar(32) PRIMARY KEY, \
+	key varchar(255) \
+	)"))
 	
-	assert(dbc:execute("CREATE TABLE IF NOT EXISTS schema_migrations(name varchar(255) PRIMARY KEY, timestamp INTEGER)"))
+	assert(dbc:execute("CREATE TABLE IF NOT EXISTS network_hosts( \
+	ip varchar(45), \
+	visited INTEGER, \
+	scanid INTEGER, \
+	network varchar(16), \
+	last_seen_timestamp INTEGER \
+	)"))
+	assert(dbc:execute("CREATE TABLE IF NOT EXISTS network_links( \
+	ip1 varchar(45), \
+	ip2 varchar(45), \
+	scanid INTEGER, \
+	network varchar(16), \
+	last_seen_timestamp INTEGER \
+	)"))
+	
+	assert(dbc:execute("CREATE TABLE IF NOT EXISTS schema_migrations( \
+	name varchar(255) PRIMARY KEY, \
+	timestamp INTEGER \
+	)"))
 	migrateSchema()
 end
 
@@ -343,16 +386,26 @@ function db.registerGatewaySession(sid, name, method, meshIP, port)
 	return true, nil
 end
 
-function db.updateGatewaySession(sid, active, internetIPv4, internetIPv6, timeout)
+function db.updateGatewaySession(sid, active, internetIPv4, internetIPv4gateway, internetIPv6, internetIPv6gateway, timeout)
 	
 	if internetIPv4 then
 		local err
 		internetIPv4, err = network.canonicalizeIp(internetIPv4)
 		if err then return nil, err end
 	end
+	if internetIPv4gateway then
+		local err
+		internetIPv4gateway, err = network.canonicalizeIp(internetIPv4gateway)
+		if err then return nil, err end
+	end
 	if internetIPv6 then
 		local err
 		internetIPv6, err = network.canonicalizeIp(internetIPv6)
+		if err then return nil, err end
+	end
+	if internetIPv6gateway then
+		local err
+		internetIPv6gateway, err = network.canonicalizeIp(internetIPv6gateway)
 		if err then return nil, err end
 	end
 	
@@ -363,13 +416,17 @@ function db.updateGatewaySession(sid, active, internetIPv4, internetIPv6, timeou
 		"UPDATE sessions SET "
 		.." active = '%d'"
 		..((internetIPv4==nil and "%s") or ",internetIPv4 = '%s'")
+		..((internetIPv4gateway==nil and "%s") or ",internetIPv4gateway = '%s'")
 		..((internetIPv6==nil and "%s") or ",internetIPv6 = '%s'")
+		..((internetIPv6gateway==nil and "%s") or ",internetIPv6gateway = '%s'")
 		..",register_timestamp = '%d'"
 		..",timeout_timestamp = '%d'"
 		.." WHERE sid = '%s'"
 		,act
 		,(internetIPv4==nil and "") or dbc:escape(internetIPv4)
+		,(internetIPv4gateway==nil and "") or dbc:escape(internetIPv4gateway)
 		,(internetIPv6==nil and "") or dbc:escape(internetIPv6)
+		,(internetIPv6gateway==nil and "") or dbc:escape(internetIPv6gateway)
 		,timestamp
 		,timestamp+tonumber(timeout)
 		,dbc:escape(sid)
@@ -381,7 +438,7 @@ function db.updateGatewaySession(sid, active, internetIPv4, internetIPv6, timeou
 	return true, nil
 end
 
-function db.registerSubscriberSession(sid, name, method, meshIP, port, internetIPv4, internetIPv6, timeout)
+function db.registerSubscriberSession(sid, name, method, meshIP, port, internetIPv4, internetIPv4gateway, internetIPv6, internetIPv6gateway, timeout)
 	
 	local meshIP, err = network.canonicalizeIp(meshIP)
 	if err then return nil, err end
@@ -390,9 +447,19 @@ function db.registerSubscriberSession(sid, name, method, meshIP, port, internetI
 		internetIPv4, err = network.canonicalizeIp(internetIPv4)
 		if err then return nil, err end
 	end
+	if internetIPv4gateway then
+		local err
+		internetIPv4gateway, err = network.canonicalizeIp(internetIPv4gateway)
+		if err then return nil, err end
+	end
 	if internetIPv6 then
 		local err
 		internetIPv6, err = network.canonicalizeIp(internetIPv6)
+		if err then return nil, err end
+	end
+	if internetIPv6gateway then
+		local err
+		internetIPv6gateway, err = network.canonicalizeIp(internetIPv6gateway)
 		if err then return nil, err end
 	end
 	
@@ -406,7 +473,9 @@ function db.registerSubscriberSession(sid, name, method, meshIP, port, internetI
 		..",meshIP"
 		..",port"
 		..",internetIPv4"
+		..",internetIPv4gateway"
 		..",internetIPv6"
+		..",internetIPv6gateway"
 		..",register_timestamp"
 		..",timeout_timestamp"
 		..",active"
@@ -418,7 +487,9 @@ function db.registerSubscriberSession(sid, name, method, meshIP, port, internetI
 		..(meshIP==nil and ",NULL%s" or ",'%s'")
 		..",'%d'"
 		..(internetIPv4==nil and ",NULL%s" or ",'%s'")
+		..(internetIPv4gateway==nil and ",NULL%s" or ",'%s'")
 		..(internetIPv6==nil and ",NULL%s" or ",'%s'")
+		..(internetIPv6gateway==nil and ",NULL%s" or ",'%s'")
 		..",'%d'"
 		..",'%d'"
 		..",1"
@@ -429,7 +500,9 @@ function db.registerSubscriberSession(sid, name, method, meshIP, port, internetI
 		,meshIP~=nil and dbc:escape(meshIP) or ""
 		,tonumber(port)
 		,internetIPv4~=nil and dbc:escape(internetIPv4) or ""
+		,internetIPv4gateway~=nil and dbc:escape(internetIPv4gateway) or ""
 		,internetIPv6~=nil and dbc:escape(internetIPv6) or ""
+		,internetIPv6gateway~=nil and dbc:escape(internetIPv6gateway) or ""
 		,timestamp
 		,timestamp+timeout
 	)

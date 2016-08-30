@@ -71,7 +71,7 @@ function cjdns.requestConnection(sid, name, port, method, options)
 	
 	local timeout = config.gateway.subscriberTimeout
 	
-	db.registerSubscriberSession(sid, name, method, subscriberip, port, ipv4, ipv6, timeout)
+	db.registerSubscriberSession(sid, name, method, subscriberip, port, ipv4, config.gateway.ipv4gateway, ipv6, config.gateway.ipv6gateway, timeout)
 	db.registerSubscriberSessionCjdnsKey(sid, key)
 	
 	local interface, err = tunnel.getInterface()

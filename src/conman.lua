@@ -171,7 +171,7 @@ function conman.connectToGateway(ip, port, method, sid)
 		local result, err = cjdns.connectTo(ip, port, method, sid)
 		if err then return nil, err end
 		if result.success then
-			db.updateGatewaySession(sid, true, result.ipv4, result.ipv6, result.timeout)
+			db.updateGatewaySession(sid, true, result.ipv4, result.ipv4gateway, result.ipv6, result.ipv6gateway, result.timeout)
 			
 			local interface, err = tunnel.getInterface()
 			if interface then interface = interface.name end
