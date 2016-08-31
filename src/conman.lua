@@ -17,7 +17,7 @@ local tunnel = require("cjdnstools.tunnel")
 
 local conManTs = 0
 
-local subscriberManager = function()
+function conman.subscriberManager()
 	
 	local sinceTimestamp = conManTs
 	conManTs = os.time()
@@ -89,7 +89,7 @@ local subscriberManager = function()
 	end
 end
 
-local gatewayManager = function()
+function conman.gatewayManager()
 	
 	local currentTimestamp = os.time()
 	local gracePeriod = 10;
@@ -215,27 +215,29 @@ function conman.disconnect(sid)
 	return nil, "Unknown method"
 end
 
-local connectionManager = function()
-	if config.gateway.enabled == "yes" then
-		subscriberManager()
-	else
-		gatewayManager()
-	end
-end
-
 function conman.run()
 	local socket = require("socket")
-	local listener = threadman.registerListener("conman",{"exit"})
+	local listener = threadman.registerListener("conman",{"exit","heartbeat"})
+	local lastTime = 0
 	while true do
-		socket.sleep(2)
-		connectionManager()
 		local msg = {};
 		while msg ~= nil do
-			msg = listener:listen(true)
+			msg = listener:listen()
 			if msg ~= nil then
 				if msg["type"] == "exit" then
 					threadman.unregisterListener(listener)
 					return
+				end
+			end
+			if msg["type"] == "heartbeat" then
+				local time = os.time()
+				if time > lastTime + 2 then
+					if config.gateway.enabled == "yes" then
+						conman.subscriberManager()
+					else
+						conman.gatewayManager()
+					end
+					lastTime = time
 				end
 			end
 		end

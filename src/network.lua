@@ -455,6 +455,20 @@ function network.getIpv6TransitInterface()
 	return nil, nil
 end
 
+function network.ping(addr)
+	
+	local ip, err = network.parseIp(addr)
+	if err then return nil, err end
+	
+	local v6 = #ip > 4
+	
+	if v6 then
+		return network.ping6(addr)
+	else
+		return network.ping4(addr)
+	end
+end
+
 function network.ping4(addr)
 	
 	for k,i in pairs({1,2,3}) do

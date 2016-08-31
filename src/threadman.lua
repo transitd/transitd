@@ -206,4 +206,40 @@ function threadman.unregisterListener(l)
 	l:unregister()
 end
 
+function threadman.waitForMessage(type, pollMsg)
+	
+	local idchars = "1234567890abcdefghijklmnopqrstuvwxyz"
+	local id = ""
+	for i=1,32 do
+		local char = math.random(1,string.len(idchars))
+		id = id .. string.sub(idchars,char,char)
+	end
+	if id == "" then
+		return nil, "Failed to come up with a listener id"
+	end
+	
+	local listener = threadman.registerListener(id,{"exit",type})
+	
+	local result = nil
+	
+	while true do
+		if pollMsg then threadman.notify(pollMsg) end
+		local msg = listener:listen()
+		if msg ~= nil then
+			if msg["type"] == "exit" then
+				break
+			end
+			if msg["type"] == type then
+				result = msg
+				break
+			end
+		end
+	end
+	
+	threadman.unregisterListener(listener)
+	
+	return result, nil
+
+end
+
 return threadman

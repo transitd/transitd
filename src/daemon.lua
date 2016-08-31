@@ -17,6 +17,7 @@ local config = require("config")
 local threadman = require("threadman")
 local httpd = require("httpd")
 local scanner = require("scanner")
+local socket = require("socket")
 
 print("[transitd]", "starting up...")
 
@@ -76,25 +77,36 @@ scanner.startScan()
 -- start http server
 threadman.startThreadInFunction('httpd', 'run')
 
--- wait until exit message is issued
+-- start monitor thread
+threadman.startThreadInFunction('monitor', 'run')
+
+-- wait until exit message is issued, send heartbeats
 local retval = 0
 local listener = threadman.registerListener("main",{"exit","error","info"})
 while true do
-	local msg = listener:listen()
-	if msg ~= nil then
-		if msg["type"] == "exit" then
-			if msg["retval"] then retval = msg["retval"] end
-			break
-		end
-		if msg["type"] == "error" or msg["type"] == "info" then
-			print("[transitd]", msg["type"])
-			for k,v in pairs(msg) do
-				if k ~= "type" then
-					print("["..msg["type"].."]", k, v)
+	
+	local msg = "";
+	while msg ~= nil do
+		msg = listener:listen(true)
+		if msg ~= nil then
+			if msg["type"] == "exit" then
+				if msg["retval"] then retval = msg["retval"] end
+				break
+			end
+			if msg["type"] == "error" or msg["type"] == "info" then
+				print("[transitd]", msg["type"])
+				for k,v in pairs(msg) do
+					if k ~= "type" then
+						print("["..msg["type"].."]", k, v)
+					end
 				end
 			end
 		end
 	end
+	
+	socket.sleep(1)
+	
+	threadman.notify({type = "heartbeat", ["time"] = os.time()})
 end
 threadman.unregisterListener(listener)
 

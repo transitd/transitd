@@ -30,6 +30,9 @@ scanDelay=1
 ; networks which should have full access
 authorizedNetworks=127.0.0.1/8,::1/128
 
+; ip to ping to detect online status
+pingTarget=8.8.8.8
+
 
 [gateway]
 
@@ -62,8 +65,8 @@ ipv6gateway=fdff:ffff::ff01
 ; shell scripts to run on certain events
 ; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv4gateway" "$ipv6" "$ipv6gateway" "$interface"
 ; arguments are passed as '0' when no value is available
-onRegister=
-onRelease=
+;onRegister=
+;onRelease=
 
 
 [subscriber]
@@ -76,9 +79,10 @@ routing=route
 ; shell scripts to run on certain events
 ; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv4gateway" "$ipv6" "$ipv6gateway" "$interface"
 ; arguments are passed as '0' when no value is available
-onConnect=
-onDisconnect=
-
+;onConnect=
+;onDisconnect=
+;onGoingOnline=
+;onGoingOffline=
 
 [cjdns]
 

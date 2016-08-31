@@ -16,7 +16,7 @@ local threadman = require("threadman")
 
 function shrunner.run()
 	
-	local listener = threadman.registerListener("shrunner",{"exit", "registered", "released", "connected", "disconnected"})
+	local listener = threadman.registerListener("shrunner",{"exit", "registered", "released", "connected", "disconnected", "goingOnline", "goingOffline"})
 	
 	while true do
 		local msg = listener:listen()
@@ -24,17 +24,18 @@ function shrunner.run()
 			if msg["type"] == "exit" then
 				break
 			end
-			if (config.gateway.enabled == "yes" and msg.type=="registered" and config.gateway.onRegister ~= "")
-			or (config.gateway.enabled == "yes" and msg.type=="released" and config.gateway.onRelease ~= "")
-			or (config.gateway.enabled ~= "yes" and msg.type=="connected" and config.subscriber.onConnect ~= "")
-			or (config.gateway.enabled ~= "yes" and msg.type=="disconnected" and config.subscriber.onDisconnect ~= "")
+			local exe = nil
+			local cmd = nil
+			if (config.gateway.enabled == "yes" and msg.type=="registered" and config.gateway.onRegister)
+			or (config.gateway.enabled == "yes" and msg.type=="released" and config.gateway.onRelease)
+			or (config.gateway.enabled ~= "yes" and msg.type=="connected" and config.subscriber.onConnect)
+			or (config.gateway.enabled ~= "yes" and msg.type=="disconnected" and config.subscriber.onDisconnect)
 			then
-				local exe = nil
 				if msg.type=="registered" then exe = config.gateway.onRegister end
 				if msg.type=="released" then exe = config.gateway.onRelease end
 				if msg.type=="connected" then exe = config.subscriber.onConnect end
 				if msg.type=="disconnected" then exe = config.subscriber.onDisconnect end
-				if msg.sid then
+				if exe and msg.sid then
 					local session = db.lookupSession(msg.sid)
 					if session and exe then
 						local sid = session.sid or "0"
@@ -45,13 +46,22 @@ function shrunner.run()
 						local ipv6gateway = session.internetIPv6gateway or "0"
 						local interface = msg.interface or "0"
 						cmd = shell.escape({exe, sid, meshIp, ipv4, ipv4gateway, ipv6, ipv6gateway, interface})
-						local result = os.execute(cmd)
-						if result then
-							threadman.notify({type = "info", module = "daemon", info = "Command `"..cmd.."` successfully executed"})
-						else
-							threadman.notify({type = "error", module = "daemon", error = "Command `"..cmd.."` failed"})
-						end
 					end
+				end
+			end
+			if (msg.type=="goingOnline" and config.subscriber.onGoingOnline)
+			or (msg.type=="goingOffline" and config.subscriber.onGoingOffline)
+			then
+				if msg.type=="goingOnline" then exe = config.subscriber.onGoingOnline end
+				if msg.type=="goingOffline" then exe = config.subscriber.onGoingOffline end
+				if exe then cmd = shell.escape({exe}) end
+			end
+			if cmd then
+				local result = os.execute(cmd)
+				if result then
+					threadman.notify({type = "info", module = "daemon", info = "Command `"..cmd.."` successfully executed"})
+				else
+					threadman.notify({type = "error", module = "daemon", error = "Command `"..cmd.."` failed"})
 				end
 			end
 		end

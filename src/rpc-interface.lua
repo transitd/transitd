@@ -429,11 +429,9 @@ function rpcInterface.status()
 	
 	local result = { success = true }
 	
-	local online, err = network.ping4('8.8.8.8')
-	if err then
-		return { success = true, ["online"] = false }
-	end
-	result.online = online
+	local monitor = require('monitor')
+	
+	result.online = monitor.isOnline()
 	
 	local if4, err = network.getIpv4TransitInterface()
 	if not err and if4 and #(if4.ipv4subnets) > 0 then
