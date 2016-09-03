@@ -58,6 +58,10 @@ function reloadSessions()
 				if(result.success==true)
 				{
 					var activeSessions = result.sessions;
+					if(activeSessions.length == undefined || activeSessions.length==0)
+						$('#sessions').hide();
+					else
+						$('#sessions').show();
 					for (index = 0; index < activeSessions.length; ++index)
 					{
 						var activeSession = activeSessions[index];

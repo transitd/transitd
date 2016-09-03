@@ -63,6 +63,10 @@ function reloadGateways()
 				if(result.success==true)
 				{
 					var gateways = result.gateways;
+					if(gateways.length == undefined || gateways.length==0)
+						$('#gateways').hide();
+					else
+						$('#gateways').show();
 					for (index = 0; index < gateways.length; ++index)
 					{
 						var gateway = gateways[index];
