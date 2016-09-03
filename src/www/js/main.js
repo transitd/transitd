@@ -26,14 +26,17 @@ function nonBlockingCallWrapper(result, callback)
 {
 	if(result.callId)
 	{
+		showSpinner();
 		var id = result.callId;
 		setTimeout(function(){
 			service.pollCallStatus({
 				params: [id],
 				onSuccess: function(result) {
+					hideSpinner();
 					nonBlockingCallWrapper(result, callback);
 				},
 				onException: function(e) {
+					hideSpinner();
 					logAppendMessage('danger', e);
 					return true;
 				}
@@ -130,3 +133,17 @@ $(document).ready(function(){
 		}
 	});
 });
+
+var spinnerCount = 0;
+function showSpinner()
+{
+	if(spinnerCount==0)
+		$("#spinner").show();
+	spinnerCount++;
+}
+function hideSpinner()
+{
+	spinnerCount--;
+	if(spinnerCount==0)
+		$("#spinner").hide();
+}

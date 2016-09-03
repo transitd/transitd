@@ -10,9 +10,14 @@ transitd web UI CSS file
  
 */
 
+body {
+	padding-top: 50px;
+	padding-bottom: 20px;
+}
+
 #log
 {
-    white-space: pre;
+	white-space: pre;
 	position:fixed;
 	top: 5%;
 	left: 5%;
@@ -45,3 +50,6 @@ transitd web UI CSS file
 .navbar {
   background: none;
 }
+
+.glyphicon-spin { animation: spin 500ms linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }

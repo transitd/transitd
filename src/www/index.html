@@ -19,12 +19,6 @@ transitd web UI main html file
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 
 		<link rel="stylesheet" href="css/vendor/bootstrap.min.css">
-		<style>
-			body {
-				padding-top: 50px;
-				padding-bottom: 20px;
-			}
-		</style>
 		<link rel="stylesheet" href="css/vendor/bootstrap-theme.min.css">
 		<link rel="stylesheet" href="css/vendor/vis.min.css">
 		<link rel="stylesheet" href="css/main.css">
@@ -47,6 +41,7 @@ transitd web UI main html file
 						<li class="about"><a href="#about">About</a></li>
 					</ul>
 					<ul class="nav navbar-nav navbar-right">
+						<li><p class="navbar-text" id="spinner"><span class="glyphicon glyphicon-refresh glyphicon-spin"></span></p></li>
 						<li><p class="navbar-text" id="status"></p></li>
 						<li><p class="navbar-text"><button id="startScan" type="button" class="btn btn-primary btn-xs">Rescan</button></p></li>
 					</ul>
