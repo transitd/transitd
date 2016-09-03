@@ -287,11 +287,7 @@ function rpcInterface.getInterface()
 			return { success = false, errorMsg = err }
 		end
 		
-		if not authorized then
-			return { success = false, errorMsg = "Permission denied" }
-		end
-		
-		local callId, err = rpc.wrapBlockingCall('rpc-interface', 'status')
+		local callId, err = rpc.wrapBlockingCall('rpc-interface', 'status', authorized)
 		if err then
 			return { success = false, errorMsg = err }
 		end
@@ -425,7 +421,7 @@ function rpcInterface.listSessions()
 	
 end
 
-function rpcInterface.status()
+function rpcInterface.status(authorized)
 	
 	local result = { success = true }
 	
@@ -433,16 +429,18 @@ function rpcInterface.status()
 	
 	result.online = monitor.isOnline()
 	
-	local if4, err = network.getIpv4TransitInterface()
-	if not err and if4 and #(if4.ipv4subnets) > 0 then
-		local subnet = if4.ipv4subnets[1]
-		result.ipv4 = {ip = network.ip2string(subnet[1]), cidr = subnet[2]}
-	end
-	
-	local if6, err = network.getIpv6TransitInterface()
-	if not err and if6 and #(if6.ipv6subnets) > 0 then
-		local subnet = if6.ipv4subnets[1]
-		result.ipv6 = {ip = network.ip2string(subnet[1]), cidr = subnet[2]}
+	if authorized then
+		local if4, err = network.getIpv4TransitInterface()
+		if not err and if4 and #(if4.ipv4subnets) > 0 then
+			local subnet = if4.ipv4subnets[1]
+			result.ipv4 = {ip = network.ip2string(subnet[1]), cidr = subnet[2]}
+		end
+		
+		local if6, err = network.getIpv6TransitInterface()
+		if not err and if6 and #(if6.ipv6subnets) > 0 then
+			local subnet = if6.ipv4subnets[1]
+			result.ipv6 = {ip = network.ip2string(subnet[1]), cidr = subnet[2]}
+		end
 	end
 	
 	return result, nil
