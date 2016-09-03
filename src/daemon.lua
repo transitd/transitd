@@ -104,6 +104,8 @@ while true do
 		end
 	end
 	
+	if msg ~= nil and msg["type"] == "exit" then break end
+	
 	socket.sleep(1)
 	
 	threadman.notify({type = "heartbeat", ["time"] = os.time()})
