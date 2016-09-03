@@ -50,6 +50,11 @@ transitd web UI main html file
 		</nav>
 		
 		<div class="container" id="pageone-home">
+			<div class="bs-callout bs-callout-danger hidden online-hidden" id="offline-message">
+				<h4>Offline</h4>
+				<p>This system is currently offline.<span class='gateway-hidden unauthorized-hidden hidden'>Hit <button type="button" class="startScan btn btn-primary btn-xs">Rescan</button> to scan for Internet gateways.</span></p>
+				<p class='gateway-hidden hidden'>Once the system is able to find reachable gateways, an authorized user may be able to connect to one.</p>
+			</div>
 			<div class="row">
 				<div class="col-md-12" id="sessions">
 					<h2>Sessions</h2>

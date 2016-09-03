@@ -55,8 +55,8 @@ function bootstrap()
 		reloadSessions();
 	if($("#status").length>0)
 		reloadStatus();
-	if($("#startScan").length>0)
-		$("#startScan").click(startScan);
+	if($(".startScan").length>0)
+		$(".startScan").click(startScan);
 	if($("#network").length>0)
 		startNetworkGraph();
 }
@@ -100,6 +100,28 @@ $(document).ready(function(){
 					
 					$(document).prop('title', nodeInfo.name);
 					$('.navbar-brand').text(nodeInfo.name);
+					
+					if(nodeInfo.gateway)
+					{
+						$('.gateway-hidden').addClass('hidden');
+						$('.subscriber-hidden').removeClass('hidden');
+					}
+					else
+					{
+						$('.subscriber-hidden').addClass('hidden');
+						$('.gateway-hidden').removeClass('hidden');
+					}
+					
+					if(nodeInfo.authorized)
+					{
+						$('.authorized-hidden').addClass('hidden');
+						$('.unauthorized-hidden').removeClass('hidden');
+					}
+					else
+					{
+						$('.unauthorized-hidden').addClass('hidden');
+						$('.authorized-hidden').removeClass('hidden');
+					}
 					
 					if(nodeInfo.gateway || !nodeInfo.authorized)
 					{

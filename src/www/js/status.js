@@ -23,9 +23,17 @@ function reloadStatus()
 				{
 					var html = '';
 					if(result.online)
-						 html += '<span class="glyphicon glyphicon-globe text-success" aria-hidden="true"></span> ';
+					{
+						html += '<span class="glyphicon glyphicon-globe text-success" aria-hidden="true"></span> ';
+						$('.online-hidden').addClass('hidden');
+						$('.offline-hidden').removeClass('hidden');
+					}
 					else
-						 html += '<span class="glyphicon glyphicon-remove-sign text-danger" aria-hidden="true"></span> ';
+					{
+						html += '<span class="glyphicon glyphicon-remove-sign text-danger" aria-hidden="true"></span> ';
+						$('.offline-hidden').addClass('hidden');
+						$('.online-hidden').removeClass('hidden');
+					}
 					if(result.ipv4)
 						html += result.ipv4.ip + "/" + result.ipv4.cidr + ' ';
 					if(result.ipv6)
