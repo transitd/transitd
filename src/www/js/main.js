@@ -10,7 +10,29 @@ transitd web UI main js file
 
 */
 
-var service = new rpc.ServiceProxy("/jsonrpc", {methods: ['nodeInfo','connectTo','disconnect','listGateways','pollCallStatus','listSessions','startScan','getGraphSince','status']});
+var serviceProxy = new rpc.ServiceProxy("/jsonrpc", {methods: ['nodeInfo','connectTo','disconnect','listGateways','pollCallStatus','listSessions','startScan','getGraphSince','status']});
+
+// proxy that wraps calls with showSpinner/hideSpinner pair
+var service = new Proxy(serviceProxy, {
+	get: function(target, name) {
+		return function() {
+			
+			// manage spinner
+			showSpinner();
+			if(arguments[0])
+			{
+				var onSuccess = arguments[0].onSuccess;
+				var onException = arguments[0].onException;
+				arguments[0].onSuccess = function(a) { var retval; if(onSuccess) retval = onSuccess(a); hideSpinner(); return retval; }
+				arguments[0].onException = function(a) { var retval; if(onException) retval = onException(a); hideSpinner(); return retval; }
+			}
+			
+			// run service proxy function
+			var retval = target[name].apply(this, arguments);
+			return retval;
+		}
+	}
+});
 
 function logAppendMessage(type, msg)
 {
@@ -159,13 +181,13 @@ $(document).ready(function(){
 var spinnerCount = 0;
 function showSpinner()
 {
-	if(spinnerCount==0)
+	if(spinnerCount>=0)
 		$("#spinner").show();
 	spinnerCount++;
 }
 function hideSpinner()
 {
 	spinnerCount--;
-	if(spinnerCount==0)
+	if(spinnerCount<=0)
 		$("#spinner").hide();
 }
