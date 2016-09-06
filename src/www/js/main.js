@@ -44,8 +44,10 @@ function logAppendMessage(type, msg)
 	$("#log").append(div);
 }
 
-function nonBlockingCallWrapper(result, callback)
+function nonBlockingCallWrapper(result, callback, timeout)
 {
+	timeout = timeout | 100;
+	
 	if(result.callId)
 	{
 		showSpinner();
@@ -55,7 +57,7 @@ function nonBlockingCallWrapper(result, callback)
 				params: [id],
 				onSuccess: function(result) {
 					hideSpinner();
-					nonBlockingCallWrapper(result, callback);
+					nonBlockingCallWrapper(result, callback, timeout*2);
 				},
 				onException: function(e) {
 					hideSpinner();
@@ -63,7 +65,7 @@ function nonBlockingCallWrapper(result, callback)
 					return true;
 				}
 			});
-		},1000);
+		},timeout);
 	}
 	else
 		callback(result);

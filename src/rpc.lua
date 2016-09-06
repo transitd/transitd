@@ -86,8 +86,10 @@ function rpc.getProxy(ip, port)
 				if type(result)=="table" and result.callId then
 					local id = result.callId
 					-- poll for result until it arrives
+					local sleeptime = 0.1
 					while type(result)=="table" and result.callId ~= nil do
-						socket.sleep(2)
+						socket.select(nil, nil, sleeptime)
+						sleeptime = sleeptime * 2
 						called, result, err = pcall(proxy.pollCallStatus, id)
 						if called ~= true then
 							return nil, result
