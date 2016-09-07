@@ -109,18 +109,19 @@ function loadNetworkGraph()
 						 nodes.clear();
 						 edges.clear();
 					}
+					if(result.hosts)
+						for (index = 0; index < result.hosts.length; ++index)
+						{
+							var host = result.hosts[index];
+							addNode(host.ip, host.ip, host.type);
+						}
 					
-					for (index = 0; index < result.hosts.length; ++index)
-					{
-						var host = result.hosts[index];
-						addNode(host.ip, host.ip, host.type);
-					}
-					
-					for (index = 0; index < result.links.length; ++index)
-					{
-						var link = result.links[index];
-						addLink(link.ip1, link.ip2);
-					}
+					if(result.links)
+						for (index = 0; index < result.links.length; ++index)
+						{
+							var link = result.links[index];
+							addLink(link.ip1, link.ip2);
+						}
 					
 					lastScanId = result.scanId;
 				}
