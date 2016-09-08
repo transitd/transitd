@@ -86,8 +86,8 @@ $ docker run -it --privileged --name=transitd-gateway transitd:0
 # transitd-cli --set gateway.enabled=yes
 # exit
 $ docker start -ai transitd-gateway
-# apk update
-# apk add tcpdump
+# apt-get update
+# apt-get install tcpdump
 # tcpdump -i tun0
 ```
 ### Subscriber
@@ -99,6 +99,8 @@ $ docker run -it --privileged --name=transitd-sub transitd:0
 # ip route show
 # ping 8.8.8.8
 ```
+### Web UI
+You can access `http://172.17.0.???:65533/` from your browser (where the IP address is the docker container instance address).
 
 ### Manual Installation
 ```
