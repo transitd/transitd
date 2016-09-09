@@ -85,33 +85,22 @@ function bootstrap()
 		startNetworkGraph();
 }
 
+function gotopage(page)
+{
+	$(".container.onepage").addClass('hidden');
+	$(".container#onepage-"+page).removeClass('hidden');
+	$(".navbar li.active").removeClass('active')
+	$("li.onepage-"+page).addClass('active')
+}
+
 var nodeInfo;
 $(document).ready(function(){
 	$("#gateways").hide();
 	$("#sessions").hide();
 	
-	$(".navbar li.title").click(function(event) {
-		event.preventDefault();
-		$("#pageone-about").hide();
-		$("#pageone-home").show();
-		$(".navbar li.active").removeClass("active");
-		$(".navbar li.home").addClass("active");
-	});
-	
-	$(".navbar li.home").click(function(event) {
-		event.preventDefault();
-		$("#pageone-about").hide();
-		$("#pageone-home").show();
-		$(".navbar li.active").removeClass("active");
-		$(".navbar li.home").addClass("active");
-	});
-
-	$(".navbar li.about").click(function(event) {
-		event.preventDefault();
-		$("#pageone-home").hide();
-		$("#pageone-about").show();
-		$(".navbar li.active").removeClass("active");
-		$(".navbar li.about").addClass("active");
+	$("a[onepage]").click(function(e){
+		e.preventDefault();
+		gotopage($(this).attr("onepage"));
 	});
 	
 	service.nodeInfo({

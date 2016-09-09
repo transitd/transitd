@@ -42,7 +42,7 @@ body {
 	opacity: 0.4;
 }
 
-.table, .navbar-default .navbar-collapse
+.table, .form-group, .navbar-default .navbar-collapse
 {
 	background-color: rgba(255,255,255,0.6);
 }

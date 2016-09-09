@@ -36,9 +36,10 @@ transitd web UI main html file
 				</div>
 				<div id="navbar" class="collapse navbar-collapse">
 					<ul class="nav navbar-nav">
-						<li class="title"><a class="navbar-brand" href="#home">transitd</a></li>
-						<li class="active home"><a href="#home">Home</a></li>
-						<li class="about"><a href="#about">About</a></li>
+						<li class="title"><a class="navbar-brand" href="#">transitd</a></li>
+						<li class="active onepage-home"><a href="#home" onepage="home">Home</a></li>
+						<li class="onepage-config"><a href="#config" onepage="config">Configuration</a></li>
+						<li class="onepage-about"><a href="#about" onepage="about">About</a></li>
 					</ul>
 					<ul class="nav navbar-nav navbar-right">
 						<li><p class="navbar-text" id="spinner"><span class="glyphicon glyphicon-refresh glyphicon-spin"></span></p></li>
@@ -49,7 +50,7 @@ transitd web UI main html file
 			</div>
 		</nav>
 		
-		<div class="container" id="pageone-home">
+		<div class="container onepage" id="onepage-home">
 			<div class="bs-callout bs-callout-danger hidden online-hidden" id="offline-message">
 				<h4>Offline</h4>
 				<p>This system is currently offline.<span class='gateway-hidden unauthorized-hidden hidden'>Hit <button type="button" class="startScan btn btn-primary btn-xs">Rescan</button> to scan for Internet gateways.</span></p>
@@ -99,7 +100,43 @@ transitd web UI main html file
 			</div>
 		</div>
 		
-		<div class="container" id="pageone-about" style="display:none;>
+		<div class="container onepage hidden" id="onepage-config">
+			<div id="section">
+				
+				<h3>Configuration</h3>
+				
+				<form>
+					
+					<div class="form-group">
+						<label for="config-name" class="col-xs-2 col-form-label">Name</label>
+						<div class="col-xs-4">
+							<input class="form-control" type="text" value="" id="config-name">
+						</div>
+					</div>
+					
+					<fieldset class="form-group col-xs-6">
+						<legend>Mode <small>(restart required)</small></legend>
+						<div class="form-check">
+							<label class="form-check-label">
+								<input type="radio" class="form-check-input" name="gateway.enabled" id="config-mode-subscriber" value="no" checked>
+								Subscriber mode
+							</label>
+						</div>
+						<div class="form-check">
+							<label class="form-check-label">
+								<input type="radio" class="form-check-input" name="gateway.enabled" id="config-mode-gateway" value="yes">
+								Gateway mode
+							</label>
+						</div>
+					</fieldset>
+					
+					<button type="submit" class="btn btn-primary pull-right">Apply Configuration Changes</button>
+					
+				</form>
+			</div>
+		</div>
+		
+		<div class="container onepage hidden" id="onepage-about">
 			<div id="section">
 				<h3>About</h3>
 				<p>Transit Daemon is an automated Internet gateway publish, search and connect tool for community networks. The goal of this package is to provide to gateway operators the ability to automatically run and advertise their Internet gateway / VPN on a community network and to provide to subscribers the automated gateway search and connect functionality. Emerging community mesh networks seek to provide free and open access to a network built by its users. Implementations of such networks may not necessarily provide transit to the rest of the Internet. Access to the traditional Internet has a recurring cost (paid to transit providers), which someone has to pay. In the case where someone does pay for it, service type/quality may not suit all users. This makes Internet access incompatible with the open/free nature of community networks. In most cases, one cannot simply assume that access to such networks will grant them access to the traditional Internet. There may be multiple available Internet gateways on a particular community network, some free of charge to use and some that may come at a cost. In all cases, setting up connection to the traditional Internet through community network gateways is a manual process. Transitd makes the process of getting and having Internet access via a community network easy.</p>
