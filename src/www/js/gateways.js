@@ -63,18 +63,19 @@ function reloadGateways()
 				if(result.success==true)
 				{
 					var gateways = result.gateways;
-					if(gateways.length == undefined || gateways.length==0)
+					if(gateways == undefined || gateways.length == undefined || gateways.length==0)
 						$('#gateways').hide();
 					else
 						$('#gateways').show();
-					for (index = 0; index < gateways.length; ++index)
-					{
-						var gateway = gateways[index];
-						insertGateway(gateway.name,
-									  gateway.ip,
-									  gateway.port,
-									  gateway.method);
-					}
+					if(gateways)
+						for (index = 0; index < gateways.length; ++index)
+						{
+							var gateway = gateways[index];
+							insertGateway(gateway.name,
+										  gateway.ip,
+										  gateway.port,
+										  gateway.method);
+						}
 				}
 				else
 				{

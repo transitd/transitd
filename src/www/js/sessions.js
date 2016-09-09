@@ -58,22 +58,23 @@ function reloadSessions()
 				if(result.success==true)
 				{
 					var activeSessions = result.sessions;
-					if(activeSessions.length == undefined || activeSessions.length==0)
+					if(activeSessions == undefined || activeSessions.length == undefined || activeSessions.length==0)
 						$('#sessions').hide();
 					else
 						$('#sessions').show();
-					for (index = 0; index < activeSessions.length; ++index)
-					{
-						var activeSession = activeSessions[index];
-						insertSession(activeSession.sid,
-									  activeSession.name,
-									  activeSession.meshIP,
-									  activeSession.port,
-									  activeSession.method,
-									  activeSession.internetIPv4,
-									  activeSession.internetIPv6,
-									  activeSession.timeout_timestamp);
-					}
+					if(activeSessions)
+						for (index = 0; index < activeSessions.length; ++index)
+						{
+							var activeSession = activeSessions[index];
+							insertSession(activeSession.sid,
+										  activeSession.name,
+										  activeSession.meshIP,
+										  activeSession.port,
+										  activeSession.method,
+										  activeSession.internetIPv4,
+										  activeSession.internetIPv6,
+										  activeSession.timeout_timestamp);
+						}
 				}
 				else
 				{
