@@ -14,12 +14,15 @@ transitd daemon main file
 --]]
 
 local config = require("config")
+local db = require("db")
 local threadman = require("threadman")
-local httpd = require("httpd")
 local scanner = require("scanner")
 local socket = require("socket")
 
 print("[transitd]", "starting up...")
+
+db.prepareDatabase()
+db.purge()
 
 -- configure gateway functionality
 if config.gateway.enabled == "yes" then

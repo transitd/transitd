@@ -22,9 +22,10 @@ if dbc == nil then
 	error("Failed to open database "..dbfile)
 end
 
-function prepareDatabase()
+function db.prepareDatabase()
+	
 	assert(dbc:execute("PRAGMA journal_mode=WAL"))
-
+	
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS nodes( \
 	name varchar(255), \
 	ip varchar(15), \
@@ -79,15 +80,37 @@ function prepareDatabase()
 	name varchar(255) PRIMARY KEY, \
 	timestamp INTEGER \
 	)"))
-	migrateSchema()
+	
+	db.migrateSchema()
+	
 end
 
-function migrateSchema()
+function db.migrateSchema()
 	-- TODO: code simple schema migration system for painless upgrades
 end
 
-function purge()
-	-- TODO: remove outdated data from database
+-- remove outdated data from database
+function db.purge()
+	
+	local tables = {
+			{ ['table'] = 'nodes', timeout = 31*24*60*60, timeoutField = 'last_seen_timestamp'},
+			{ ['table'] = 'gateways', timeout = 31*24*60*60, timeoutField = 'last_seen_timestamp'},
+			{ ['table'] = 'network_hosts', timeout = 24*60*60, timeoutField = 'last_seen_timestamp'},
+			{ ['table'] = 'network_links', timeout = 24*60*60, timeoutField = 'last_seen_timestamp'},
+		}
+	
+	local timestamp = os.time()
+	
+	for k,t in pairs(tables) do
+		local query = string.format(
+			"DELETE FROM '%s' WHERE '%s' < '%d'"
+			,dbc:escape(t.table)
+			,dbc:escape(t.timeoutField)
+			,timestamp-t.timeout
+		)
+		local result, err = dbc:execute(query)
+		if err then print(err) end
+	end
 end
 
 function db.addNetworkHost(net, ip, scanid)
@@ -848,7 +871,5 @@ function db.getRecentGateways()
 	cur:close()
 	return list, nil
 end
-
-prepareDatabase()
 
 return db
