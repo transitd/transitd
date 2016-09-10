@@ -11,6 +11,7 @@ local threadman = {}
 local config = require("config")
 local luaproc = require("luaproc")
 local cjson_safe = require("cjson.safe")
+local random = require("random")
 
 function threadman.setup()
 	-- TODO: catch errors
@@ -208,13 +209,9 @@ end
 
 function threadman.waitForMessage(type, pollMsg)
 	
-	local idchars = "1234567890abcdefghijklmnopqrstuvwxyz"
-	local id = ""
-	for i=1,32 do
-		local char = math.random(1,string.len(idchars))
-		id = id .. string.sub(idchars,char,char)
-	end
-	if id == "" then
+	local id = random.mktoken(32)
+	
+	if not id or id == "" then
 		return nil, "Failed to come up with a listener id"
 	end
 	

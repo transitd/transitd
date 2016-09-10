@@ -5,11 +5,6 @@
 @copyright 2016 Alex
 --]]
 
-local socket = require("socket")
-
--- need better random numbers
-math.randomseed(socket.gettime()*1000)
-
 function script_path()
 	local str = debug.getinfo(2, "S").source:sub(2)
 	return str:match("(.*/)")

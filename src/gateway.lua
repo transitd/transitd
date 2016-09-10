@@ -14,8 +14,8 @@ local config = require("config")
 local db = require("db")
 local bit32 = require("bit32")
 local bit128 = require("bit128")
-
 local network = require("network")
+local random = require("random")
 
 function gateway.allocateIpv4()
 	
@@ -125,20 +125,16 @@ function gateway.allocateSid(suggesteredSid)
 	-- TODO: fix race condition
 	
 	if suggesteredSid == nil then
-		local sidchars = "1234567890abcdefghijklmnopqrstuvwxyz"
 		local sid = ""
 		for t=0,5 do
-			for i=1,32 do
-				local char = math.random(1,string.len(sidchars))
-				sid = sid .. string.sub(sidchars,char,char)
-			end
+			sid = random.mktoken(32)
 			if db.lookupSession(sid) ~= nil then
 				sid = ""
 			else
 				break
 			end
 		end
-		if sid == "" then
+		if not sid or sid == "" then
 			return nil, "Failed to come up with an unused session id"
 		end
 		return sid, nil
