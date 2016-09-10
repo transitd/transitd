@@ -19,6 +19,7 @@ if urandom then
 		seed = bit32.lshift(seed,8)
 		seed = bit32.bxor(seed,v)
 	end
+	urandom:close()
 end
 local socket = require("socket")
 local mstimestamp = socket.gettime()
