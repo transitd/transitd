@@ -110,21 +110,21 @@ transitd web UI main html file
 					<div class="form-group">
 						<label for="config-name" class="col-xs-2 col-form-label">Name</label>
 						<div class="col-xs-4">
-							<input class="form-control" type="text" value="" id="config-name">
+							<input class="form-control" type="text" name="main.name" value="" id="config-name">
 						</div>
 					</div>
 					
 					<fieldset class="form-group col-xs-6">
-						<legend>Mode <small>(restart required)</small></legend>
+						<legend>Mode</legend>
 						<div class="form-check">
 							<label class="form-check-label">
-								<input type="radio" class="form-check-input" name="gateway.enabled" id="config-mode-subscriber" value="no" checked>
+								<input type="radio" class="form-check-input" name="gateway.enabled" id="config-mode-subscriber" geval="no">
 								Subscriber mode
 							</label>
 						</div>
 						<div class="form-check">
 							<label class="form-check-label">
-								<input type="radio" class="form-check-input" name="gateway.enabled" id="config-mode-gateway" value="yes">
+								<input type="radio" class="form-check-input" name="gateway.enabled" id="config-mode-gateway" geval="yes">
 								Gateway mode
 							</label>
 						</div>
@@ -155,5 +155,6 @@ transitd web UI main html file
 		<script src="js/connection.js"></script>
 		<script src="js/network.js"></script>
 		<script src="js/status.js"></script>
+		<script src="js/configuration.js"></script>
 	</body>
 </html>

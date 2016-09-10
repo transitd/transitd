@@ -132,7 +132,9 @@ function threadman.startThreadInFunction(modname, funcname, ...)
 	-- instead of running config code for each thread
 	local cjson_safe = require("cjson.safe")
 	local config_encoded = cjson_safe.encode(_G.config)
-	local args_encoded = cjson_safe.encode({...})
+	local configfile = _G.configfile
+	local arg_encoded = cjson_safe.encode(_G.arg)
+	local funcargs_encoded = cjson_safe.encode({...})
 	
 	return threadman.startThread(function()
 		-- luaproc doesn't load everything by default
@@ -148,10 +150,12 @@ function threadman.startThreadInFunction(modname, funcname, ...)
 		-- restore config global
 		local cjson_safe = require("cjson.safe")
 		_G.config = cjson_safe.decode(config_encoded)
-		local args = cjson_safe.decode(args_encoded)
+		_G.configfile = configfile
+		_G.arg = cjson_safe.decode(arg_encoded)
+		local funcargs = cjson_safe.decode(funcargs_encoded)
 		
 		local threadman = require("threadman")
-		threadman.threadWrapper(modname, funcname, unpack(args))
+		threadman.threadWrapper(modname, funcname, unpack(funcargs))
 	end)
 end
 

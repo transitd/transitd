@@ -38,6 +38,10 @@ function rpcInterface.getInterface()
 		
 		info.authorized = authorized
 		
+		if authorized then
+			info.config = config
+		end
+		
 		info.gateway = config.gateway.enabled == "yes"
 		if info.gateway then
 			info.ipv6support = config.gateway.ipv6support == "yes"
@@ -293,6 +297,35 @@ function rpcInterface.getInterface()
 		end
 		
 		return { success = true, ["callId"] = callId }
+		
+	end,
+	
+	configure = function(settings)
+		
+		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		
+		local authorized, err = network.isAuthorizedIp(requestip)
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
+		if not authorized then
+			return { success = false, errorMsg = "Permission denied" }
+		end
+		
+		for setting, value in pairs(settings) do
+			local result, err = set_config(setting, value)
+			if err then
+				return { success = false, errorMsg = err }
+			end
+			threadman.notify({type = "config", ["setting"] = setting, ["value"] = value})
+		end
+		
+		save_config()
+		
+		threadman.notify({type = "exit", ["restart"] = true})
+		
+		return { success = true }
 		
 	end,
 	

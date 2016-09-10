@@ -17,6 +17,55 @@ local bit128 = require("bit128")
 local network = require("network")
 local random = require("random")
 
+local cjdnsTunnelEnabled = false
+
+function gateway.setup()
+	
+	if config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
+		
+		local interface, err = network.getIpv4TransitInterface()
+		if err then
+			error("Failed to determine IPv4 transit interface! Cannot start in gateway mode. ("..err..")")
+		end
+		if not interface then
+			error("Failed to determine IPv4 transit interface! Cannot start in gateway mode.")
+		end
+		
+		if config.gateway.ipv6support == "yes" then
+			
+			local interface, err = network.getIpv6TransitInterface()
+			if err then
+				error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file. ("..err..")")
+			end
+			if not interface then
+				error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file.")
+			end
+		end
+		
+		local tunnel = require("cjdnstools.tunnel")
+		local result, err = tunnel.gatewaySetup()
+		if err then
+			error("Failed to set up cjdns tunnel gateway: "..err)
+		end
+		
+		cjdnsTunnelEnabled = true
+	end
+	
+end
+
+function gateway.teardown()
+	
+	if cjdnsTunnelEnabled then
+		
+		local tunnel = require("cjdnstools.tunnel")
+		local result, err = tunnel.gatewayTeardown()
+		if err then
+			error("Failed to set up cjdns tunnel gateway: "..err)
+		end
+	end
+	
+end
+
 function gateway.allocateIpv4()
 	
 	-- come up with random ipv4 based on settings in config

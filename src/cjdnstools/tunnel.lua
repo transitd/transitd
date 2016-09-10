@@ -157,6 +157,8 @@ function tunnel.getInterface()
 	return interface
 end
 
+local tunnelSetup = {}
+
 function tunnel.gatewaySetup()
 	
 	local mode = config.gateway.routing
@@ -210,6 +212,10 @@ function tunnel.gatewaySetup()
 	if retval ~= 0 then
 		return nil, "Failed to set local IPv4 address"
 	end
+	
+	tunnelSetup["ipv4"] = ipv4
+	tunnelSetup["cidr4"] = cidr4
+	tunnelSetup["interface"] = interface
 	
 	-- determine transit interface
 	local transitIf4, err = network.getIpv4TransitInterface()
@@ -313,6 +319,24 @@ function tunnel.gatewaySetup()
 			
 		end
 	end
+	
+	return true, nil
+end
+
+function tunnel.gatewayTeardown()
+	
+	if tunnelSetup and tunnelSetup.ipv4 then
+		
+		-- set up cjdns interface ip address
+		local cmd = shell.escape({"ip","addr","del",network.ip2string(tunnelSetup.ipv4).."/"..tunnelSetup.cidr4,"dev",tunnelSetup.interface.name})
+		local retval = os.execute(cmd)
+		if retval ~= 0 then
+			return nil, "Failed to set local IPv4 address"
+		end
+		
+	end
+	
+	-- TODO: remove iptables rules
 	
 	return true, nil
 end

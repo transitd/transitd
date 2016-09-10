@@ -10,7 +10,8 @@ transitd web UI main js file
 
 */
 
-var serviceProxy = new rpc.ServiceProxy("/jsonrpc", {methods: ['nodeInfo','connectTo','disconnect','listGateways','pollCallStatus','listSessions','startScan','getGraphSince','status']});
+var serviceProxy = new rpc.ServiceProxy("/jsonrpc", {methods: ['nodeInfo','connectTo','disconnect','listGateways','pollCallStatus','listSessions','startScan','getGraphSince','status','configure']});
+var restarting = false;
 
 // proxy that wraps calls with showSpinner/hideSpinner pair
 var service = new Proxy(serviceProxy, {
@@ -26,6 +27,10 @@ var service = new Proxy(serviceProxy, {
 				arguments[0].onSuccess = function(a) { var retval; if(onSuccess) retval = onSuccess(a); hideSpinner(); return retval; }
 				arguments[0].onException = function(a) { var retval; if(onException) retval = onException(a); hideSpinner(); return retval; }
 			}
+			
+			// don't do anything if waiting for a restart
+			if(restarting)
+				return null;
 			
 			// run service proxy function
 			var retval = target[name].apply(this, arguments);
@@ -73,14 +78,56 @@ function nonBlockingCallWrapper(result, callback, timeout)
 
 function bootstrap()
 {
+	$(document).prop('title', nodeInfo.name);
+	$('.navbar-brand').text(nodeInfo.name);
+	
+	if(nodeInfo.gateway)
+	{
+		$('.gateway-hidden').addClass('hidden');
+		$('.subscriber-hidden').removeClass('hidden');
+	}
+	else
+	{
+		$('.subscriber-hidden').addClass('hidden');
+		$('.gateway-hidden').removeClass('hidden');
+	}
+	
+	if(nodeInfo.authorized)
+	{
+		$('.authorized-hidden').addClass('hidden');
+		$('.unauthorized-hidden').removeClass('hidden');
+	}
+	else
+	{
+		$('.unauthorized-hidden').addClass('hidden');
+		$('.authorized-hidden').removeClass('hidden');
+	}
+	
+	if(nodeInfo.gateway || !nodeInfo.authorized)
+		$("#gateways").remove();
+	else
+		$("#gateways").show();
+	
+	if(nodeInfo.authorized)
+		$("#sessions").show();
+	else
+		$("#sessions").remove();
+	
+	if(nodeInfo.config)
+		initConfiguration(nodeInfo.config);
+	
 	if($("#gateways").length>0)
 		reloadGateways();
+	
 	if($("#sessions").length>0)
 		reloadSessions();
+	
 	if($("#status").length>0)
 		reloadStatus();
+	
 	if($(".startScan").length>0)
 		$(".startScan").click(startScan);
+	
 	if($("#network").length>0)
 		startNetworkGraph();
 }
@@ -110,50 +157,6 @@ $(document).ready(function(){
 				if(result.success==true)
 				{
 					nodeInfo = result;
-					
-					$(document).prop('title', nodeInfo.name);
-					$('.navbar-brand').text(nodeInfo.name);
-					
-					if(nodeInfo.gateway)
-					{
-						$('.gateway-hidden').addClass('hidden');
-						$('.subscriber-hidden').removeClass('hidden');
-					}
-					else
-					{
-						$('.subscriber-hidden').addClass('hidden');
-						$('.gateway-hidden').removeClass('hidden');
-					}
-					
-					if(nodeInfo.authorized)
-					{
-						$('.authorized-hidden').addClass('hidden');
-						$('.unauthorized-hidden').removeClass('hidden');
-					}
-					else
-					{
-						$('.unauthorized-hidden').addClass('hidden');
-						$('.authorized-hidden').removeClass('hidden');
-					}
-					
-					if(nodeInfo.gateway || !nodeInfo.authorized)
-					{
-						$("#gateways").remove();
-					}
-					else
-					{
-						$("#gateways").show();
-					}
-					
-					if(nodeInfo.authorized)
-					{
-						$("#sessions").show();
-					}
-					else
-					{
-						$("#sessions").remove();
-					}
-					
 					bootstrap();
 				}
 				else
