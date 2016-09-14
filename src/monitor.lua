@@ -1,5 +1,5 @@
 --[[
-@file jsonrpc.lua
+@file monitor.lua
 @license The MIT License (MIT)
 @author Alex <alex@maximum.guru>
 @copyright 2016 Alex
