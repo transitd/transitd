@@ -18,9 +18,7 @@ local db = require("db")
 local threadman = require("threadman")
 local scanner = require("scanner")
 local socket = require("socket")
-
 local gateway = require("gateway")
-local gatewayEnabled = config.gateway.enabled == "yes";
 
 local start = true
 while start do
@@ -29,6 +27,8 @@ while start do
 	
 	db.prepareDatabase()
 	db.purge()
+	
+	local gatewayEnabled = config.gateway.enabled == "yes";
 	
 	-- configure gateway functionality
 	if gatewayEnabled then gateway.setup() end
