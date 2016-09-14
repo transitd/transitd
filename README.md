@@ -5,7 +5,7 @@ The goal of this package is to provide to gateway operators the ability to autom
 
 Emerging community mesh networks seek to provide free and open access to a network built by its users.  Implementations of such networks may not necessarily povide transit to the rest of the Internet.  Access to the traditional Internet has a recurring cost (paid to transit providers), which someone has to pay.  In the case where someone does pay for it, service type/quality may not suit all users.  This makes Internet access incompatible with the open/free nature of community networks.  In most cases, one cannot simply assume that access to such networks will grant them access to the traditional Internet.  There may be multiple available Internet gateways on a particular community network, some free of charge to use and some that may come at a cost.  In all cases, setting up connection to the traditional Internet through community network gateways is a manual process.  Transitd makes the process of getting and having Internet access via a community network easy.
 
-### Warning:  code in this repository is work in progress and currently not usable, feel free to contribute.
+### Warning:  code in this repository is work in progress
 
 ## Main Advantages
 Although it is possible for community network users to set up Internet connectivity on their networks manually, using this package has a number of advantages.
