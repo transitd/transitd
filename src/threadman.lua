@@ -19,9 +19,13 @@ function threadman.setup()
 	-- set number of worker threads, most not be too low or deadlocks will occur
 	luaproc.setnumworkers(20)
 	
+	-- init shared table
+	_G.sharedTable = {}
+	
 	-- create message channel (for passing messages between threads)
 	luaproc.newchannel("master")
 	
+	-- start message dispatcher thread
 	assert(luaproc.newproc(function()
 		
 		-- luaproc doesn't load everything by default
@@ -39,6 +43,8 @@ function threadman.setup()
 		local listeners = {}
 		local numListeners = 0
 		
+		_G.sharedTable = {}
+		
 		print("[dispatcher]", "started")
 		
 		local msg
@@ -53,6 +59,9 @@ function threadman.setup()
 					numListeners = numListeners - 1
 					print("[dispatcher]", "removed listener "..msg["name"])
 				end
+				if msg["type"] == "setShared" then
+					_G.sharedTable[msg["field"]] = msg["value"]
+				end
 				for name, listener in pairs(listeners) do
 					local doSend = false
 					if listener.types then
@@ -62,6 +71,9 @@ function threadman.setup()
 							end
 						end
 					else
+						doSend = true
+					end
+					if msg["type"] == "setShared" then
 						doSend = true
 					end
 					if doSend then
@@ -75,9 +87,26 @@ function threadman.setup()
 					end
 				end
 				if msg["type"] == "newListener" then
-					listeners[msg["name"]] = {name = msg["name"], types = msg["types"]}
+					
+					local name = msg["name"]
+					local types = msg["types"]
+					listeners[name] = {["name"] = name, ["types"] = types}
 					numListeners = numListeners + 1
 					print("[dispatcher]", "added listener "..msg["name"])
+					
+					-- propagate new shared table values to threads with new listeners
+					-- TODO: fix this so out of order messages don't confuse threads
+					for k,v in pairs(_G.sharedTable) do
+						local msg = {type="setShared", ["field"]=k, ["value"]=v}
+						-- TODO: catch errors
+						local emsg = cjson_safe.encode(msg)
+						-- send message in another thread to prevent deadlocks
+						luaproc.newproc(function()
+							local luaproc = require("luaproc")
+							luaproc.send(name, emsg)
+						end)
+					end
+					
 				end
 				if msg["type"] == "exit" then
 					doExit = true
@@ -134,6 +163,7 @@ function threadman.startThreadInFunction(modname, funcname, ...)
 	local config_encoded = cjson_safe.encode(_G.config)
 	local configfile = _G.configfile
 	local arg_encoded = cjson_safe.encode(_G.arg)
+	local sharedtable_encoded = cjson_safe.encode(_G.sharedTable)
 	local funcargs_encoded = cjson_safe.encode({...})
 	
 	return threadman.startThread(function()
@@ -152,6 +182,7 @@ function threadman.startThreadInFunction(modname, funcname, ...)
 		_G.config = cjson_safe.decode(config_encoded)
 		_G.configfile = configfile
 		_G.arg = cjson_safe.decode(arg_encoded)
+		_G.sharedTable = cjson_safe.decode(sharedtable_encoded)
 		local funcargs = cjson_safe.decode(funcargs_encoded)
 		
 		local threadman = require("threadman")
@@ -180,7 +211,7 @@ end
 
 function threadman.ThreadListener:listen(asynchronous)
 	asynchronous = asynchronous or false
-	local msg, err = nil, nil
+	local msg, err
 	if asynchronous then
 		msg, err = luaproc.receive(self.channel, true)
 	else
@@ -188,6 +219,11 @@ function threadman.ThreadListener:listen(asynchronous)
 	end
 	if msg ~= nil then
 		msg = cjson_safe.decode(msg)
+		
+		-- update shared table values
+		if msg["type"] == "setShared" then
+			_G.sharedTable[msg["field"]] = msg["value"]
+		end
 	end
 	return msg, err
 end
@@ -240,7 +276,16 @@ function threadman.waitForMessage(type, pollMsg)
 	threadman.unregisterListener(listener)
 	
 	return result, nil
+	
+end
 
+function threadman.setShared(field, value)
+	_G.sharedTable[field] = value
+	threadman.notify({type="setShared", ["field"]=field, ["value"]=value})
+end
+
+function threadman.getShared(field)
+	return _G.sharedTable[field]
 end
 
 return threadman
