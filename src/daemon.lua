@@ -74,6 +74,7 @@ while start do
 					print("[transitd]", msg["type"])
 					for k,v in pairs(msg) do
 						if k ~= "type" then
+							if type(v) == "table" then v = cjson_safe.encode(v) end
 							print("["..msg["type"].."]", k, v)
 						end
 					end
