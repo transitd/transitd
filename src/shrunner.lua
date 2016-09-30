@@ -70,4 +70,18 @@ function shrunner.run()
 	threadman.unregisterListener(listener)
 end
 
+function shrunner.execute(cmd)
+	local retval = os.execute(cmd)
+	threadman.notify({type = "shell", ["cmd"] = cmd, ["retval"] = retval})
+	return retval
+end
+
+function shrunner.popen(...)
+	local retval = {io.popen(...)}
+	local retvalnotify
+	if not retval[1] then retvalnotify = retval end
+	threadman.notify({type = "shell", ["popen"] = {...}, ["retval"] = retvalnotify})
+	return unpack(retval)
+end
+
 return shrunner
