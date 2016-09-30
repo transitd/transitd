@@ -463,16 +463,23 @@ function rpcInterface.status(authorized)
 	result.online = monitor.isOnline()
 	
 	if authorized then
+		
+		-- TODO: return all ips, not just one
+		
 		local if4, err = network.getIpv4TransitInterface()
 		if not err and if4 and #(if4.ipv4subnets) > 0 then
 			local subnet = if4.ipv4subnets[1]
-			result.ipv4 = {ip = network.ip2string(subnet[1]), cidr = subnet[2]}
+			if subnet then
+				result.ipv4 = {ip = network.ip2string(subnet[1]), cidr = subnet[2]}
+			end
 		end
 		
 		local if6, err = network.getIpv6TransitInterface()
 		if not err and if6 and #(if6.ipv6subnets) > 0 then
-			local subnet = if6.ipv4subnets[1]
-			result.ipv6 = {ip = network.ip2string(subnet[1]), cidr = subnet[2]}
+			local subnet = if6.ipv6subnets[1]
+			if subnet then
+				result.ipv6 = {ip = network.ip2string(subnet[1]), cidr = subnet[2]}
+			end
 		end
 	end
 	
