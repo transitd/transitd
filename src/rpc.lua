@@ -46,7 +46,7 @@ end
 function rpc.processBlockingCallMsg(msg)
 	local id = msg.callId
 	if msg.type=="nonblockingcall.complete" then
-		blockingCalls[id] = {callId = id, result = msg.result, msg.err}
+		blockingCalls[id] = {callId = id, result = msg.result, err = msg.err}
 	end
 end
 
@@ -61,7 +61,7 @@ function rpc.returnBlockingCallResult(id)
 		blockingCalls[id] = nil
 		return result, err
 	end
-	return nil
+	return nil, nil
 end
 
 -- a polling wrapper, this allows non-blocking json rpc
