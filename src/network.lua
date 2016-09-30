@@ -31,30 +31,47 @@ end
 
 -- takes string representation and returns internal representation
 function network.parseIp(ip)
+	
+	if ip == nil then return nil, "IP not specified" end
+	
 	local data, err = network.parseIpv4(ip)
 	if err then
 		data, err = network.parseIpv6(ip)
 	end
-	if err or not data then
-		return nil, "Failed to parse IP '"..ip.."'"
+	
+	if err then
+		return nil, "Failed to parse IP: "..err
+	elseif not data then
+		return nil, "Failed to parse IP"
 	end
+	
 	return data, nil
+	
 end
 
 -- takes string representation and returns internal representation and cidr
 function network.parseSubnet(subnet)
+
+	if subnet == nil then return nil, "Subnet not specified" end
+	
 	local data, err = network.parseIpv4Subnet(subnet)
 	if err then
 		data, err = network.parseIpv6Subnet(subnet)
 	end
-	if err or not data then
-		return nil, "Failed to parse subnet '"..subnet.."'"
+	
+	if err then
+		return nil, "Failed to parse subnet: "..err
+	elseif not data then
+		return nil, "Failed to parse subnet"
 	end
+	
 	return data, nil
 end
 
 -- takes string representation and returns internal representation
 function network.parseIpv4(ip)
+	
+	if ip == nil then return nil, "IP not specified" end
 	
 	ip = tostring(ip)
 	local matches = {ip:match("^(%d+)%.(%d+)%.(%d+)%.(%d+)$")}
@@ -75,6 +92,8 @@ end
 
 -- takes string representation and returns internal representation
 function network.parseIpv6(ip)
+	
+	if ip == nil then return nil, "IP not specified" end
 	
 	ip = tostring(ip)
 	local matches = {ip:match("^([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)(:?)([0-9a-f]*)$")}
@@ -153,6 +172,8 @@ end
 -- takes string representation of ip and cidr and returns internal representation and cidr
 function network.parseIpv4Subnet(subnet)
 	
+	if subnet == nil then return nil, "Subnet not specified" end
+	
 	local ip, cidr = subnet:match("^(%d+%.%d+%.%d+%.%d+)(/?%d*)$")
 	
 	if ip == nil and cidr == nil then return nil, "Not a valid subnet" end
@@ -177,6 +198,8 @@ end
 
 -- takes string representation of ip and cidr and returns internal representation and cidr
 function network.parseIpv6Subnet(subnet)
+	
+	if subnet == nil then return nil, "Subnet not specified" end
 	
 	local ip, cidr = subnet:match("^([0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*:?[0-9a-f]*)(/?%d*)$")
 	
@@ -305,7 +328,7 @@ end
 function network.getInterfaceIpv4subnets(interface)
 	interface = string.lower(interface)
 	
-	local ipcmd = io.popen(shell.escape({"ip", "addr", "show", interface}), 'r')
+	local ipcmd = shrunner.popen(shell.escape({"ip", "addr", "show", interface}), 'r')
 	
 	if not ipcmd then 
 		return nil, "Failed to get IPv4 address for interface "..interface
@@ -416,7 +439,7 @@ end
 
 function network.getIpv4TransitInterface()
 	
-	local ipcmd = io.popen("ip route show", 'r')
+	local ipcmd = shrunner.popen("ip route show", 'r')
 	
 	if not ipcmd then
 		return nil, "Failed to get routing table"
@@ -437,7 +460,7 @@ end
 
 function network.getIpv6TransitInterface()
 	
-	local ipcmd = io.popen("ip -6 route show", 'r')
+	local ipcmd = shrunner.popen("ip -6 route show", 'r')
 	
 	if not ipcmd then
 		return nil, "Failed to get routing table"
@@ -474,7 +497,7 @@ function network.ping4(addr)
 	
 	for k,i in pairs({1,2,3}) do
 		
-		local ipcmd = io.popen(shell.escape({"ping", "-c", i, "-s", 0, "-W", 1, addr}), 'r')
+		local ipcmd = shrunner.popen(shell.escape({"ping", "-c", i, "-s", 0, "-W", 1, addr}), 'r')
 		
 		if not ipcmd then
 			return nil, "Failed to execute ping"
@@ -512,7 +535,7 @@ function network.ping6(addr)
 	
 	for k,i in pairs({1,2,3}) do
 		
-		local ipcmd = io.popen(shell.escape({"ping6", "-c", i, "-s", 0, "-W", 1, addr}), 'r')
+		local ipcmd = shrunner.popen(shell.escape({"ping6", "-c", i, "-s", 0, "-W", 1, addr}), 'r')
 		
 		if not ipcmd then
 			return nil, "Failed to execute ping"
@@ -556,6 +579,13 @@ function network.setIpv4Forwading(value)
 	ipforward:write(tostring(value))
 	ipforward:close()
 	
+	-- TODO: determine if this is needed
+	--local cmd = shell.escape({"iptables","--append","FORWARD","-j","DROP"})
+	--local retval = shrunner.execute(cmd)
+	--if retval ~= 0 then
+	--	return nil, "iptables failed"
+	--end
+	
 	return true, nil
 end
 
@@ -568,6 +598,13 @@ function network.setIpv6Forwading(value)
 	
 	ipforward:write(tostring(value))
 	ipforward:close()
+	
+	-- TODO: determine if this is needed
+	--local cmd = shell.escape({"ip6tables","--append","FORWARD","-j","DROP"})
+	--local retval = shrunner.execute(cmd)
+	--if retval ~= 0 then
+	--	return nil, "iptables failed"
+	--end
 	
 	return true, nil
 end
