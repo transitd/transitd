@@ -26,10 +26,12 @@ function monitor.check()
 	if ol and (online == nil or online == false) then
 		online = true
 		threadman.notify({type = "goingOnline"})
+		threadman.setShared('online', online)
 	end
 	if not ol and (online == nil or online == true) then
 		online = false
 		threadman.notify({type = "goingOffline"})
+		threadman.setShared('online', online)
 	end
 	
 	if ol ~= nil then
@@ -40,11 +42,7 @@ end
 function monitor.isOnline()
 	
 	if online == nil then
-		
-		local result, err = threadman.waitForMessage("onlineStatus", {type = "onlineStatusQuery"})
-		if err then return nil, err end
-		return result["online"], nil
-		
+		return threadman.getShared('online'), nil;
 	else
 		return online, nil
 	end
