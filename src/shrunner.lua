@@ -9,9 +9,7 @@
 local shrunner = {}
 
 local config = require("config")
-
 local shell = require("lib.shell")
-local db = require("db")
 local threadman = require("threadman")
 
 function shrunner.run()
@@ -36,6 +34,7 @@ function shrunner.run()
 				if msg.type=="connected" then exe = config.subscriber.onConnect end
 				if msg.type=="disconnected" then exe = config.subscriber.onDisconnect end
 				if exe and msg.sid then
+					local db = require("db")
 					local session = db.lookupSession(msg.sid)
 					if session and exe then
 						local sid = session.sid or "0"
@@ -57,7 +56,7 @@ function shrunner.run()
 				if exe then cmd = shell.escape({exe}) end
 			end
 			if cmd then
-				local result = os.execute(cmd)
+				local result = shrunner.execute(cmd)
 				if result then
 					threadman.notify({type = "info", module = "daemon", info = "Command `"..cmd.."` successfully executed"})
 				else
