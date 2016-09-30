@@ -16,24 +16,41 @@ transitd daemon main file
 local config = require("config")
 local db = require("db")
 local threadman = require("threadman")
-local scanner = require("scanner")
 local socket = require("socket")
 local gateway = require("gateway")
+local support = require("support")
+local cjson_safe = require("cjson.safe")
 
 local start = true
 while start do
 	
 	print("[transitd]", "starting up...")
 	
+	threadman.setup()
+	
+	-- TODO: set up SIGTERM callback
+	-- send shutdown message
+	-- threadman.notify({type="exit"})
+	
 	db.prepareDatabase()
 	db.purge()
+	
+	local suites = support.getSuites()
+	local suitesStr = ""
+	for name,suite in pairs(suites) do
+		if #suitesStr>0 then suitesStr = suitesStr.."," end
+		suitesStr = suitesStr..name
+	end
+	if suitesStr == "" then
+		print("[transitd]", "WARNING!!! There are no supported suites!")
+	else
+		print("[transitd]", "Supported suites: "..suitesStr)
+	end
 	
 	local gatewayEnabled = config.gateway.enabled == "yes";
 	
 	-- configure gateway functionality
 	if gatewayEnabled then gateway.setup() end
-	
-	threadman.setup()
 	
 	-- start conneciton manager
 	threadman.startThreadInFunction('conman', 'run')
@@ -44,12 +61,8 @@ while start do
 		threadman.startThreadInFunction('shrunner', 'run')
 	end
 	
-	-- start network scan if one hasn't already been started
-	scanner.startScan()
-	
-	-- TODO: set up SIGTERM callback
-	-- send shutdown message
-	-- threadman.notify({type="exit"})
+	-- start network scanner threads
+	threadman.startThreadInFunction('scanner', 'run')
 	
 	-- start http server
 	threadman.startThreadInFunction('httpd', 'run')

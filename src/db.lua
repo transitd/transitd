@@ -38,14 +38,14 @@ function db.prepareDatabase()
 	ip varchar(15), \
 	port INTEGER, \
 	last_seen_timestamp INTEGER, \
-	method varchar(64) \
+	suite varchar(64) \
 	)"))
 	
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS sessions( \
 	sid varchar(32) PRIMARY KEY, \
 	name varchar(255), \
 	subscriber INTEGER, \
-	method varchar(64), \
+	suite varchar(64), \
 	meshIP varchar(45), \
 	port INTEGER, \
 	internetIPv4 varchar(18), \
@@ -369,7 +369,7 @@ function db.getLastActiveSessions()
 	return list, nil
 end
 
-function db.registerGatewaySession(sid, name, method, meshIP, port)
+function db.registerGatewaySession(sid, name, suite, meshIP, port)
 	
 	local meshIP, err = network.canonicalizeIp(meshIP)
 	if err then return nil, err end
@@ -380,7 +380,7 @@ function db.registerGatewaySession(sid, name, method, meshIP, port)
 		.." sid"
 		..",name"
 		..",subscriber"
-		..",method"
+		..",suite"
 		..",meshIP"
 		..",port"
 		..",active"
@@ -397,7 +397,7 @@ function db.registerGatewaySession(sid, name, method, meshIP, port)
 		..")"
 		,dbc:escape(sid)
 		,dbc:escape(name)
-		,dbc:escape(method)
+		,dbc:escape(suite)
 		,meshIP~=nil and dbc:escape(meshIP) or ""
 		,tonumber(port)
 		,timestamp
@@ -461,7 +461,7 @@ function db.updateGatewaySession(sid, active, internetIPv4, internetIPv4gateway,
 	return true, nil
 end
 
-function db.registerSubscriberSession(sid, name, method, meshIP, port, internetIPv4, internetIPv4gateway, internetIPv6, internetIPv6gateway, timeout)
+function db.registerSubscriberSession(sid, name, suite, meshIP, port, internetIPv4, internetIPv4gateway, internetIPv6, internetIPv6gateway, timeout)
 	
 	local meshIP, err = network.canonicalizeIp(meshIP)
 	if err then return nil, err end
@@ -492,7 +492,7 @@ function db.registerSubscriberSession(sid, name, method, meshIP, port, internetI
 		.." sid"
 		..",name"
 		..",subscriber"
-		..",method"
+		..",suite"
 		..",meshIP"
 		..",port"
 		..",internetIPv4"
@@ -519,7 +519,7 @@ function db.registerSubscriberSession(sid, name, method, meshIP, port, internetI
 		..")"
 		,dbc:escape(sid)
 		,dbc:escape(name)
-		,dbc:escape(method)
+		,dbc:escape(suite)
 		,meshIP~=nil and dbc:escape(meshIP) or ""
 		,tonumber(port)
 		,internetIPv4~=nil and dbc:escape(internetIPv4) or ""
@@ -565,7 +565,7 @@ function db.getCjdnsSubscriberKey(sid)
 	if result and result.key then
 		return result.key, nil
 	else
-		return nil, "Sid not found"
+		return nil, "Sid cjdns key mapping not found"
 	end
 end
 
@@ -773,7 +773,7 @@ function db.getRecentNodes()
 	return list, nil
 end
 
-function db.registerGateway(name, ip, port, method)
+function db.registerGateway(name, ip, port, suite)
 	
 	local ip, err = network.canonicalizeIp(ip)
 	if err then return nil, err end
@@ -783,14 +783,14 @@ function db.registerGateway(name, ip, port, method)
 	local query
 	
 	-- TODO: fix race condition
-	local gateway = db.lookupGateway(ip, port, method)
+	local gateway = db.lookupGateway(ip, port, suite)
 	if gateway ~= nil then
 		query = string.format(
-			"UPDATE gateways SET last_seen_timestamp = '%d' WHERE ip = '%s' AND port = '%d' AND method = '%s'"
+			"UPDATE gateways SET last_seen_timestamp = '%d' WHERE ip = '%s' AND port = '%d' AND suite = '%s'"
 			,timestamp
 			,dbc:escape(ip)
 			,tonumber(port)
-			,dbc:escape(method)
+			,dbc:escape(suite)
 		)
 	else
 		query = string.format(
@@ -799,7 +799,7 @@ function db.registerGateway(name, ip, port, method)
 			..",ip"
 			..",port"
 			..",last_seen_timestamp"
-			..",method"
+			..",suite"
 			..") VALUES ("
 			.."'%s'"
 			..",'%s'"
@@ -811,7 +811,7 @@ function db.registerGateway(name, ip, port, method)
 			,dbc:escape(ip)
 			,tonumber(port)
 			,tonumber(timestamp)
-			,dbc:escape(method)
+			,dbc:escape(suite)
 		)
 	end
 	
@@ -822,12 +822,12 @@ function db.registerGateway(name, ip, port, method)
 	return true, nil
 end
 
-function db.lookupGateway(ip, port, method)
+function db.lookupGateway(ip, port, suite)
 	
 	local ip, err = network.canonicalizeIp(ip)
 	if err then return nil, err end
 	
-	local cur, err = dbc:execute(string.format("SELECT * FROM gateways WHERE ip = '%s' AND port = '%d' AND method = '%s'",dbc:escape(ip),tonumber(port),dbc:escape(method)))
+	local cur, err = dbc:execute(string.format("SELECT * FROM gateways WHERE ip = '%s' AND port = '%d' AND suite = '%s'",dbc:escape(ip),tonumber(port),dbc:escape(suite)))
 	if cur == nil then
 		return nil, err
 	end

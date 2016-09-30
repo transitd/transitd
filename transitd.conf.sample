@@ -47,21 +47,6 @@ maxConnections=10
 ; automatically disable users after this timeout
 subscriberTimeout=300
 
-; how routing should be set up
-; nat - set up NAT on gateway side
-; route - set up routing
-; none - don't set up routing
-routing=nat
-
-; subscriber address allocation
-addressAllocation=static
-
-; static address allocation subnets
-ipv4subnet=10.67.90.0/24
-ipv4gateway=10.67.90.1
-ipv6subnet=fdff:ffff::ff00/120
-ipv6gateway=fdff:ffff::ff01
-
 ; shell scripts to run on certain events
 ; arguments: "$sessionid" "$meshIp" "$ipv4" "$ipv4gateway" "$ipv6" "$ipv6gateway" "$interface"
 ; arguments are passed as '0' when no value is available
@@ -100,6 +85,21 @@ subscriberSupport=yes
 
 ; allow the use of built in cjdns tunnel function
 tunnelSupport=yes
+
+; how routing should be set up
+; nat - set up NAT on gateway side
+; route - set up routing
+; none - don't set up routing
+routing=nat
+
+; subscriber address allocation
+addressAllocation=static
+
+; static address allocation subnets
+ipv4subnet=10.67.90.0/24
+ipv4gateway=10.67.90.1
+ipv6subnet=fdff:ffff::ff00/120
+ipv6gateway=fdff:ffff::ff01
 
 
 [database]

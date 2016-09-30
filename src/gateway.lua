@@ -16,8 +16,11 @@ local bit32 = require("bit32")
 local bit128 = require("bit128")
 local network = require("network")
 local random = require("random")
+local support = require("support")
+local rpc = require("rpc")
+local threadman = require("threadman")
 
-local cjdnsTunnelEnabled = false
+local tunnelsEnabled = false
 
 function gateway.setup()
 	
@@ -42,40 +45,224 @@ function gateway.setup()
 			end
 		end
 		
-		local tunnel = require("cjdnstools.tunnel")
-		local result, err = tunnel.gatewaySetup()
-		if err then
-			error("Failed to set up cjdns tunnel gateway: "..err)
+		for tunmod,tun in pairs(support.getTunnels()) do
+			
+			local module = require("tunnels."..tun.module)
+			
+			if module.gatewaySetup then
+				local result, err = module.gatewaySetup()
+				if err then
+					error("Failed to set up tunnel module: "..err)
+				end
+			end
+			
 		end
 		
-		cjdnsTunnelEnabled = true
+		tunnelsEnabled = true
 	end
 	
 end
 
 function gateway.teardown()
 	
-	if cjdnsTunnelEnabled then
+	if tunnelsEnabled then
 		
-		local tunnel = require("cjdnstools.tunnel")
-		local result, err = tunnel.gatewayTeardown()
-		if err then
-			error("Failed to set up cjdns tunnel gateway: "..err)
+		for netmod,net in pairs(support.getTunnels()) do
+			
+			local module = require("tunnels."..net.module)
+			
+			if module['gatewayTeardown'] then
+				local result, err = module.gatewayTeardown()
+				if err then
+					error("Failed to tear down tunnel module: "..err)
+				end
+			end
+			
 		end
+		
 	end
 	
 end
 
-function gateway.allocateIpv4()
+function gateway.requestConnection(request, response)
 	
-	-- come up with random ipv4 based on settings in config
-	local subnet, err = network.parseIpv4Subnet(config.gateway.ipv4subnet)
+	-- check to make sure the user isn't already registered
+	local activeSubscriber, err = db.lookupActiveSubscriberSessionByIp(request.ip, request.port)
+	if err then
+		response.success = false response.errorMsg = err return response
+	end
+	if activeSubscriber ~= nil then
+		response.success = false response.errorMsg = "Already registered" response.temporaryError = true return response
+	end
+	
+	-- check maxclients config to make sure we are not registering more clients than needed
+	local activeSessions = db.getActiveSessions()
+	if #activeSessions >= config.gateway.maxConnections then
+		response.success = false response.errorMsg = "Too many sessions" response.temporaryError = true return response
+	end
+	
+	-- TODO: check ip reachability
+	
+	request.sid, err = gateway.allocateSid(request.sid)
+	if err ~= nil then
+		response.success = false response.errorMsg = err response.temporaryError = true return response
+	end
+	
+	response.timeout = tonumber(config.gateway.subscriberTimeout)
+	
+	response.success = true
+	
+	return response
+end
+
+function gateway.requestConnectionCommit(request, response)
+	
+	local result, err = db.registerSubscriberSession(request.sid, request.name, request.suite, request.ip, request.port, response.ipv4, response.ipv4gateway, response.ipv6, response.ipv6gateway, response.timeout)
+	if err then
+		threadman.notify({type = "error", module = "gateway", ["function"] = "renewConnectionCommit", ["request"] = request, ["response"] = response, ["error"] = err, ["result"] = result})
+	end
+	
+	threadman.notify({type = "registered", ["request"] = request, ["response"] = response})
+	
+	response.success = true
+	
+	return response
+end
+
+function gateway.renewConnection(request, response)
+	response.timeout = config.gateway.subscriberTimeout
+	response.success = true
+	return response
+end
+
+function gateway.renewConnectionAbort(request, response)
+	response.timeout = nil
+	return response
+end
+
+function gateway.renewConnectionCommit(request, response)
+	
+	local result, err = db.updateSessionTimeout(request.sid, response.timeout)
+	if err then
+		threadman.notify({type = "error", module = "gateway", ["function"] = "renewConnectionCommit", ["request"] = request, ["response"] = response, ["error"] = err, ["result"] = result})
+	end
+	
+	threadman.notify({type = "renewed", ["request"] = request, ["response"] = response})
+	
+	response.success = true
+	
+	return response
+end
+
+function gateway.releaseConnectionCommit(request, response)
+	
+	local result, err = db.deactivateSession(request.sid)
+	if err then
+		threadman.notify({type = "error", module = "gateway", ["function"] = "releaseConnectionCommit", ["request"] = request, ["response"] = response, ["error"] = err, ["result"] = result})
+	end
+	
+	threadman.notify({type = "released", ["request"] = request, ["response"] = response})
+	
+	response.success = true
+	
+	return response
+end
+
+function gateway.connect(request, response)
+	
+	local sid, err = gateway.allocateSid(request.sid)
+	if err then
+		response.success = false response.errorMsg = err response.temporaryError = true return response
+	end
+	
+	response.sid = sid
+	
+	if request.sid == nil then
+		request.sid = sid
+	elseif request.sid ~= response.sid then
+		response.success = false response.errorMsg = "Session ID mismatch" return response
+	end
+	
+	local result, err = db.registerGatewaySession(request.sid, request.name, request.suite, request.ip, request.port)
+	if err then
+		response.success = false response.errorMsg = err response.temporaryError = true return response
+	end
+	
+	local proxy = rpc.getProxy(request.ip, request.port)
+	
+	local result, err = proxy.requestConnection(request.sid, config.main.name, config.daemon.rpcport, request.gatewaySuite, request.options)
+	if err then
+		response.success = false response.errorMsg = err return response
+	elseif result.errorMsg then
+		response.success = false response.errorMsg = result.errorMsg return response
+	elseif result.success == false then
+		response.success = false response.errorMsg = "Unknown error" return response
+	end
+	
+	response.gatewayResponse = result
+	
+	response.success = true
+	
+	return response
+end
+
+function gateway.connectAbort(request, response)
+	response.sid = nil
+	return response
+end
+
+function gateway.connectCommit(request, response)
+	
+	db.updateGatewaySession(response.sid, true, response.gatewayResponse.ipv4, response.gatewayResponse.ipv4gateway, response.gatewayResponse.ipv6, response.gatewayResponse.ipv6gateway, response.gatewayResponse.timeout)
+	threadman.notify({type = "connected", ["request"] = request, ["response"] = response})
+	
+	return response
+end
+
+function gateway.disconnect(request, response)
+	
+	local session, err = db.lookupSession(request.sid)
+	if err then
+		response.success = false response.errorMsg = err return response
+	end
+	
+	-- notify the gateway
+	local ip = session.meshIP
+	local port = session.port
+	local proxy = rpc.getProxy(ip, port)
+	local result = proxy.releaseConnection(request.sid)
+	if type(result) ~= "table" or not result.success then
+		threadman.notify({type = "error", module = "gateway", ["function"] = "disconnect", ["request"] = request, ["response"] = response, ["error"] = "Release call unsuccessful", ["result"] = result})
+	end
+	
+	response.success = true
+	
+	return response
+end
+
+
+function gateway.disconnectCommit(request, response)
+	
+	local result, err = db.deactivateSession(request.sid)
+	if err then
+		threadman.notify({type = "error", module = "gateway", ["function"] = "disconnectCommit", ["request"] = request, ["response"] = response, ["error"] = err, ["result"] = result})
+	end
+	
+	threadman.notify({type = "disconnected", ["request"] = request, ["response"] = response})
+	
+	return response
+end
+
+-- come up with an ipv4 addr within a subnet
+function gateway.allocateIpv4(subnetStr, gatewayIpStr)
+	
+	local subnet, err = network.parseIpv4Subnet(subnetStr)
 	local prefixIp, cidr = unpack(subnet)
 	if err then
 		return nil, "Failed to parse ipv4subnet"
 	end
 	
-	local gatewayIp, err = network.parseIpv4(config.gateway.ipv4gateway)
+	local gatewayIp, err = network.parseIpv4(gatewayIpStr)
 	if err then
 		return nil, "Failed to parse ipv4gateway"
 	end
@@ -114,25 +301,20 @@ function gateway.allocateIpv4()
 	return nil, "Failed to allocate IPv4"
 end
 
-function gateway.allocateIpv6()
+-- come up with an ipv6 addr within a subnet
+function gateway.allocateIpv6(subnetStr, gatewayIpStr)
 	
-	if not config.gateway.ipv6subnet
-	or not config.gateway.ipv6gateway then
-		return nil, nil
-	end
-	
-	local gatewayIp, err = network.parseIpv6(config.gateway.ipv6gateway)
-	if err then
-		return nil, "Failed to parse ipv6gateway"
-	end
-	gatewayIp = network.ip2string(gatewayIp)
-	
-	-- come up with random ipv4 based on settings in config
-	local subnet, err = network.parseIpv6Subnet(config.gateway.ipv6subnet)
+	local subnet, err = network.parseIpv6Subnet(subnetStr)
 	local prefixIp, cidr = unpack(subnet)
 	if err then
 		return nil, "Failed to parse ipv6subnet"
 	end
+	
+	local gatewayIp, err = network.parseIpv6(gatewayIpStr)
+	if err then
+		return nil, "Failed to parse ipv6gateway"
+	end
+	gatewayIp = network.ip2string(gatewayIp)
 	
 	local prefixMask = network.Ipv6cidrToBinaryMask(cidr)
 	local prefixAddr = bit128.band(network.ip2binary(prefixIp), prefixMask)

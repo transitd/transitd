@@ -10,7 +10,7 @@ transitd web UI main js file
 
 */
 
-var serviceProxy = new rpc.ServiceProxy("/jsonrpc", {methods: ['nodeInfo','connectTo','disconnect','listGateways','pollCallStatus','listSessions','startScan','getGraphSince','status','configure']});
+var serviceProxy = new rpc.ServiceProxy("/jsonrpc", {methods: ['nodeInfo','connect','disconnect','listGateways','pollCallStatus','listSessions','startScan','getGraphSince','status','configure']});
 var restarting = false;
 
 // proxy that wraps calls with showSpinner/hideSpinner pair

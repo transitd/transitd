@@ -18,7 +18,7 @@ function startScan()
 			nonBlockingCallWrapper(result, function(result) {
 				if(result.success==true)
 				{
-					logAppendMessage('success', "Started scan "+result.scanId);
+					logAppendMessage('success', "Scan started");
 					loadNetworkGraph();
 				}
 				else

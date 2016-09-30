@@ -25,7 +25,7 @@ if optarg.l then
 		print(error)
 	else
 		for k,v in pairs (gateways) do
-		   print(v.name.." ( "..v.ip.." port "..v.port.." ) {method:"..v.method.."}")
+		   print(v.name.." ( "..v.ip.." port "..v.port.." ) {suite:"..v.suite.."}")
 		end
 	end
 end
@@ -61,7 +61,7 @@ if optarg.c then
 		port = tonumber(optarg.p)
 	end
 	
-	local result, err = daemon.connectTo(ip, port, "cjdns")
+	local result, err = daemon.connect(ip, port, "cjdns")
 	if err then
 		print("Failed: " .. err)
 	else
@@ -120,7 +120,7 @@ if optarg.s then
 		if result.success ~= true then
 			print("Failed: " .. result.errorMsg)
 		else
-			print("Scan "..result.scanId.." started successfully.")
+			print("Scan started successfully.")
 		end
 	end
 	

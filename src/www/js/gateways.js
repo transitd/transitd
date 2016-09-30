@@ -14,19 +14,19 @@ function clearGatewayList() {
 	$("#gateways tbody").empty();
 }
 
-function insertGateway(name, ip, port, method)
+function insertGateway(name, ip, port, suite)
 {
 	var row = $( "<tr>"
 				+"<td class='name'></td>"
 				+"<td class='ip'></td>"
 				+"<td class='port'></td>"
-				+"<td class='method'></td>"
+				+"<td class='suite'></td>"
 				+"<td><button class='connect btn btn-primary' id='connect'>Connect</button></td>"
 				+"</tr>");
 	row.find(".name").text(name);
 	row.find(".ip").text(ip);
 	row.find(".port").text(port);
-	row.find(".method").text(method);
+	row.find(".suite").text(suite);
 	var session;
 	jQuery.each(activeSessions, function(i, s){
 		if(s.meshIP==ip)
@@ -39,9 +39,7 @@ function insertGateway(name, ip, port, method)
 		row.find(".connect").click(function(e) {
 			e.preventDefault();
 			$(this).hide();
-			connectTo(ip, port, method, function(){
-
-			});
+			connectToGateway(ip, port, suite, function(){ });
 		});
 	}
 	
@@ -74,7 +72,7 @@ function reloadGateways()
 							insertGateway(gateway.name,
 										  gateway.ip,
 										  gateway.port,
-										  gateway.method);
+										  gateway.suite);
 						}
 				}
 				else

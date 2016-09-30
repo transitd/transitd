@@ -33,9 +33,9 @@ function shrunner.run()
 				if msg.type=="released" then exe = config.gateway.onRelease end
 				if msg.type=="connected" then exe = config.subscriber.onConnect end
 				if msg.type=="disconnected" then exe = config.subscriber.onDisconnect end
-				if exe and msg.sid then
+				if exe and msg.response.sid then
 					local db = require("db")
-					local session = db.lookupSession(msg.sid)
+					local session = db.lookupSession(msg.response.sid)
 					if session and exe then
 						local sid = session.sid or "0"
 						local meshIp = session.meshIP or "0"
@@ -43,7 +43,7 @@ function shrunner.run()
 						local ipv4gateway = session.internetIPv4gateway or "0"
 						local ipv6 = session.internetIPv6 or "0"
 						local ipv6gateway = session.internetIPv6gateway or "0"
-						local interface = msg.interface or "0"
+						local interface = msg.response.interface or "0"
 						cmd = shell.escape({exe, sid, meshIp, ipv4, ipv4gateway, ipv6, ipv6gateway, interface})
 					end
 				end

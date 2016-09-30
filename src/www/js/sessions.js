@@ -16,13 +16,13 @@ function clearSessionList() {
 	$("#sessions tbody").empty();
 }
 
-function insertSession(sid, name, meshIP, port, method, internetIPv4, internetIPv6, timeout_timestamp)
+function insertSession(sid, name, meshIP, port, suite, internetIPv4, internetIPv6, timeout_timestamp)
 {
 	var sRow = $( "<tr>"
 				+"<td class='name'></td>"
 				+"<td class='meshIP'></td>"
 				+"<td class='port'></td>"
-				+"<td class='method'></td>"
+				+"<td class='suite'></td>"
 				+"<td class='internetIPv4'></td>"
 				+"<td class='internetIPv6'></td>"
 				+"<td class='timeout_timestamp'></td>"
@@ -31,7 +31,7 @@ function insertSession(sid, name, meshIP, port, method, internetIPv4, internetIP
 	sRow.find(".name").text(name);
 	sRow.find(".meshIP").text(meshIP);
 	sRow.find(".port").text(port);
-	sRow.find(".method").text(method);
+	sRow.find(".suite").text(suite);
 	sRow.find(".internetIPv4").text(internetIPv4);
 	sRow.find(".internetIPv6").text(internetIPv6);
 	sRow.find(".timeout_timestamp").text(timeout_timestamp);
@@ -70,7 +70,7 @@ function reloadSessions()
 										  activeSession.name,
 										  activeSession.meshIP,
 										  activeSession.port,
-										  activeSession.method,
+										  activeSession.suite,
 										  activeSession.internetIPv4,
 										  activeSession.internetIPv6,
 										  activeSession.timeout_timestamp);

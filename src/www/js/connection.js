@@ -10,10 +10,10 @@ transitd web UI connection js file
 
 */
 
-function connectTo(ip, port, method, successCallback, failureCallback)
+function connectToGateway(ip, port, suite, successCallback, failureCallback)
 {
-	service.connectTo({
-		params: [ip, port, method],
+	service.connect({
+		params: [ip, port, suite],
 		onSuccess: function(result) {
 			nonBlockingCallWrapper(result, function(result) {
 				if(result.success==true)
