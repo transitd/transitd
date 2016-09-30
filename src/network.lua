@@ -11,6 +11,7 @@ local network = {}
 local bit32 = require("bit32")
 local bit128 = require("bit128")
 local shell = require("lib.shell")
+local shrunner = require("shrunner")
 
 -- There are 3 different representations for IPs
 -- 1. internal {192,168,1,1} and ipv6 {255,...........}
@@ -588,6 +589,158 @@ function network.isAuthorizedIp(ip)
 	end
 	
 	return false, nil
+end
+
+function network.setInterfaceIp(interface, subnet)
+	
+	local ip, cidr = unpack(subnet)
+	ip = network.ip2string(ip)
+	cidr = tostring(cidr)
+	
+	local cmd = shell.escape({"ip", "addr", "add", ip.."/"..cidr, "dev", interface.name})
+	local retval = shrunner.execute(cmd)
+	if retval ~= 0 then
+		return nil, "Failed to add interface IP address"
+	end
+	
+	return true, nil
+end
+
+function network.unsetInterfaceIp(interface, subnet)
+	
+	local ip, cidr = unpack(subnet)
+	ip = network.ip2string(ip)
+	cidr = tostring(cidr)
+	
+	local cmd = shell.escape({"ip", "addr", "del", ip.."/"..cidr, "dev", interface.name})
+	local retval = shrunner.execute(cmd)
+	if retval ~= 0 then
+		return nil, "Failed to remove interface IP address"
+	end
+	
+	return true, nil
+end
+
+function network.setRoute(interface, subnet)
+	
+	local ip, cidr = unpack(subnet)
+	
+	local v6 = #ip > 4
+	
+	ip = network.ip2string(ip)
+	cidr = tostring(cidr)
+	
+	if v6 then
+		cmd = shell.escape({"ip", "-6", "route", "add", ip.."/"..cidr, "dev", interface.name})
+	else
+		cmd = shell.escape({"ip", "route", "add", ip.."/"..cidr, "dev", interface.name})
+	end
+	
+	local retval = shrunner.execute(cmd)
+	if retval ~= 0 then
+		return nil, "Failed to add route"
+	end
+	
+	return true, nil
+end
+
+function network.unsetRoute(interface, subnet)
+	
+	local ip, cidr = unpack(subnet)
+	
+	local v6 = #ip > 4
+	
+	ip = network.ip2string(ip)
+	cidr = tostring(cidr)
+	
+	if v6 then
+		cmd = shell.escape({"ip", "-6", "route", "del", ip.."/"..cidr, "dev", interface.name})
+	else
+		cmd = shell.escape({"ip", "route", "del", ip.."/"..cidr, "dev", interface.name})
+	end
+	
+	local retval = shrunner.execute(cmd)
+	if retval ~= 0 then
+		return nil, "Failed to add route"
+	end
+	
+	return true, nil
+end
+
+function network.setDefaultRoute(interface, ip)
+	
+	local v6 = #ip > 4
+	
+	-- ignore errors
+	network.unsetDefaultRoute(v6)
+	
+	local cmd
+	
+	if v6 then
+		cmd = shell.escape({"ip", "-6", "route", "add", "default", "dev", interface.name})
+	else
+		cmd = shell.escape({"ip", "route", "add", "default", "dev", interface.name})
+	end
+	
+	local retval = shrunner.execute(cmd)
+	if retval ~= 0 then
+		return nil, "Failed to configure default route"
+	end
+	
+	return true, nil
+end
+
+function network.unsetDefaultRoute(v6)
+	
+	local retval
+	
+	if v6 then
+		retval = shrunner.execute("ip -6 route del default")
+	else
+		retval = shrunner.execute("ip route del default")
+	end
+	
+	if retval ~= 0 then
+		return nil, "Failed to remove default route"
+	end
+	
+	return true, nil
+end
+
+function network.setupNat4(interface, transitInterface)
+	
+	-- set up nat
+	local cmd = shell.escape({"iptables","--table","nat","--append","POSTROUTING","--out-interface",transitInterface.name,"-j","MASQUERADE"})
+	local retval = shrunner.execute(cmd)
+	if retval ~= 0 then
+		return nil, "iptables failed"
+	end
+	
+	local cmd = shell.escape({"iptables","--append","FORWARD","--in-interface",interface.name,"-j","ACCEPT"})
+	local retval = shrunner.execute(cmd)
+	if retval ~= 0 then
+		return nil, "iptables failed"
+	end
+	
+	return true, nil
+end
+
+function network.setupNat6(interface, transitInterface)
+	
+	-- set up nat
+	local cmd = shell.escape({"ip6tables","--table","nat","--append","POSTROUTING","--out-interface",transitInterface.name,"-j","MASQUERADE"})
+	local retval = shrunner.execute(cmd)
+	if retval ~= 0 then
+		return nil, "iptables failed"
+	end
+	
+	local cmd = shell.escape({"ip6tables","--append","FORWARD","--in-interface",interface.name,"-j","ACCEPT"})
+	local retval = shrunner.execute(cmd)
+	if retval ~= 0 then
+		return nil, "iptables failed"
+	end
+	
+	return true, nil
 end
 
 return network
