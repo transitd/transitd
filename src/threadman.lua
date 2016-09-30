@@ -51,7 +51,7 @@ function threadman.setup()
 		local doExit = false
 		while not doExit or numListeners > 0 do
 			msg = luaproc.receive("master")
-			print("[dispatcher]", "msg = "..msg)
+			print("[dispatcher]", "msg = "..tostring(msg))
 			msg = cjson_safe.decode(msg)
 			if msg ~= nil then
 				if msg["type"] == "removedListener" then
