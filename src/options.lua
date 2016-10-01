@@ -22,7 +22,7 @@ if clfile == "cli.lua" then
 	   set = "n",
 	}
 	
-	optarg, optind = alt_getopt.get_opts (_G.arg, "hf:lc:p:sn:d", long_opts)
+	optarg, optind = alt_getopt.get_opts (_G.arg, "hf:lc:m:p:sn:d", long_opts)
 	
 	if optarg.h or not (optarg.l or optarg.c or optarg.s or optarg.n or optarg.d) then
 		print("Welcome to transitd CLI tool.\n\
@@ -30,6 +30,7 @@ Program arguments: \
  -f, --config <path/to/config>   Load configuration file \
  -l                              List available gateways \
  -c <ip>                         Connect to a gateway \
+ -m <suite>                      Use a specific suite \
  -d                              Disconnect from the current gateway \
  -p <port>                       Use a specific gateway port \
  -n, --set <section.x=value>     Set a configuration value \

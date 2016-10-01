@@ -61,7 +61,13 @@ if optarg.c then
 		port = tonumber(optarg.p)
 	end
 	
-	local result, err = daemon.connect(ip, port, "cjdns")
+	if not optarg.m then
+		error("Suite must be specified")
+	end
+	
+	local suite = optarg.m
+	
+	local result, err = daemon.connect(ip, port, suite)
 	if err then
 		print("Failed: " .. err)
 	else
