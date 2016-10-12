@@ -49,9 +49,9 @@ cjdroute --nobg < /etc/cjdroute.conf >/var/log/cjdns.log 2>&1 \n\
 }
 
 # install transitd and patch dependencies
+COPY ./ /transitd/
 RUN { \
 	cd / && \
-	git clone --depth=1 https://github.com/intermesh-networks/transitd.git && \
 	patch -p0 /usr/local/share/lua/5.1/socket/http.lua /transitd/patches/luasocket-ipv6-fix.patch && \
 	patch -p0 /usr/local/share/lua/5.1/cgilua/post.lua /transitd/patches/cgilua-content-type-fix.patch && \
 	echo $'#!/bin/bash \n\
