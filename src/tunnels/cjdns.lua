@@ -471,10 +471,6 @@ function cjdns.gatewaySetup()
 	
 	-- IPv4
 	
-	-- set up kernel forwarding option
-	local success, err = network.setIpv4Forwading(1)
-	if err then return nil, err end
-	
 	-- determine cjdns interface
 	local interface, err = cjdnsNet.getInterface()
 	if err then return nil, err end
@@ -549,10 +545,6 @@ function cjdns.gatewaySetup()
 	-- IPv6
 	
 	if config.gateway.ipv6support == "yes" then
-		
-		-- set up kernel forwarding option
-		local success, err = network.setIpv6Forwading(1)
-		if err then return nil, err end
 		
 		local ipv6, cidr6, subnet6
 		if mode == "nat" then
@@ -634,6 +626,16 @@ function cjdns.gatewayTeardown()
 		local result, err = network.unsetInterfaceIp(tunnelSetup.interface, tunnelSetup.subnet4)
 		if err then
 			return nil, "Failed to unset local IPv4 address: "..err
+		end
+		
+	end
+	
+	if tunnelSetup and tunnelSetup.subnet6 then
+		
+		-- set up cjdns interface ip address
+		local result, err = network.unsetInterfaceIp(tunnelSetup.interface, tunnelSetup.subnet6)
+		if err then
+			return nil, "Failed to unset local IPv6 address: "..err
 		end
 		
 	end

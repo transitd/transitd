@@ -24,41 +24,50 @@ local tunnelsEnabled = false
 
 function gateway.setup()
 	
-	if config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes" then
+	local interface, err = network.getIpv4TransitInterface()
+	if err then
+		error("Failed to determine IPv4 transit interface! Cannot start in gateway mode. ("..err..")")
+	end
+	if not interface then
+		error("Failed to determine IPv4 transit interface! Cannot start in gateway mode.")
+	end
+	
+	if config.gateway.ipv6support == "yes" then
 		
-		local interface, err = network.getIpv4TransitInterface()
+		local interface, err = network.getIpv6TransitInterface()
 		if err then
-			error("Failed to determine IPv4 transit interface! Cannot start in gateway mode. ("..err..")")
+			error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file. ("..err..")")
 		end
 		if not interface then
-			error("Failed to determine IPv4 transit interface! Cannot start in gateway mode.")
+			error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file.")
 		end
+	end
+	
+	for tunmod,tun in pairs(support.getTunnels()) do
 		
-		if config.gateway.ipv6support == "yes" then
-			
-			local interface, err = network.getIpv6TransitInterface()
+		local module = require("tunnels."..tun.module)
+		
+		if module.gatewaySetup then
+			local result, err = module.gatewaySetup()
 			if err then
-				error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file. ("..err..")")
-			end
-			if not interface then
-				error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file.")
+				error("Failed to set up tunnel module: "..err)
 			end
 		end
 		
-		for tunmod,tun in pairs(support.getTunnels()) do
-			
-			local module = require("tunnels."..tun.module)
-			
-			if module.gatewaySetup then
-				local result, err = module.gatewaySetup()
-				if err then
-					error("Failed to set up tunnel module: "..err)
-				end
-			end
-			
-		end
+	end
+	
+	tunnelsEnabled = true
+	
+	-- set up kernel forwarding option
+	local success, err = network.setIpv4Forwading(1)
+	if err then return nil, err end
+	
+	if config.gateway.ipv6support == "yes" then
 		
-		tunnelsEnabled = true
+		-- set up kernel forwarding option
+		local success, err = network.setIpv6Forwading(1)
+		if err then return nil, err end
+		
 	end
 	
 end
