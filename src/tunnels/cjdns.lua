@@ -524,13 +524,13 @@ function cjdns.subscriberSetup(gatewayData)
 		
 		local ipv4gateway, err = network.parseIpv4(gatewayData.ipv4gateway)
 		if err then return nil, err end
-		local result, err = network.setDefaultRoute(interface, ipv4gateway)
+		local result, err = network.setDefaultRoute(interface, false)
 		if err then return nil, err end
 		
 		if gatewayData.ipv6gateway then
 			local ipv6gateway, err = network.parseIpv6(gatewayData.ipv6gateway)
 			if err then return nil, err end
-			local result, err = network.setDefaultRoute(interface, ipv6gateway)
+			local result, err = network.setDefaultRoute(interface, true)
 			if err then return nil, err end
 		end
 		

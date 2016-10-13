@@ -704,22 +704,39 @@ function network.unsetRoute(interface, subnet)
 	return true, nil
 end
 
-function network.setDefaultRoute(interface, ip)
-	
-	local v6 = #ip > 4
+function network.setDefaultRoute(interface, v6, gatewayIp)
 	
 	-- ignore errors
 	network.unsetDefaultRoute(v6)
 	
-	local cmd
+	local cmd = {"ip", "route", "add", "default"}
 	
-	if v6 then
-		cmd = shell.escape({"ip", "-6", "route", "add", "default", "dev", interface.name})
-	else
-		cmd = shell.escape({"ip", "route", "add", "default", "dev", interface.name})
+	if v6 then table.insert(cmd, 2, "-6") end
+	
+	if gatewayIp then
+		table.insert(cmd, "via")
+		table.insert(cmd, network.ip2string(gatewayIp))
 	end
 	
-	local retval = shrunner.execute(cmd)
+	table.insert(cmd, "dev")
+	table.insert(cmd, interface.name)
+	
+	local src, ifsubnets
+	if v6 then
+		ifsubnets = interface.ipv6subnets
+	else
+		ifsubnets = interface.ipv4subnets
+	end
+	for k,ifsubnet in pairs(ifsubnets) do
+		local addr, cidr = unpack(ifsubnet)
+		src = network.ip2string(addr)
+		break
+	end
+	
+	table.insert(cmd, "src")
+	table.insert(cmd, src)
+	
+	local retval = shrunner.execute(shell.escape(cmd))
 	if retval ~= 0 then
 		return nil, "Failed to configure default route"
 	end
