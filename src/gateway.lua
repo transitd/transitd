@@ -435,10 +435,10 @@ function gateway.interfaceSetup4(mode, interface, ipv4subnet, ipv4gateway)
 	end
 	
 	-- remove interface address if it is already set
-	network.unsetInterfaceIp(interface, subnet4)
+	network.unsetInterfaceIp(interface, {ipv4, cidr4})
 	
 	-- set up cjdns interface ip address
-	local result, err = network.setInterfaceIp(interface, subnet4)
+	local result, err = network.setInterfaceIp(interface, {ipv4, cidr4})
 	if err then
 		return nil, "Failed to set local IPv4 address: "..err
 	end
@@ -464,7 +464,7 @@ function gateway.interfaceSetup4(mode, interface, ipv4subnet, ipv4gateway)
 		
 	end
 	
-	return subnet4, nil
+	return {ipv4, cidr4}, nil
 end
 
 function gateway.interfaceTeardown4(interface, subnet4)
@@ -529,12 +529,12 @@ function gateway.interfaceSetup6(mode, interface, ipv6subnet, ipv6gateway)
 	end
 	
 	-- remove interface address if it is already set
-	network.unsetInterfaceIp(interface, subnet6)
+	network.unsetInterfaceIp(interface, {ipv6, cidr6})
 	
 	-- set up cjdns interface ip address
-	local result, err = network.setInterfaceIp(interface, subnet6)
+	local result, err = network.setInterfaceIp(interface, {ipv6, cidr6})
 	if err then
-		return nil, "Failed to set local IPv4 address: "..err
+		return nil, "Failed to set local IPv6 address: "..err
 	end
 	
 	if mode == "nat" then
@@ -558,10 +558,10 @@ function gateway.interfaceSetup6(mode, interface, ipv6subnet, ipv6gateway)
 		
 	end
 	
-	return subnet6, nil
+	return {ipv6, cidr6}, nil
 end
 
-function gateway.interfaceTeardown4(interface, subnet4)
+function gateway.interfaceTeardown6(interface, subnet6)
 	
 	-- set up cjdns interface ip address
 	local result, err = network.unsetInterfaceIp(interface, subnet6)
