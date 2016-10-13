@@ -36,10 +36,11 @@ function gateway.setup()
 		
 		local interface, err = network.getIpv6TransitInterface()
 		if err then
-			error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file. ("..err..")")
+			error("Failed to determine IPv6 transit interface! ("..err..")")
 		end
 		if not interface then
-			error("Failed to determine IPv6 transit interface! Please disable ipv6support in the configuration file.")
+			-- TODO: set up 6in4
+			return nil, "6in4 support unimplemented, no IPv6 transit available"
 		end
 	end
 	
@@ -266,10 +267,9 @@ end
 function gateway.allocateIpv4(subnetStr, gatewayIpStr)
 	
 	local subnet, err = network.parseIpv4Subnet(subnetStr)
+	if not subnet then return nil, "Failed to parse ipv4subnet" end
+	if err then return nil, "Failed to parse ipv4subnet: "..err end
 	local prefixIp, cidr = unpack(subnet)
-	if err then
-		return nil, "Failed to parse ipv4subnet"
-	end
 	
 	local gatewayIp, err = network.parseIpv4(gatewayIpStr)
 	if err then
@@ -314,10 +314,9 @@ end
 function gateway.allocateIpv6(subnetStr, gatewayIpStr)
 	
 	local subnet, err = network.parseIpv6Subnet(subnetStr)
+	if not subnet then return nil, "Failed to parse ipv6subnet" end
+	if err then return nil, "Failed to parse ipv6subnet: "..err end
 	local prefixIp, cidr = unpack(subnet)
-	if err then
-		return nil, "Failed to parse ipv6subnet"
-	end
 	
 	local gatewayIp, err = network.parseIpv6(gatewayIpStr)
 	if err then
@@ -385,5 +384,195 @@ function gateway.allocateSid(suggesteredSid)
 		return suggesteredSid, nil
 	end
 end
+
+-- sets up interface on gateway side to get it ready to forward packets
+-- returns gateway ip that should be supplied to subscribers
+function gateway.interfaceSetup4(mode, interface, ipv4subnet, ipv4gateway)
+	
+	mode = mode or "none"
+	
+	if mode == "none" then
+		return true, nil
+	end
+	
+	if mode ~= "nat" and mode ~= "route" then
+		return nil, "Unknown gateway routing mode "..mode
+	end
+	
+	-- determine ip that will be used on cjdns interface
+	local ipv4, cidr4, subnet4
+	if mode == "nat" then
+		subnet4, err = network.parseIpv4Subnet(ipv4subnet);
+		if err then
+			return nil, "Failed to parse IPv4 subnet: "..err
+		end
+		ipv4, err = network.parseIpv4(ipv4gateway);
+		if err then
+			return nil, "Failed to parse IPv4 gateway: "..err
+		end
+		
+		local ipv4prefix
+		ipv4prefix, cidr4 = unpack(subnet4)
+	end
+	if mode == "route" then
+		subnet4, err = gateway.allocateIpv4(ipv4subnet, ipv4gateway);
+		if err then
+			return nil, "Failed to allocate IPv4: "..err
+		end
+		if not subnet4 then
+			return nil, "Failed to allocate IPv4 for interface "..interface
+		end
+		ipv4, cidr4 = unpack(subnet4)
+	end
+	
+	-- determine transit interface
+	local transitInterface, err = network.getIpv4TransitInterface()
+	if err then
+		return nil, "Failed to determine IPv4 transit interface: "..err
+	end
+	if not transitInterface then
+		return nil, "Failed to determine IPv4 transit interface"
+	end
+	
+	-- remove interface address if it is already set
+	network.unsetInterfaceIp(interface, subnet4)
+	
+	-- set up cjdns interface ip address
+	local result, err = network.setInterfaceIp(interface, subnet4)
+	if err then
+		return nil, "Failed to set local IPv4 address: "..err
+	end
+	
+	if mode == "nat" then
+		
+		local result, err = network.setupNat4(interface, transitInterface)
+		if err then
+			return nil, "Failed to set up NAT: "..err
+		end
+		
+	end
+	
+	if mode == "route" then
+		
+		local prefixMask4 = network.Ipv4cidrToBinaryMask(cidr4)
+		local prefixAddr4 = bit32.band(network.ip2binary(ipv4), prefixMask4)
+		
+		local result, err = network.setRoute(interface, {prefixAddr4, cidr4})
+		if err then
+			return nil, "Failed to set up route: "..err
+		end
+		
+	end
+	
+	return subnet4, nil
+end
+
+function gateway.interfaceTeardown4(interface, subnet4)
+	
+	-- set up cjdns interface ip address
+	local result, err = network.unsetInterfaceIp(interface, subnet4)
+	if err then
+		return nil, "Failed to unset local IPv4 address: "..err
+	end
+	
+	-- TODO: remove nat / route
+	
+	return true, nil
+end
+
+-- sets up interface on gateway side to get it ready to forward packets
+-- returns gateway ip that should be supplied to subscribers
+function gateway.interfaceSetup6(mode, interface, ipv6subnet, ipv6gateway)
+	
+	mode = mode or "none"
+	
+	if mode == "none" then
+		return true, nil
+	end
+	
+	if mode ~= "nat" and mode ~= "route" then
+		return nil, "Unknown gateway routing mode "..mode
+	end
+	
+	local ipv6, cidr6, subnet6
+	if mode == "nat" then
+		subnet6, err = network.parseIpv6Subnet(ipv6subnet);
+		if err then
+			return nil, "Failed to parse IPv6 subnet: "..err
+		end
+		ipv6, err = network.parseIpv6(ipv6gateway);
+		if err then
+			return nil, "Failed to parse IPv6 gateway: "..err
+		end
+		
+		local ipv6prefix
+		ipv6prefix, cidr6 = unpack(subnet6)
+	end
+	if mode == "route" then
+		subnet6, err = gateway.allocateIpv6(ipv6subnet, ipv6gateway);
+		if err then
+			return nil, "Failed to allocate IPv6: "..err
+		end
+		if not subnet6 then
+			return nil, "Failed to allocate IPv6 for interface "..interface
+		end
+		ipv6, cidr6 = unpack(subnet6)
+	end
+	
+	-- determine transit interface
+	local transitInterface, err = network.getIpv6TransitInterface()
+	if err then
+		return nil, "Failed to determine IPv6 transit interface: "..err
+	end
+	if not transitInterface then
+		return nil, "Failed to determine IPv6 transit interface"
+	end
+	
+	-- remove interface address if it is already set
+	network.unsetInterfaceIp(interface, subnet6)
+	
+	-- set up cjdns interface ip address
+	local result, err = network.setInterfaceIp(interface, subnet6)
+	if err then
+		return nil, "Failed to set local IPv4 address: "..err
+	end
+	
+	if mode == "nat" then
+		
+		local result, err = network.setupNat6(interface, transitInterface)
+		if err then
+			return nil, "Failed to set up NAT: "..err
+		end
+		
+	end
+	
+	if mode == "route" then
+		
+		local prefixMask6 = network.Ipv6cidrToBinaryMask(cidr6)
+		local prefixAddr6 = bit128.band(network.ip2binary(ipv6), prefixMask6)
+		
+		local result, err = network.setRoute(interface, {prefixAddr6, cidr6})
+		if err then
+			return nil, "Failed to set up route: "..err
+		end
+		
+	end
+	
+	return subnet6, nil
+end
+
+function gateway.interfaceTeardown4(interface, subnet4)
+	
+	-- set up cjdns interface ip address
+	local result, err = network.unsetInterfaceIp(interface, subnet6)
+	if err then
+		return nil, "Failed to unset local IPv6 address: "..err
+	end
+	
+	-- TODO: remove nat / route
+	
+	return true, nil
+end
+
 
 return gateway
