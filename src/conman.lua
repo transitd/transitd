@@ -97,7 +97,7 @@ function conman.gatewayManager()
 	
 	for k, session in pairs(sessions) do
 		if session.subscriber == 0 and session.active == 1 then
-			if currentTimestamp > session.timeout_timestamp then
+			if currentTimestamp > session.timeoutTimestamp then
 				
 				local result, err = rpcInterface.disconnect(session.sid)
 				if err then
@@ -110,7 +110,7 @@ function conman.gatewayManager()
 					threadman.notify({type = "error", module = "conman", ["error"] = "Unknown error"})
 				end
 				
-			elseif currentTimestamp > session.timeout_timestamp-gracePeriod then
+			elseif currentTimestamp > session.timeoutTimestamp-gracePeriod then
 				
 				local proxy = rpc.getProxy(session.meshIP, session.port)
 				
@@ -124,8 +124,8 @@ function conman.gatewayManager()
 				elseif not result.success then
 					threadman.notify({type = "error", module = "conman", ["function"] = 'gatewayManager', ["error"] = "Unknown error"})
 				else
-					db.updateSessionTimeout(session.sid, result.timeout)
-					threadman.notify({type = "renewedGatewaySession", ["sid"] = session.sid, ["timeout"] = result.timeout})
+					db.updateSessionTimeout(session.sid, result.timeoutTimestamp)
+					threadman.notify({type = "renewedGatewaySession", ["sid"] = session.sid, ["timeoutTimestamp"] = result.timeoutTimestamp})
 				end
 			end
 		end

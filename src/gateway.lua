@@ -118,7 +118,8 @@ function gateway.requestConnection(request, response)
 		response.success = false response.errorMsg = err response.temporaryError = true return response
 	end
 	
-	response.timeout = tonumber(config.gateway.subscriberTimeout)
+	local timestamp = os.time()
+	response.timeoutTimestamp = timestamp + tonumber(config.gateway.subscriberTimeout)
 	
 	response.success = true
 	
@@ -127,7 +128,7 @@ end
 
 function gateway.requestConnectionCommit(request, response)
 	
-	local result, err = db.registerSubscriberSession(request.sid, request.name, request.suite, request.ip, request.port, response.ipv4, response.ipv4gateway, response.ipv6, response.ipv6gateway, response.timeout)
+	local result, err = db.registerSubscriberSession(request.sid, request.name, request.suite, request.ip, request.port, response.ipv4, response.ipv4gateway, response.ipv6, response.ipv6gateway, response.timeoutTimestamp)
 	if err then
 		threadman.notify({type = "error", module = "gateway", ["function"] = "renewConnectionCommit", ["request"] = request, ["response"] = response, ["error"] = err, ["result"] = result})
 	end
@@ -140,19 +141,20 @@ function gateway.requestConnectionCommit(request, response)
 end
 
 function gateway.renewConnection(request, response)
-	response.timeout = config.gateway.subscriberTimeout
+	local timestamp = os.time()
+	response.timeoutTimestamp = timestamp + tonumber(config.gateway.subscriberTimeout)
 	response.success = true
 	return response
 end
 
 function gateway.renewConnectionAbort(request, response)
-	response.timeout = nil
+	response.timeoutTimestamp = nil
 	return response
 end
 
 function gateway.renewConnectionCommit(request, response)
 	
-	local result, err = db.updateSessionTimeout(request.sid, response.timeout)
+	local result, err = db.updateSessionTimeout(request.sid, response.timeoutTimestamp)
 	if err then
 		threadman.notify({type = "error", module = "gateway", ["function"] = "renewConnectionCommit", ["request"] = request, ["response"] = response, ["error"] = err, ["result"] = result})
 	end
@@ -223,7 +225,7 @@ end
 
 function gateway.connectCommit(request, response)
 	
-	db.updateGatewaySession(response.sid, true, response.gatewayResponse.ipv4, response.gatewayResponse.ipv4gateway, response.gatewayResponse.ipv6, response.gatewayResponse.ipv6gateway, response.gatewayResponse.timeout)
+	db.updateGatewaySession(response.sid, true, response.gatewayResponse.ipv4, response.gatewayResponse.ipv4gateway, response.gatewayResponse.ipv6, response.gatewayResponse.ipv6gateway, response.gatewayResponse.timeoutTimestamp)
 	threadman.notify({type = "connected", ["request"] = request, ["response"] = response})
 	
 	return response

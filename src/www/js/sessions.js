@@ -16,7 +16,7 @@ function clearSessionList() {
 	$("#sessions tbody").empty();
 }
 
-function insertSession(sid, name, meshIP, port, suite, internetIPv4, internetIPv6, timeout_timestamp)
+function insertSession(sid, name, meshIP, port, suite, internetIPv4, internetIPv6, timeoutTimestamp)
 {
 	var sRow = $( "<tr>"
 				+"<td class='name'></td>"
@@ -25,7 +25,7 @@ function insertSession(sid, name, meshIP, port, suite, internetIPv4, internetIPv
 				+"<td class='suite'></td>"
 				+"<td class='internetIPv4'></td>"
 				+"<td class='internetIPv6'></td>"
-				+"<td class='timeout_timestamp'></td>"
+				+"<td class='timeoutTimestamp'></td>"
 				+"<td><button class='disconnect btn btn-primary' id='disconnect'>Disconnect</button></td>"
 				+"</tr>");
 	sRow.find(".name").text(name);
@@ -34,7 +34,7 @@ function insertSession(sid, name, meshIP, port, suite, internetIPv4, internetIPv
 	sRow.find(".suite").text(suite);
 	sRow.find(".internetIPv4").text(internetIPv4);
 	sRow.find(".internetIPv6").text(internetIPv6);
-	sRow.find(".timeout_timestamp").text(timeout_timestamp);
+	sRow.find(".timeoutTimestamp").text((new Date(timeoutTimestamp*1000)).toString());
 	sRow.find(".disconnect").click(function(e) {
 		e.preventDefault();
 		disconnect(sid);
@@ -73,7 +73,7 @@ function reloadSessions()
 										  activeSession.suite,
 										  activeSession.internetIPv4,
 										  activeSession.internetIPv6,
-										  activeSession.timeout_timestamp);
+										  activeSession.timeoutTimestamp);
 						}
 				}
 				else

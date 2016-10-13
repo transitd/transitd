@@ -23,7 +23,7 @@ function connectToGateway(ip, port, suite, successCallback, failureCallback)
 						message += "IPv4: "+result.ipv4+"\n";
 					if(result.ipv6)
 						message += "IPv6: "+result.ipv6+"\n";
-					message += "Timeout: "+result.timeout+"\n";
+					message += "Timeout: "+(new Date(result.gatewayResponse.timeoutTimestamp*1000)).toString()+"\n";
 					logAppendMessage('success', message);
 					if(successCallback)
 						successCallback();

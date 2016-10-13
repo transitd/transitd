@@ -75,11 +75,11 @@ if optarg.c then
 			print("Failed: " .. result.errorMsg)
 		else
 			print("Registered with " .. ip .. " port " .. port .. "!")
-			if result.ipv4        then print("IPv4:" .. result.ipv4)                        end
-			if result.ipv4gateway then print("IPv4 gateway:" .. result.ipv4gateway)         end
-			if result.ipv6        then print("IPv6:" .. result.ipv6)                        end
-			if result.ipv6gateway then print("IPv6 gateway:" .. result.ipv6gateway)         end
-			if result.timeout     then print("Timeout is " .. result.timeout .. " seconds") end
+			if result.ipv4             then print("IPv4:" .. result.ipv4)                        end
+			if result.ipv4gateway      then print("IPv4 gateway:" .. result.ipv4gateway)         end
+			if result.ipv6             then print("IPv6:" .. result.ipv6)                        end
+			if result.ipv6gateway      then print("IPv6 gateway:" .. result.ipv6gateway)         end
+			if result.timeoutTimestamp then print("Timeout is in " .. (result.timeoutTimestamp - result.registerTimestamp) .. " seconds") end
 		end
 	end
 end

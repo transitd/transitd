@@ -52,8 +52,8 @@ function db.prepareDatabase()
 	internetIPv4gateway varchar(15), \
 	internetIPv6 varchar(49), \
 	internetIPv6gateway varchar(45), \
-	register_timestamp INTEGER, \
-	timeout_timestamp INTEGER, active INTEGER \
+	registerTimestamp INTEGER, \
+	timeoutTimestamp INTEGER, active INTEGER \
 	)"))
 	
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS sessions_cjdns( \
@@ -355,7 +355,7 @@ end
 -- TODO: add purge function to remove records with expired last_seen_timestamp values
 
 function db.getLastActiveSessions()
-	local cur, err = dbc:execute("SELECT * FROM sessions WHERE active = 1 ORDER BY timeout_timestamp DESC")
+	local cur, err = dbc:execute("SELECT * FROM sessions WHERE active = 1 ORDER BY timeoutTimestamp DESC")
 	if cur == nil then
 		return nil, err
 	end
@@ -384,7 +384,7 @@ function db.registerGatewaySession(sid, name, suite, meshIP, port)
 		..",meshIP"
 		..",port"
 		..",active"
-		..",register_timestamp"
+		..",registerTimestamp"
 		..") VALUES ("
 		.."'%s'"
 		..",'%s'"
@@ -409,7 +409,7 @@ function db.registerGatewaySession(sid, name, suite, meshIP, port)
 	return true, nil
 end
 
-function db.updateGatewaySession(sid, active, internetIPv4, internetIPv4gateway, internetIPv6, internetIPv6gateway, timeout)
+function db.updateGatewaySession(sid, active, internetIPv4, internetIPv4gateway, internetIPv6, internetIPv6gateway, timeoutTimestamp)
 	
 	if internetIPv4 then
 		local err
@@ -442,8 +442,8 @@ function db.updateGatewaySession(sid, active, internetIPv4, internetIPv4gateway,
 		..((internetIPv4gateway==nil and "%s") or ",internetIPv4gateway = '%s'")
 		..((internetIPv6==nil and "%s") or ",internetIPv6 = '%s'")
 		..((internetIPv6gateway==nil and "%s") or ",internetIPv6gateway = '%s'")
-		..",register_timestamp = '%d'"
-		..",timeout_timestamp = '%d'"
+		..",registerTimestamp = '%d'"
+		..",timeoutTimestamp = '%d'"
 		.." WHERE sid = '%s'"
 		,act
 		,(internetIPv4==nil and "") or dbc:escape(internetIPv4)
@@ -451,7 +451,7 @@ function db.updateGatewaySession(sid, active, internetIPv4, internetIPv4gateway,
 		,(internetIPv6==nil and "") or dbc:escape(internetIPv6)
 		,(internetIPv6gateway==nil and "") or dbc:escape(internetIPv6gateway)
 		,timestamp
-		,timestamp+tonumber(timeout)
+		,tonumber(timeoutTimestamp)
 		,dbc:escape(sid)
 	)
 	local result, err = dbc:execute(query)
@@ -461,7 +461,7 @@ function db.updateGatewaySession(sid, active, internetIPv4, internetIPv4gateway,
 	return true, nil
 end
 
-function db.registerSubscriberSession(sid, name, suite, meshIP, port, internetIPv4, internetIPv4gateway, internetIPv6, internetIPv6gateway, timeout)
+function db.registerSubscriberSession(sid, name, suite, meshIP, port, internetIPv4, internetIPv4gateway, internetIPv6, internetIPv6gateway, timeoutTimestamp)
 	
 	local meshIP, err = network.canonicalizeIp(meshIP)
 	if err then return nil, err end
@@ -499,8 +499,8 @@ function db.registerSubscriberSession(sid, name, suite, meshIP, port, internetIP
 		..",internetIPv4gateway"
 		..",internetIPv6"
 		..",internetIPv6gateway"
-		..",register_timestamp"
-		..",timeout_timestamp"
+		..",registerTimestamp"
+		..",timeoutTimestamp"
 		..",active"
 		..") VALUES ("
 		.."'%s'"
@@ -527,7 +527,7 @@ function db.registerSubscriberSession(sid, name, suite, meshIP, port, internetIP
 		,internetIPv6~=nil and dbc:escape(internetIPv6) or ""
 		,internetIPv6gateway~=nil and dbc:escape(internetIPv6gateway) or ""
 		,timestamp
-		,timestamp+timeout
+		,tonumber(timeoutTimestamp)
 	)
 	local result, err = dbc:execute(query)
 	if result == nil then
@@ -590,9 +590,9 @@ function db.activateSession(sid)
 	return true, nil
 end
 
-function db.updateSessionTimeout(sid, timeout)
+function db.updateSessionTimeout(sid, timeoutTimestamp)
 	local timestamp = os.time()
-	local result, err = dbc:execute(string.format("UPDATE sessions SET timeout_timestamp = '%d' WHERE sid = '%s' AND active = 1", timestamp+tonumber(timeout), dbc:escape(sid)))
+	local result, err = dbc:execute(string.format("UPDATE sessions SET timeoutTimestamp = '%d' WHERE sid = '%s' AND active = 1", tonumber(timeoutTimestamp), dbc:escape(sid)))
 	if err ~= nil then
 		return false, err
 	end
@@ -613,7 +613,7 @@ function db.lookupActiveSubscriberSessionByIp(ip, port)
 	if err then return nil, err end
 	
  	local timestamp = os.time()
-	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND meshIP = '%s' AND port = '%d' AND '%d' <= timeout_timestamp AND active = 1", dbc:escape(ip), tonumber(port), timestamp))
+	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND meshIP = '%s' AND port = '%d' AND '%d' <= timeoutTimestamp AND active = 1", dbc:escape(ip), tonumber(port), timestamp))
 	if err then
 		return nil, err
 	end
@@ -631,7 +631,7 @@ function db.lookupActiveSubscriberSessionByInternetIp(ip)
 	if err then return nil, err end
 	
  	local timestamp = os.time()
-	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND (internetIPv4 = '%s' OR internetIPv6 = '%s') AND '%d' <= timeout_timestamp AND active = 1", dbc:escape(ip), dbc:escape(ip), timestamp))
+	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND (internetIPv4 = '%s' OR internetIPv6 = '%s') AND '%d' <= timeoutTimestamp AND active = 1", dbc:escape(ip), dbc:escape(ip), timestamp))
 	if err then
 		return nil, err
 	end
@@ -649,7 +649,7 @@ function db.getTimingOutSubscribers(sinceTimestamp)
 	if sinceTimestamp >= timestamp then
 		return nil, "Timestamp must be in the past"
 	end
-	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND '%d' <= timeout_timestamp AND timeout_timestamp < '%d' AND active = 1", sinceTimestamp, timestamp))
+	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE subscriber = 1 AND '%d' <= timeoutTimestamp AND timeoutTimestamp < '%d' AND active = 1", sinceTimestamp, timestamp))
 	if cur == nil then
 		return nil, err
 	end
@@ -665,7 +665,7 @@ end
 
 function db.getActiveSessions()
  	local timestamp = os.time()
-	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE '%d' <= timeout_timestamp AND active = 1", timestamp))
+	local cur, err = dbc:execute(string.format("SELECT * FROM sessions WHERE '%d' <= timeoutTimestamp AND active = 1", timestamp))
 	if cur == nil then
 		return nil, err
 	end
