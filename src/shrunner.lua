@@ -40,11 +40,14 @@ function shrunner.run()
 						local sid = session.sid or "0"
 						local meshIp = session.meshIP or "0"
 						local ipv4 = session.internetIPv4 or "0"
+						local cidr4 = session.internetIPv4cidr or "0"
 						local ipv4gateway = session.internetIPv4gateway or "0"
 						local ipv6 = session.internetIPv6 or "0"
+						local cidr6 = session.internetIPv6cidr or "0"
 						local ipv6gateway = session.internetIPv6gateway or "0"
-						local interface = msg.response.interface or "0"
-						cmd = shell.escape({exe, sid, meshIp, ipv4, ipv4gateway, ipv6, ipv6gateway, interface})
+						local interface4 = msg.response.interface4 or "0"
+						local interface6 = msg.response.interface6 or "0"
+						cmd = shell.escape({exe, sid, meshIp, ipv4, ipv4gateway, cidr4, ipv6, ipv6gateway, cidr6, interface4, interface6})
 					end
 				end
 			end

@@ -137,5 +137,14 @@ function cjdns.getMyIp()
 	end
 end
 
+function cjdns.connectInit(request, response)
+	
+	response.networkLocalIp = cjdns.getMyIp()
+	response.networkRemoteIp = request.ip
+	
+	response.success = true
+	
+	return response
+end
 
 return cjdns

@@ -304,9 +304,11 @@ end
 function network.getInterface(ifname)
 	
 	local ipv4subnets, err = network.getInterfaceIpv4subnets(ifname)
+	if err then return nil, err end
 	local ipv6subnets, err = network.getInterfaceIpv6subnets(ifname)
+	if err then return nil, err end
 	
-	return { ["name"] = ifname, ["ipv4subnets"] = ipv4subnets, ["ipv6subnets"] = ipv6subnets }
+	return { ["name"] = ifname, ["ipv4subnets"] = ipv4subnets, ["ipv6subnets"] = ipv6subnets }, nil
 end
 
 function network.getInterfaces()
@@ -318,7 +320,8 @@ function network.getInterfaces()
 	for l in procnetdev:lines() do
 		local ifname = string.match(string.lower(l), "^%s*(%w+):")
 		if ifname then
-			ifs[ifname] = network.getInterface(ifname)
+			local iface, err = network.getInterface(ifname)
+			if iface then ifs[ifname] = iface end
 		end
 	end
 	procnetdev:close()
@@ -449,7 +452,8 @@ function network.getIpv4TransitInterface()
 		local interface = string.match(string.lower(l), "^default%s.*dev%s([^%s]+)%s")
 		if interface then
 			ipcmd:close()
-			return network.getInterface(interface), nil
+			local iface, err = network.getInterface(interface)
+			if iface then return iface, nil end
 		end
 	end
 	
@@ -470,7 +474,8 @@ function network.getIpv6TransitInterface()
 		local interface = string.match(string.lower(l), "^default%s.*dev%s([^%s]+)%s")
 		if interface then
 			ipcmd:close()
-			return network.getInterface(interface), nil
+			local iface, err = network.getInterface(interface)
+			if iface then return iface, nil end
 		end
 	end
 	
@@ -796,5 +801,59 @@ function network.setupNat6(interface, transitInterface)
 	
 	return true, nil
 end
+
+function network.setupTunnel(interfaceName, mode, remoteIp, localIp)
+	
+	if #remoteIp ~= #localIp then
+		return nil, "ip version mismatch"
+	end
+	
+	netv6 = #remoteIp > 4
+	
+	local cmd = {"ip", "tunnel", "add", interfaceName, "mode", mode, "remote", network.ip2string(remoteIp), "local", network.ip2string(localIp)}
+	
+	if v6 then table.insert(cmd, 2, "-6") end
+	
+	local retval = shrunner.execute(shell.escape(cmd))
+	if retval ~= 0 then
+		return nil, "Failed to set up tunnel"
+	end
+	
+	return true, nil
+end
+
+function network.teardownTunnel(interface)
+	
+	local cmd = {"ip", "tunnel", "del", interfaceName}
+	local retval = shrunner.execute(shell.escape(cmd))
+	if retval ~= 0 then
+		return nil, "Failed to tear down tunnel"
+	end
+	
+	return true, nil
+end
+
+function network.upInterface(interface)
+	
+	local cmd = {"ip", "link", "set", "dev", interface.name, "up"}
+	local retval = shrunner.execute(shell.escape(cmd))
+	if retval ~= 0 then
+		return nil, "Failed to bring up interface"
+	end
+	
+	return true, nil
+end
+
+function network.downInterface(interface)
+	
+	local cmd = {"ip", "link", "set", "dev", interface.name, "down"}
+	local retval = shrunner.execute(shell.escape(cmd))
+	if retval ~= 0 then
+		return nil, "Failed to bring down interace"
+	end
+	
+	return true, nil
+end
+
 
 return network

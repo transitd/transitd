@@ -98,8 +98,28 @@ addressAllocation=static
 ; static address allocation subnets
 ipv4subnet=10.67.90.0/24
 ipv4gateway=10.67.90.1
-ipv6subnet=fdff:ffff::ff00/120
-ipv6gateway=fdff:ffff::ff01
+ipv6subnet=fdff:ffff::f000/120
+ipv6gateway=fdff:ffff::f001
+
+[ipip]
+
+; allow the use of ipip tunnels
+support=yes
+
+; how routing should be set up
+; nat - set up NAT on gateway side
+; route - set up routing
+; none - don't set up routing
+routing=nat
+
+; subscriber address allocation
+addressAllocation=static
+
+; static address allocation subnets
+ipv4subnet=10.67.91.0/24
+ipv4gateway=10.67.91.1
+ipv6subnet=fdff:ffff::f100/120
+ipv6gateway=fdff:ffff::f101
 
 
 [database]

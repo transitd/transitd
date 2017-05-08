@@ -118,6 +118,11 @@ function gateway.requestConnection(request, response)
 		response.success = false response.errorMsg = err response.temporaryError = true return response
 	end
 	
+	local result, err = db.registerSession(request.sid, true, request.name, request.suite, request.ip, request.port)
+	if err then
+		threadman.notify({type = "error", module = "gateway", ["function"] = "requestConnection", ["request"] = request, ["response"] = response, ["error"] = err, ["result"] = result})
+	end
+	
 	local timestamp = os.time()
 	response.timeoutTimestamp = timestamp + tonumber(config.gateway.subscriberTimeout)
 	
@@ -128,9 +133,9 @@ end
 
 function gateway.requestConnectionCommit(request, response)
 	
-	local result, err = db.registerSubscriberSession(request.sid, request.name, request.suite, request.ip, request.port, response.ipv4, response.ipv4gateway, response.ipv6, response.ipv6gateway, response.timeoutTimestamp)
+	local result, err = db.updateSession(request.sid, true, response.ipv4, response.cidr4, response.ipv4gateway, response.interface4, response.ipv6, response.cidr6, response.ipv6gateway, response.interface6, response.timeoutTimestamp)
 	if err then
-		threadman.notify({type = "error", module = "gateway", ["function"] = "renewConnectionCommit", ["request"] = request, ["response"] = response, ["error"] = err, ["result"] = result})
+		threadman.notify({type = "error", module = "gateway", ["function"] = "requestConnectionCommit", ["request"] = request, ["response"] = response, ["error"] = err, ["result"] = result})
 	end
 	
 	threadman.notify({type = "registered", ["request"] = request, ["response"] = response})
@@ -195,7 +200,7 @@ function gateway.connect(request, response)
 		response.success = false response.errorMsg = "Session ID mismatch" return response
 	end
 	
-	local result, err = db.registerGatewaySession(request.sid, request.name, request.suite, request.ip, request.port)
+	local result, err = db.registerSession(request.sid, false, request.name, request.suite, request.ip, request.port)
 	if err then
 		response.success = false response.errorMsg = err response.temporaryError = true return response
 	end
@@ -225,7 +230,7 @@ end
 
 function gateway.connectCommit(request, response)
 	
-	db.updateGatewaySession(response.sid, true, response.gatewayResponse.ipv4, response.gatewayResponse.ipv4gateway, response.gatewayResponse.ipv6, response.gatewayResponse.ipv6gateway, response.gatewayResponse.timeoutTimestamp)
+	db.updateSession(response.sid, true, response.gatewayResponse.ipv4, response.gatewayResponse.cidr4, response.gatewayResponse.ipv4gateway, response.interface4, response.gatewayResponse.ipv6, response.gatewayResponse.cidr6, response.gatewayResponse.ipv6gateway, response.interface6, response.gatewayResponse.timeoutTimestamp)
 	threadman.notify({type = "connected", ["request"] = request, ["response"] = response})
 	
 	return response
@@ -422,7 +427,7 @@ function gateway.interfaceSetup4(mode, interface, ipv4subnet, ipv4gateway)
 			return nil, "Failed to allocate IPv4: "..err
 		end
 		if not subnet4 then
-			return nil, "Failed to allocate IPv4 for interface "..interface
+			return nil, "Failed to allocate IPv4 for interface "..interface.name
 		end
 		ipv4, cidr4 = unpack(subnet4)
 	end
@@ -516,7 +521,7 @@ function gateway.interfaceSetup6(mode, interface, ipv6subnet, ipv6gateway)
 			return nil, "Failed to allocate IPv6: "..err
 		end
 		if not subnet6 then
-			return nil, "Failed to allocate IPv6 for interface "..interface
+			return nil, "Failed to allocate IPv6 for interface "..interface.name
 		end
 		ipv6, cidr6 = unpack(subnet6)
 	end

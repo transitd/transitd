@@ -13,22 +13,22 @@ local db = require("db")
 local cjdnsNet = require("networks.cjdns")
 local gateway = require("gateway")
 local shell = require("lib.shell")
+local threadman = require("threadman")
+local network = require("network")
 
 function cjdns.getName()
 	return "cjdns tunnel"
 end
 
-function cjdns.checkSupport(network, tunnel, payment)
+function cjdns.checkSupport(net, tun, pay)
 	local interface, err = cjdnsNet.getInterface()
 	return
 		not err and interface
 		and config.cjdns.gatewaySupport == "yes" and config.cjdns.tunnelSupport == "yes"
-		and network and network.module == "cjdns"
+		and net and net.module == "cjdns"
+		and tun and tun.module == "cjdns"
 end
 
-local threadman = require("threadman")
-local rpc = require("rpc")
-local network = require("network")
 
 function cjdns.requestConnection(request, response)
 	
@@ -78,7 +78,7 @@ function cjdns.requestConnection(request, response)
 	end
 	
 	local interface, err = cjdnsNet.getInterface()
-	if interface then response.interface = interface.name end
+	if interface then response.interface4 = interface.name response.interface6 = interface.name end
 	
 	response.success = true
 	
@@ -93,13 +93,14 @@ function cjdns.requestConnectionAbort(request, response)
 	response.ipv6 = nil
 	response.cidr6 = nil
 	response.ipv6gateway = nil
-	response.interface = nil
+	response.interface4 = nil
+	response.interface6 = nil
 	return response
 end
 
 function cjdns.requestConnectionCommit(request, response)
 	
-	db.registerSubscriberSessionCjdnsKey(request.sid, request.options.key)
+	db.registerSessionCjdnsKey(request.sid, request.options.key)
 	
 	local result, err = cjdns.addKey(response.key, response.ipv4, response.ipv6)
 	if err then
@@ -113,14 +114,14 @@ end
 
 function cjdns.releaseConnection(request, response)
 	
-	local key, err = db.getCjdnsSubscriberKey(request.sid)
+	local key, err = db.getSessionCjdnsKey(request.sid)
 	if err then
 		threadman.notify({type = "error", module = "tunnels.cjdns", ["function"] = "releaseConnection", ["request"] = request, ["response"] = response, error = err})
 		response.success = false response.errorMsg = "Error releasing connection: " .. err return response
 	end
 	
 	local interface, err = cjdnsNet.getInterface()
-	if interface then response.interface = interface.name end
+	if interface then response.interface4 = interface.name response.interface6 = interface.name end
 	
 	local mykey, err = cjdnsNet.getMyKey()
 	if err then
@@ -240,7 +241,7 @@ function cjdns.connect(request, response)
 	end
 	
 	local interface, err = cjdnsNet.getInterface()
-	if interface then response.interface = interface.name end
+	if interface then response.interface4 = interface.name response.interface6 = interface.name end
 	
 	response.success = true
 	
@@ -249,7 +250,7 @@ end
 
 function cjdns.connectCommit(request, response)
 	
-	db.registerSubscriberSessionCjdnsKey(request.sid, response.gatewayKey)
+	db.registerSessionCjdnsKey(request.sid, response.gatewayKey)
 	
 	local ret, err = cjdns.subscriberSetup(response.gatewayResponse)
 	if err then
@@ -264,7 +265,7 @@ end
 function cjdns.disconnect(request, response)
 	
 	local interface, err = cjdnsNet.getInterface()
-	if interface then response.interface = interface.name end
+	if interface then response.interface4 = interface.name response.interface6 = interface.name end
 	
 	response.success = true
 	
@@ -297,7 +298,7 @@ function cjdns.maintainConnection(session)
 		threadman.notify({type = "error", module = "cjdns", ["function"] = 'maintainConnection', error = err})
 	else
 		if session.active == 1 then
-			local key, err = db.getCjdnsSubscriberKey(session.sid)
+			local key, err = db.getSessionCjdnsKey(session.sid)
 			if err or not key then
 				threadman.notify({type = "error", module = "cjdns", ["function"] = 'maintainConnection', error = err})
 			else
@@ -459,13 +460,13 @@ local tunnelSetup = {}
 
 function cjdns.gatewaySetup()
 	
-	tunnelSetup.interface = interface
-	
 	local mode = config.cjdns.routing
 	
 	-- determine cjdns interface
 	local interface, err = cjdnsNet.getInterface()
 	if err then return nil, err end
+	
+	tunnelSetup.interface = interface
 	
 	local subnet4, err = gateway.interfaceSetup4(mode, interface, config.cjdns.ipv4subnet, config.cjdns.ipv4gateway)
 	if err then return nil, err end
@@ -507,7 +508,7 @@ function cjdns.gatewayTeardown()
 	return true, nil
 end
 
-function cjdns.subscriberSetup(gatewayData)
+function cjdns.subscriberSetup(session)
 	
 	local mode = config.subscriber.routing
 	
@@ -522,21 +523,17 @@ function cjdns.subscriberSetup(gatewayData)
 		
 		-- configure default route
 		
-		local ipv4gateway, err = network.parseIpv4(gatewayData.ipv4gateway)
-		if err then return nil, err end
 		local result, err = network.setDefaultRoute(interface, false)
 		if err then return nil, err end
 		
-		if gatewayData.ipv6gateway then
-			local ipv6gateway, err = network.parseIpv6(gatewayData.ipv6gateway)
-			if err then return nil, err end
+		if session.internetIPv6gateway then
 			local result, err = network.setDefaultRoute(interface, true)
 			if err then return nil, err end
 		end
 		
 	end
 	
-	return true
+	return true, nil
 end
 
 function cjdns.subscriberTeardown(session)

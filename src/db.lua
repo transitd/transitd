@@ -49,11 +49,16 @@ function db.prepareDatabase()
 	meshIP varchar(45), \
 	port INTEGER, \
 	internetIPv4 varchar(18), \
+	internetIPv4cidr INTEGER, \
 	internetIPv4gateway varchar(15), \
+	interface4 varchar(15), \
 	internetIPv6 varchar(49), \
+	internetIPv6cidr INTEGER, \
 	internetIPv6gateway varchar(45), \
+	interface6 varchar(15), \
 	registerTimestamp INTEGER, \
-	timeoutTimestamp INTEGER, active INTEGER \
+	timeoutTimestamp INTEGER, \
+	active INTEGER \
 	)"))
 	
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS sessions_cjdns( \
@@ -369,7 +374,9 @@ function db.getLastActiveSessions()
 	return list, nil
 end
 
-function db.registerGatewaySession(sid, name, suite, meshIP, port)
+function db.registerSession(sid, subscriber, name, suite, meshIP, port)
+	
+	if subscriber then subscriber = 1 else subscriber = 0 end
 	
 	local meshIP, err = network.canonicalizeIp(meshIP)
 	if err then return nil, err end
@@ -388,7 +395,7 @@ function db.registerGatewaySession(sid, name, suite, meshIP, port)
 		..") VALUES ("
 		.."'%s'"
 		..",'%s'"
-		..",0"
+		..",'%d'"
 		..",'%s'"
 		..(meshIP==nil and ",NULL%s" or ",'%s'")
 		..",'%d'"
@@ -397,6 +404,7 @@ function db.registerGatewaySession(sid, name, suite, meshIP, port)
 		..")"
 		,dbc:escape(sid)
 		,dbc:escape(name)
+		,tonumber(subscriber)
 		,dbc:escape(suite)
 		,meshIP~=nil and dbc:escape(meshIP) or ""
 		,tonumber(port)
@@ -409,12 +417,15 @@ function db.registerGatewaySession(sid, name, suite, meshIP, port)
 	return true, nil
 end
 
-function db.updateGatewaySession(sid, active, internetIPv4, internetIPv4gateway, internetIPv6, internetIPv6gateway, timeoutTimestamp)
+function db.updateSession(sid, active, internetIPv4, internetIPv4cidr, internetIPv4gateway, interface4, internetIPv6, internetIPv6cidr, internetIPv6gateway, interface6, timeoutTimestamp)
+	
+	if active then active = 1 else active = 0 end
 	
 	if internetIPv4 then
 		local err
 		internetIPv4, err = network.canonicalizeIp(internetIPv4)
 		if err then return nil, err end
+		if internetIPv4cidr == nil then return nil, "IPv4 CIDR is required" end
 	end
 	if internetIPv4gateway then
 		local err
@@ -425,6 +436,7 @@ function db.updateGatewaySession(sid, active, internetIPv4, internetIPv4gateway,
 		local err
 		internetIPv6, err = network.canonicalizeIp(internetIPv6)
 		if err then return nil, err end
+		if internetIPv6cidr == nil then return nil, "IPv6 CIDR is required" end
 	end
 	if internetIPv6gateway then
 		local err
@@ -433,23 +445,30 @@ function db.updateGatewaySession(sid, active, internetIPv4, internetIPv4gateway,
 	end
 	
 	local timestamp = os.time()
-	local act = 0
-	if active==true then act = 1 end
+	
 	local query = string.format(
 		"UPDATE sessions SET "
 		.." active = '%d'"
 		..((internetIPv4==nil and "%s") or ",internetIPv4 = '%s'")
+		..((internetIPv4cidr==nil and "%s") or ",internetIPv4cidr = '%d'")
 		..((internetIPv4gateway==nil and "%s") or ",internetIPv4gateway = '%s'")
+		..((interface4==nil and "%s") or ",interface4 = '%s'")
 		..((internetIPv6==nil and "%s") or ",internetIPv6 = '%s'")
+		..((internetIPv6cidr==nil and "%s") or ",internetIPv6cidr = '%d'")
 		..((internetIPv6gateway==nil and "%s") or ",internetIPv6gateway = '%s'")
+		..((interface6==nil and "%s") or ",interface6 = '%s'")
 		..",registerTimestamp = '%d'"
 		..",timeoutTimestamp = '%d'"
 		.." WHERE sid = '%s'"
-		,act
+		,tonumber(active)
 		,(internetIPv4==nil and "") or dbc:escape(internetIPv4)
+		,(internetIPv4cidr==nil and "") or tonumber(internetIPv4cidr)
 		,(internetIPv4gateway==nil and "") or dbc:escape(internetIPv4gateway)
+		,(interface4==nil and "") or dbc:escape(interface4)
 		,(internetIPv6==nil and "") or dbc:escape(internetIPv6)
+		,(internetIPv6cidr==nil and "") or tonumber(internetIPv6cidr)
 		,(internetIPv6gateway==nil and "") or dbc:escape(internetIPv6gateway)
+		,(interface6==nil and "") or dbc:escape(interface6)
 		,timestamp
 		,tonumber(timeoutTimestamp)
 		,dbc:escape(sid)
@@ -461,82 +480,7 @@ function db.updateGatewaySession(sid, active, internetIPv4, internetIPv4gateway,
 	return true, nil
 end
 
-function db.registerSubscriberSession(sid, name, suite, meshIP, port, internetIPv4, internetIPv4gateway, internetIPv6, internetIPv6gateway, timeoutTimestamp)
-	
-	local meshIP, err = network.canonicalizeIp(meshIP)
-	if err then return nil, err end
-	if internetIPv4 then
-		local err
-		internetIPv4, err = network.canonicalizeIp(internetIPv4)
-		if err then return nil, err end
-	end
-	if internetIPv4gateway then
-		local err
-		internetIPv4gateway, err = network.canonicalizeIp(internetIPv4gateway)
-		if err then return nil, err end
-	end
-	if internetIPv6 then
-		local err
-		internetIPv6, err = network.canonicalizeIp(internetIPv6)
-		if err then return nil, err end
-	end
-	if internetIPv6gateway then
-		local err
-		internetIPv6gateway, err = network.canonicalizeIp(internetIPv6gateway)
-		if err then return nil, err end
-	end
-	
-	local timestamp = os.time()
-	local query = string.format(
-		"INSERT INTO sessions ("
-		.." sid"
-		..",name"
-		..",subscriber"
-		..",suite"
-		..",meshIP"
-		..",port"
-		..",internetIPv4"
-		..",internetIPv4gateway"
-		..",internetIPv6"
-		..",internetIPv6gateway"
-		..",registerTimestamp"
-		..",timeoutTimestamp"
-		..",active"
-		..") VALUES ("
-		.."'%s'"
-		..",'%s'"
-		..",1"
-		..",'%s'"
-		..(meshIP==nil and ",NULL%s" or ",'%s'")
-		..",'%d'"
-		..(internetIPv4==nil and ",NULL%s" or ",'%s'")
-		..(internetIPv4gateway==nil and ",NULL%s" or ",'%s'")
-		..(internetIPv6==nil and ",NULL%s" or ",'%s'")
-		..(internetIPv6gateway==nil and ",NULL%s" or ",'%s'")
-		..",'%d'"
-		..",'%d'"
-		..",1"
-		..")"
-		,dbc:escape(sid)
-		,dbc:escape(name)
-		,dbc:escape(suite)
-		,meshIP~=nil and dbc:escape(meshIP) or ""
-		,tonumber(port)
-		,internetIPv4~=nil and dbc:escape(internetIPv4) or ""
-		,internetIPv4gateway~=nil and dbc:escape(internetIPv4gateway) or ""
-		,internetIPv6~=nil and dbc:escape(internetIPv6) or ""
-		,internetIPv6gateway~=nil and dbc:escape(internetIPv6gateway) or ""
-		,timestamp
-		,tonumber(timeoutTimestamp)
-	)
-	local result, err = dbc:execute(query)
-	if result == nil then
-		return nil, err
-	end
-	return true, nil
-end
-
-function db.registerSubscriberSessionCjdnsKey(sid, key)
+function db.registerSessionCjdnsKey(sid, key)
 	local query = string.format(
 		"INSERT INTO sessions_cjdns ("
 		.." sid"
@@ -555,7 +499,7 @@ function db.registerSubscriberSessionCjdnsKey(sid, key)
 	return true, nil
 end
 
-function db.getCjdnsSubscriberKey(sid)
+function db.getSessionCjdnsKey(sid)
 	local cur, err = dbc:execute(string.format("SELECT * FROM sessions_cjdns WHERE sid = '%s'", dbc:escape(sid)))
 	if cur == nil then
 		return nil, err
