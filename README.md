@@ -1,4 +1,4 @@
-![Design](src/www/images/logo.transitd.png?raw=true)
+![Transit Daemon](src/www/images/logo.transitd.png?raw=true)
 
 # Transit Daemon
 Transit Daemon is an automated Internet gateway publish, search and connect tool for community networks.
