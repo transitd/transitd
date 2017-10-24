@@ -1,4 +1,6 @@
-# Transit Daemon (transitd)
+![Design](src/www/images/logo.transitd.png?raw=true)
+
+# Transit Daemon
 Transit Daemon is an automated Internet gateway publish, search and connect tool for community networks.
 
 The goal of this package is to provide to gateway operators the ability to automatically run and advertise their Internet gateway / VPN on a community network and to provide to subscribers the automated gateway search and connect functionality.
@@ -20,23 +22,24 @@ Although it is possible for community network users to set up Internet connectiv
 
 ### Network configuration support
 * cjdns
-* babel <sup>to be implemented</sup>
-* batman-adv <sup>to be implemented</sup>
-* olsr <sup>to be implemented</sup>
-* layer 2 networks <sup>to be implemented</sup>
+* babel *(to be implemented)*
+* batman-adv *(to be implemented)*
+* olsr *(to be implemented)*
+* layer 2 networks *(to be implemented)*
 
 ### Tunneling configuration support
 * cjdns tunneling
-* openvpn/softether <sup>to be implemented</sup>
-* tinc <sup>to be implemented</sup>
-* ipip/gre <sup>to be implemented</sup>
-* tun2socks? <sup>to be implemented</sup>
-* layer 2 forwarding <sup>to be implemented</sup>
+* openvpn *(to be implemented)*
+* softether *(to be implemented)*
+* tinc *(to be implemented)*
+* ipip/gre *(to be implemented)*
+* tun2socks *(to be implemented)*
+* layer 2 forwarding *(to be implemented)*
 
 ### Payment method support
 * free
-* cryptocurrency microtransactions <sup>to be implemented</sup>
-* commercial payment processor + vpn service provider <sup>to be implemented</sup>
+* cryptocurrency microtransactions *(to be implemented)*
+* commercial payment processor + vpn service provider *(to be implemented)*
 
 ## Gateway functions
 1. participate in general node interactions (scan network, bootstrap DHT, etc)
@@ -78,11 +81,11 @@ A fix is required to allow JSON RPC requests to work with IPv6 (see https://gith
 ```
 $ git clone --depth=1 git://github.com/intermesh-networks/transitd.git
 $ cd transitd
-$ docker build -t "transitd:0" .
+$ docker build -t transitd .
 ```
 ### Gateway
 ```
-$ docker run -it --privileged --name=transitd-gateway transitd:0
+$ docker run -it --privileged --name=transitd-gateway transitd
 # transitd-cli --set gateway.enabled=yes
 # exit
 $ docker start -ai transitd-gateway
@@ -92,7 +95,7 @@ $ docker start -ai transitd-gateway
 ```
 ### Subscriber
 ```
-$ docker run -it --privileged --name=transitd-sub transitd:0
+$ docker run -it --privileged --name=transitd-sub transitd
 # transitd-cli -s
 # transitd-cli -l
 # transitd-cli -c ....
