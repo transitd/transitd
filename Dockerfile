@@ -8,7 +8,24 @@ MAINTAINER Alex <alex@maximum.guru>
 
 # install alpine packages
 RUN { \
-	apt-get update && apt-get install -yq bash iptables net-tools iproute2 inetutils-ping lua5.1 lua-filesystem liblua5.1-0-dev build-essential luarocks git nodejs python linux-headers-generic unzip libsqlite3-dev sqlite3; \
+	apt-get update && apt-get install -yq \
+	bash \
+	iptables \
+	net-tools \
+	iproute2 \
+	inetutils-ping \
+	lua5.1 \
+	lua-filesystem \
+	liblua5.1-0-dev \
+	build-essential \
+	luarocks \
+	git \
+	nodejs \
+	python \
+	linux-headers-generic \
+	unzip \
+	libsqlite3-dev \
+	sqlite3; \
 }
 
 RUN { \
@@ -36,7 +53,7 @@ RUN { \
 
 # install cjdns
 RUN { \
-	git clone --depth=1 https://github.com/cjdelisle/cjdns.git && \
+	git clone --depth=1 https://github.com/cjdelisle/cjdns.git -b cjdns-v20 && \
 	cd cjdns && ./do && install -m755 -oroot -groot cjdroute /usr/sbin/cjdroute && \
 	rm -rf /cjdns && \
 	echo $'#!/bin/bash \n\
