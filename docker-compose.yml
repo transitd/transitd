@@ -1,0 +1,20 @@
+gateway:
+  container_name: transitd-gateway
+  build: .
+  cap_add:
+    - NET_ADMIN
+  devices:
+    - /dev/net/tun
+  volumes:
+    - ./src:/transitd/src:ro
+  stdin_open: true
+subscriber:
+  container_name: transitd-sub
+  build: .
+  cap_add:
+    - NET_ADMIN
+  devices:
+    - /dev/net/tun
+  volumes:
+    - ./src:/transitd/src:ro
+  stdin_open: true
