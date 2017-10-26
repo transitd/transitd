@@ -79,7 +79,7 @@ function nonBlockingCallWrapper(result, callback, timeout)
 function bootstrap()
 {
 	$(document).prop('title', nodeInfo.name);
-	$('.navbar-brand').text(nodeInfo.name);
+	$('.node-name').text(nodeInfo.name);
 	
 	if(nodeInfo.gateway)
 	{

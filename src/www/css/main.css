@@ -15,6 +15,20 @@ body {
 	padding-bottom: 20px;
 }
 
+img.logo
+{
+	height: 50px;
+	display: inline;
+	padding: 10px;
+}
+img.about-logo
+{
+	display: block;
+	width: 50%;
+	margin: auto;
+	padding: 20px;
+}
+
 #log
 {
 	white-space: pre;
