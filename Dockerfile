@@ -66,7 +66,9 @@ cjdroute --nobg < /etc/cjdroute.conf >/var/log/cjdns.log 2>&1 \n\
 }
 
 # install transitd and patch dependencies
-COPY ./ /transitd/
+COPY ./patches/ /transitd/patches/
+COPY ./src/ /transitd/src/
+COPY ./transitd.conf.sample /transitd/transitd.conf.sample
 RUN { \
 	cd / && \
 	patch -p0 /usr/local/share/lua/5.1/socket/http.lua /transitd/patches/luasocket-ipv6-fix.patch && \
