@@ -805,10 +805,10 @@ end
 function network.setupTunnel(interfaceName, mode, remoteIp, localIp)
 	
 	if #remoteIp ~= #localIp then
-		return nil, "ip version mismatch"
+		return nil, "address family mismatch"
 	end
 	
-	netv6 = #remoteIp > 4
+	v6 = #remoteIp > 4
 	
 	local cmd = {"ip", "tunnel", "add", interfaceName, "mode", mode, "remote", network.ip2string(remoteIp), "local", network.ip2string(localIp)}
 	
@@ -822,7 +822,7 @@ function network.setupTunnel(interfaceName, mode, remoteIp, localIp)
 	return true, nil
 end
 
-function network.teardownTunnel(interface)
+function network.teardownTunnel(interfaceName)
 	
 	local cmd = {"ip", "tunnel", "del", interfaceName}
 	local retval = shrunner.execute(shell.escape(cmd))
@@ -833,9 +833,9 @@ function network.teardownTunnel(interface)
 	return true, nil
 end
 
-function network.upInterface(interface)
+function network.upInterface(interfaceName)
 	
-	local cmd = {"ip", "link", "set", "dev", interface.name, "up"}
+	local cmd = {"ip", "link", "set", "dev", interfaceName, "up"}
 	local retval = shrunner.execute(shell.escape(cmd))
 	if retval ~= 0 then
 		return nil, "Failed to bring up interface"
@@ -844,9 +844,9 @@ function network.upInterface(interface)
 	return true, nil
 end
 
-function network.downInterface(interface)
+function network.downInterface(interfaceName)
 	
-	local cmd = {"ip", "link", "set", "dev", interface.name, "down"}
+	local cmd = {"ip", "link", "set", "dev", interfaceName, "down"}
 	local retval = shrunner.execute(shell.escape(cmd))
 	if retval ~= 0 then
 		return nil, "Failed to bring down interace"
