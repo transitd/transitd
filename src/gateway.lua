@@ -218,6 +218,54 @@ function gateway.connect(request, response)
 	
 	response.gatewayResponse = result
 	
+	if not response.gatewayResponse.ipv4 and not response.gatewayResponse.ipv6 then
+		response.success = false response.errorMsg = "Failed to obtain IPv4 and IPv6 addresses from gateway" return response
+	end
+	if response.gatewayResponse.ipv4 and not response.gatewayResponse.cidr4 then
+		response.success = false response.errorMsg = "Failed to obtain IPv4 CIDR from gateway" return response
+	end
+	if response.gatewayResponse.ipv6 and not response.gatewayResponse.cidr6 then
+		response.success = false response.errorMsg = "Failed to obtain IPv6 CIDR from gateway" return response
+	end
+	
+	-- parse addresses
+	if response.gatewayResponse.ipv4 then
+		local subnet4, ipv4, cidr4, ipv4gateway, err
+		subnet4, err = network.parseIpv4Subnet(response.gatewayResponse.ipv4.."/"..response.gatewayResponse.cidr4)
+		if err then
+			response.success = false response.errorMsg = "Failed to parse IPv4 address" return response
+		end
+		ipv4, response.cidr4 = unpack(subnet4)
+		response.ipv4 = network.ip2string(ipv4)
+		
+		ipv4gateway, err = network.parseIpv4(response.gatewayResponse.ipv4gateway)
+		if err then
+			response.success = false response.errorMsg = "Failed to parse gateway IPv4 address" return response
+		end
+		if not ipv4gateway then
+			response.success = false response.errorMsg = "No gateway IPv4 address provided" return response
+		end
+		response.ipv4gateway = network.ip2string(ipv4gateway)
+	end
+	if response.gatewayResponse.ipv6 then
+		local subnet6, ipv6, cidr6, ipv6gateway, err
+		subnet6, err = network.parseIpv6Subnet(response.gatewayResponse.ipv6.."/"..response.gatewayResponse.cidr6)
+		if err then
+			response.success = false response.errorMsg = "Failed to parse IPv6 address" return response
+		end
+		ipv6, response.cidr6 = unpack(subnet6)
+		response.ipv6 = network.ip2string(ipv6)
+		
+		ipv6gateway, err = network.parseIpv6(response.gatewayResponse.ipv6gateway)
+		if err then
+			response.success = false response.errorMsg = "Failed to parse gateway IPv6 address" return response
+		end
+		if not ipv6gateway then
+			response.success = false response.errorMsg = "No gateway IPv6 address provided" return response
+		end
+		response.ipv6gateway = network.ip2string(ipv6gateway)
+	end
+	
 	response.success = true
 	
 	return response
@@ -225,6 +273,13 @@ end
 
 function gateway.connectAbort(request, response)
 	response.sid = nil
+	response.cidr4 = nil
+	response.ipv4 = nil
+	response.ipv4gateway = nil
+	response.cidr6 = nil
+	response.ipv6 = nil
+	response.ipv6gateway = nil
+	
 	return response
 end
 
@@ -570,7 +625,7 @@ end
 
 function gateway.interfaceTeardown6(interface, subnet6)
 	
-	-- set up cjdns interface ip address
+	-- tear down interface ip address
 	local result, err = network.unsetInterfaceIp(interface, subnet6)
 	if err then
 		return nil, "Failed to unset local IPv6 address: "..err
