@@ -1,11 +1,13 @@
 ![Transit Daemon](src/www/images/logo.transitd.png?raw=true)
 
 # Transit Daemon
-Transit Daemon is an automated Internet gateway publish, search and connect tool for community networks.
+Transit Daemon is an automated Internet gateway publishing tool for community networks.
 
-The goal of this package is to provide to gateway operators the ability to automatically run and advertise their Internet gateway / VPN on a community network and to provide to subscribers the automated gateway search and connect functionality.
+The goal of this application is to provide to gateway operators the ability to automatically run and advertise their Internet gateway / VPN on a community network and to provide to subscribers the automated gateway search and connect functionality.
 
-Emerging community mesh networks seek to provide free and open access to a network built by its users.  Implementations of such networks may not necessarily povide transit to the rest of the Internet.  Access to the traditional Internet has a recurring cost (paid to transit providers), which someone has to pay.  In the case where someone does pay for it, service type/quality may not suit all users.  This makes Internet access incompatible with the open/free nature of community networks.  In most cases, one cannot simply assume that access to such networks will grant them access to the traditional Internet.  There may be multiple available Internet gateways on a particular community network, some free of charge to use and some that may come at a cost.  In all cases, setting up connection to the traditional Internet through community network gateways is a manual process.  Transitd makes the process of getting and having Internet access via a community network easy.
+Emerging community mesh networks seek to provide free and open access to a network built by its users.  Implementations of such networks may not necessarily povide transit to the rest of the Internet.  Access to the traditional Internet has a recurring cost (paid to transit providers), which someone has to pay.  In the case where someone does pay for it, service type/quality may not be suitable to all users.  This makes Internet access incompatible with the open/free nature of community networks.  In most cases, one cannot simply assume that access to such networks will grant them access to the traditional Internet.  There may be multiple available Internet gateways on a particular community network, some may be free to use and some may have a fee.  In all cases, setting up connection to the traditional Internet through community network gateways is a manual process.
+
+Transit Daemon simplifies the process of arranging Internet access via a community network.
 
 ### Warning:  code in this repository is work in progress
 
