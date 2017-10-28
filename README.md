@@ -77,39 +77,41 @@ A fix is required to allow CGILua to accept JSON-RPC content type (see https://g
 
 A fix is required to allow JSON RPC requests to work with IPv6 (see https://github.com/diegonehab/luasocket/pull/91).  A more permanent fix has been merged into luasocket master branch, however, no stable release is available as of this writing.
 
-## Installation
+## Docker Installation
 
-### Docker Installation
+### Using Docker Compose
 ```
-$ git clone --depth=1 git://github.com/intermesh-networks/transitd.git
+$ git clone --depth=1 git://github.com/transitd/transitd.git
+$ cd transitd
+$ docker-compose up
+```
+### Building the Docker Image Manually
+```
+$ git clone --depth=1 git://github.com/transitd/transitd.git
 $ cd transitd
 $ docker build -t transitd .
 ```
-### Gateway
+### Running a Gateway & Subscriber Test
 ```
-$ docker run -it --privileged --name=transitd-gateway transitd
-# transitd-cli --set gateway.enabled=yes
-# exit
-$ docker start -ai transitd-gateway
+$ docker run -it --cap-add=NET_ADMIN --device=/dev/net/tun --name=transitd-gateway transitd ./start.gateway.cli.sh
 # apt-get update
 # apt-get install tcpdump
 # tcpdump -i tun0
 ```
-### Subscriber
 ```
-$ docker run -it --privileged --name=transitd-sub transitd
+$ docker run -it --cap-add=NET_ADMIN --device=/dev/net/tun --name=transitd-sub transitd ./start.cli.sh
 # transitd-cli -s
 # transitd-cli -l
-# transitd-cli -c ....
+# transitd-cli -c <ip> -m <suite>
 # ip route show
 # ping 8.8.8.8
 ```
-### Web UI
+### Using the Web UI
 You can access `http://172.17.0.???:65533/` from your browser (where the IP address is the docker container instance address).
 
-### Manual Installation
+## Local Installation
 ```
-$ git clone --depth=1 git://github.com/intermesh-networks/transitd.git
+$ git clone --depth=1 git://github.com/transitd/transitd.git
 $ cd transitd
 $ sudo luarocks install cgilua
 $ sudo luarocks install lua-cjson
@@ -138,7 +140,7 @@ $ sudo luarocks install https://raw.githubusercontent.com/diegonehab/luasocket/m
 ```
 If you are using --local flag with luarocks, make sure you have ``` eval `luarocks path` ``` in your .bashrc file.
 
-## Configuration
+### Configuration
 ```
 $ cd transitd
 $ cp transitd.conf.sample transitd.conf
@@ -146,27 +148,25 @@ $ vi transitd.conf
 ```
 Add path to your cjdroute.conf config file in the [cjdns] section.
 
-## Usage
-
-### Run daemon
+### Runing Local Daemon
 ```
 $ cd src
 $ lua daemon.lua
 ```
 
-### Run command line interface
+### Using CLI
 ```
 $ cd src
 $ lua cli.lua
 ```
 
-### Web UI
+### Using the Web UI
 You can access `http://localhost:65533` from your browser.
 
-## Demo usage on a single host with CJDNS
+## Demo Usage on a Single Host with CJDNS
 In order to demo the system, you actually need 2 different machines.  You can avoid this by using 2 different config files running transitd on different ports and different database file.
 
-### Start daemon 1
+### Running Gateway & Subscriber Test
 ```
 $ cd transitd
 $ cp transitd.conf.sample transitd1.conf
@@ -178,8 +178,6 @@ $ lua cli.lua -f ../transitd1.conf --set gateway.enabled=yes
 $ lua cli.lua -f ../transitd1.conf --set database.file=transitd1.db
 $ lua daemon.lua -f ../transitd1.conf
 ```
-
-### Start daemon 2
 ```
 $ cd transitd
 $ cp transitd.conf.sample transitd2.conf
@@ -192,16 +190,16 @@ $ lua cli.lua -f ../transitd2.conf --set database.file=transitd2.db
 $ lua daemon.lua -f ../transitd2.conf
 ```
 
-### Trigger network scan
+### Trigger a Network Scan
 ```
 $ cd src
 $ lua cli.lua -f ../transitd2.conf -s
 ```
 
-### Trigger connection
+### Trigger a Connection
 ```
 $ cd src
-$ lua cli.lua -f ../transitd2.conf -c <YOUR CJDNS IP> -p 65533
+$ lua cli.lua -f ../transitd2.conf -c <YOUR CJDNS IP> -m cjdns-cjdns-free -p 65533
 ```
 
 ## Design

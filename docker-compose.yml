@@ -8,6 +8,7 @@ gateway:
   volumes:
     - ./src:/transitd/src:ro
   stdin_open: true
+  command: /start.gateway.sh
 subscriber:
   container_name: transitd-sub
   build: .
@@ -15,6 +16,7 @@ subscriber:
     - NET_ADMIN
   devices:
     - /dev/net/tun
-  volumes:
-    - ./src:/transitd/src:ro
+  volumes_from:
+    - gateway
   stdin_open: true
+  command: /start.sh

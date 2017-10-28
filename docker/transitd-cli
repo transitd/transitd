@@ -1,0 +1,2 @@
+#!/bin/bash 
+cd /transitd/src/; lua5.1 cli.lua "$@"
