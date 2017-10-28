@@ -25,7 +25,9 @@ RUN { \
 	linux-headers-generic \
 	unzip \
 	libsqlite3-dev \
-	sqlite3; \
+	sqlite3 \
+	kmod \
+	; \
 }
 
 RUN { \
