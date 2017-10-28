@@ -109,17 +109,14 @@ end
 
 function scanner.run()
 	
-	local networks = support.getNetworks()
-	
 	local listener = threadman.registerListener("scanner", {"exit"})
-	
-	local numhosts = 0
 	
 	local exit = false;
 	while not exit do
 		
-		numhosts = 0
+		local numhosts = 0
 		
+		local networks = support.getNetworks()
 		for netmod,net in pairs(networks) do
 			
 			local msg = "";
@@ -160,7 +157,7 @@ function scanner.run()
 		end
 		
 		-- sleep if there are no more hosts to scan
-		if numhosts < #networks then
+		if numhosts == 0 then
 			socket.sleep(1)
 		end
 	end
