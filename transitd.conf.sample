@@ -84,7 +84,7 @@ gatewaySupport=yes
 subscriberSupport=yes
 
 ; allow the use of built in cjdns tunnel function
-tunnelSupport=yes
+tunnelSupport=no
 
 ; how routing should be set up
 ; nat - set up NAT on gateway side
