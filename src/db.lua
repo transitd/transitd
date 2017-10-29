@@ -66,6 +66,11 @@ function db.prepareDatabase()
 	key varchar(255) \
 	)"))
 	
+	assert(dbc:execute("CREATE TABLE IF NOT EXISTS sessions_ipip( \
+	sid varchar(32) PRIMARY KEY, \
+	interface varchar(15) \
+	)"))
+	
 	assert(dbc:execute("CREATE TABLE IF NOT EXISTS network_hosts( \
 	ip varchar(45), \
 	visited INTEGER, \
@@ -509,7 +514,40 @@ function db.getSessionCjdnsKey(sid)
 	if result and result.key then
 		return result.key, nil
 	else
-		return nil, "Sid cjdns key mapping not found"
+		return nil, "Session ID to cjdns key mapping not found"
+	end
+end
+
+function db.registerSessionIpipInterface(sid, interface)
+	local query = string.format(
+		"INSERT INTO sessions_ipip ("
+		.." sid"
+		..",interface"
+		..") VALUES ("
+		.."'%s'"
+		..",'%s'"
+		..")"
+		,dbc:escape(sid)
+		,dbc:escape(interface)
+	)
+	local result, err = dbc:execute(query)
+	if result == nil then
+		return nil, err
+	end
+	return true, nil
+end
+
+function db.getSessionIpipInterface(sid)
+	local cur, err = dbc:execute(string.format("SELECT * FROM sessions_ipip WHERE sid = '%s'", dbc:escape(sid)))
+	if cur == nil then
+		return nil, err
+	end
+	local result = cur:fetch ({}, "a")
+	cur:close()
+	if result and result.interface then
+		return result.interface, nil
+	else
+		return nil, "Session ID to ipip interface mapping not found"
 	end
 end
 

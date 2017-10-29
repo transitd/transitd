@@ -61,7 +61,15 @@ function ipip.requestConnection(request, response)
 	-- allocate ips based on settings in config
 	
 	-- IPv4
-	local subnet4, err = gateway.allocateIpv4(config.ipip.ipv4subnet, config.ipip.ipv4gateway);
+	local subnet4, err = network.parseIpv4Subnet(config.ipip.ipv4subnet)
+	if err then
+		response.success = false response.errorMsg = "Failed to parse config.ipip.ipv4subnet: "..err return response
+	end
+	local gatewayIp4, err = network.parseIpv4(config.ipip.ipv4gateway)
+	if err then
+		response.success = false response.errorMsg = "Failed to parse config.ipip.ipv4subnet" return response
+	end
+	subnet4, err = gateway.allocateIpv4(subnet4, gatewayIp4)
 	if err then
 		response.success = false response.errorMsg = err return response
 	end
@@ -73,7 +81,15 @@ function ipip.requestConnection(request, response)
 	
 	-- IPv6
 	if config.gateway.ipv6support == "yes" then
-		local subnet6, err = gateway.allocateIpv6(config.ipip.ipv6subnet, config.ipip.ipv6gateway);
+		local subnet6, err = network.parseIpv6Subnet(config.ipip.ipv6subnet)
+		if err then
+			response.success = false response.errorMsg = "Failed to parse config.ipip.ipv6subnet: "..err return response
+		end
+		local gatewayIp6, err = network.parseIpv6(config.ipip.ipv6gateway)
+		if err then
+			response.success = false response.errorMsg = "Failed to parse config.ipip.ipv6subnet" return response
+		end
+		subnet6, err = gateway.allocateIpv6(subnet6, gatewayIp6)
 		if err then
 			response.success = false response.errorMsg = err return response
 		end
@@ -116,9 +132,9 @@ function ipip.releaseConnection(request, response)
 		response.success = false response.errorMsg = err return response
 	end
 	
-	local result, err = ipip.gatewaySubscriberTeardown(session.sid)
+	local result, err = ipip.gatewaySubscriberTeardown(session)
 	if err then
-		threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "requestConnectionCommit", ["request"] = request, ["response"] = response, error = err})
+		threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "releaseConnection", ["request"] = request, ["response"] = response, error = err})
 	end
 	
 	response.success = true
@@ -162,24 +178,6 @@ function ipip.connectAbort(request, response)
 	return response
 end
 
-function ipip.disconnect(request, response)
-	
-	local setup = tunnelSetup.tunnels[request.sid]
-	
-	if not setup then
-		response.success = false response.errorMsg = err return response
-	end
-	
-	if interface then
-		response.interface4 = setup.interface
-		response.interface6 = setup.interface
-	end
-	
-	response.success = true
-	
-	return response
-end
-
 function ipip.disconnectCommit(request, response)
 	
 	local ret, err = ipip.subscriberTeardown(request.sid)
@@ -200,8 +198,6 @@ function ipip.maintainConnection(session)
 	return true, nil
 end
 
-local tunnelSetup = { count = 0, tunnels = {} }
-
 function ipip.gatewaySubscriberSetup(session)
 	
 	local mode = config.ipip.routing
@@ -220,23 +216,28 @@ function ipip.gatewaySubscriberSetup(session)
 	
 	local remoteIp, err = network.parseIp(session.meshIP)
 	local localIp, err = networkModule.getMyIp()
+	if err then return nil, err end
+	if not localIp then return nil, "Failed to get IP from network module" end
+	localIp, err = network.parseIp(localIp)
+	if err then return nil, err end
+	if not localIp then return nil, "Failed to parse IP from network module" end
 	
 	local tunnelMode = "ipip"
 	if #remoteIp > 4 then tunnelMode = "ipip6" end
 	
-	local interfaceName = "ipip" .. tostring(tunnelSetup.count+1)
+	local interfaceName = "ipip" .. string.sub(session.sid,1,6)
 	
 	local res, err = network.setupTunnel(interfaceName, tunnelMode, remoteIp, localIp)
 	if err then return nil, "Failed to set up "..tunnelMode.." tunnel: "..err end
 	if not res then return nil, "Failed to set up "..tunnelMode.." tunnel" end
 	
-	local setup, interface
-	
-	interface, err = network.getInterface(interfaceName)
+	local interface, err = network.getInterface(interfaceName)
 	if err then return nil, "Failed to query "..interfaceName.." interface: "..err end
 	if not interface then return nil, "Failed to query "..interfaceName.." interface" end
 	
-	setup.interface = interface
+	local res, err = db.registerSessionIpipInterface(session.sid, interfaceName)
+	if err then return nil, "Failed to save session ipip interface name '"..interfaceName.."' in database: "..err end
+	if not res then return nil, "Failed to save session ipip interface name '"..interfaceName.."' in database" end
 	
 	local res, err = network.upInterface(interfaceName)
 	if err then return nil, "Failed to bring up "..interfaceName.." tunnel: "..err end
@@ -244,62 +245,81 @@ function ipip.gatewaySubscriberSetup(session)
 	
 	if session.internetIPv4 then
 		
-		local subnet4, err = gateway.interfaceSetup4(mode, interface, config.ipip.ipv4subnet, config.ipip.ipv4gateway)
+		local subnet4, err = network.parseIpv4Subnet(config.ipip.ipv4subnet)
+		if err then
+			return nil, "Failed to parse config.ipip.ipv4subnet: "..err
+		end
+		local gatewayIp4, err = network.parseIpv4(config.ipip.ipv4gateway)
+		if err then
+			return nil, "Failed to parse config.ipip.ipv4subnet"
+		end
+		subnet4, err = gateway.interfaceSetup4(mode, interface, subnet4, gatewayIp4)
 		if err then return nil, "Failed to set up routing:"..err end
 		if not subnet4 then return nil, "Failed to set up routing" end
-		
-		setup.subnet4 = subnet4
 		
 	end
 	
 	if config.gateway.ipv6support == "yes" and session.internetIPv6 then
 		
-		local subnet6, err = gateway.interfaceSetup6(mode, interface, config.ipip.ipv6subnet, config.ipip.ipv6gateway)
+		local subnet6, err = network.parseIpv6Subnet(config.ipip.ipv6subnet)
+		if err then
+			return nil, "Failed to parse config.ipip.ipv6subnet: "..err
+		end
+		local gatewayIp6, err = network.parseIpv6(config.ipip.ipv6gateway)
+		if err then
+			return nil, "Failed to parse config.ipip.ipv6subnet"
+		end
+		subnet6, err = gateway.interfaceSetup6(mode, interface, subnet6, gatewayIp6)
 		if err then return nil, "Failed to set up routing:"..err end
 		if not subnet6 then return nil, "Failed to set up routing" end
 		
-		setup.subnet6 = subnet6
-		
 	end
 	
-	tunnelSetup.count = tunnelSetup.count + 1
-	tunnelSetup.tunnels[session.sid] = setup
-	
-	return setup, nil
+	return interfaceName, nil
 end
 
-function ipip.gatewaySubscriberTeardown(sid)
+function ipip.gatewaySubscriberTeardown(session)
 	
-	local setup = tunnelSetup.tunnels[sid]
+	local interfaceName, err = db.getSessionIpipInterface(session.sid)
+	if err then return nil, "Failed to get session ipip interface name: "..err end
+	if not interfaceName then return nil, "Failed to get session ipip interface name" end
 	
-	if setup and setup.subnet4 then
-		
-		local res, err = gateway.interfaceTeardown4(setup.interface)
-		if err then return nil, "Failed to tear down gateway subscriber:"..err end
-		if not res then return nil, "Failed to tear down gateway subscriber" end
+	local interface, err = network.getInterface(interfaceName)
+	if err then return nil, "Failed to query "..interfaceName.." interface: "..err end
+	if not interface then return nil, "Failed to query "..interfaceName.." interface" end
+	
+	subnet4, err = network.parseIpv4Subnet(config.ipip.ipv4subnet)
+	if err then
+		return nil, "Failed to parse IPv4 subnet: "..err
 	end
 	
-	if setup and setup.subnet6 then
+	if subnet4 then
 		
-		local res, err = gateway.interfaceTeardown6(setup.interface, setup.subnet6)
+		local res, err = gateway.interfaceTeardown4(interface, subnet4)
+		if err then return nil, "Failed to tear down gateway subscriber:"..err end
+		if not res then return nil, "Failed to tear down gateway subscriber" end
+		
+	end
+	
+	if subnet6 then
+		
+		local res, err = gateway.interfaceTeardown6(interface, subnet6)
 		if err then return nil, err end
 		if not res then return nil, "Failed to tear down gateway subscriber" end
 		
 	end
 	
-	if setup and setup.interface then
+	if interface then
 		
-		local res, err = network.downInterface(setup.interface.name)
-		if err then return nil, "Failed to bring down interface "..setup.interface.name..":"..err end
-		if not res then return nil, "Failed to bring down interface "..setup.interface.name end
+		local res, err = network.downInterface(interface.name)
+		if err then return nil, "Failed to bring down interface "..interface.name..":"..err end
+		if not res then return nil, "Failed to bring down interface "..interface.name end
 		
-		local res, err = network.teardownTunnel(setup.interface.name)
+		local res, err = network.teardownTunnel(interface.name)
 		if err then return nil, "Failed to tear down ipip tunnel:"..err end
 		if not res then return nil, "Failed to tear down ipip tunnel" end
 		
 	end
-	
-	-- TODO: remove element from tunnelSetup
 	
 	return true, nil
 end
@@ -326,29 +346,34 @@ function ipip.subscriberSetup(session)
 	
 	local remoteIp, err = network.parseIp(session.meshIP)
 	local localIp, err = networkModule.getMyIp()
+	if err then return nil, err end
+	if not localIp then return nil, "Failed to get IP from network module" end
+	localIp, err = network.parseIp(localIp)
+	if err then return nil, err end
+	if not localIp then return nil, "Failed to parse IP from network module" end
 	
 	local tunnelMode = "ipip"
 	if #remoteIp > 4 then tunnelMode = "ipip6" end
 	
-	local interfaceName = "ipip" .. tostring(tunnelSetup.count+1)
+	local interfaceName = "ipip" .. string.sub(session.sid,1,6)
 	
 	local res, err = network.setupTunnel(interfaceName, tunnelMode, remoteIp, localIp)
 	if err then return nil, "Failed to set up "..tunnelMode.." tunnel: "..err end
 	if not res then return nil, "Failed to set up "..tunnelMode.." tunnel" end
 	
-	local setup, interface
-	
-	interface, err = network.getInterface(interfaceName)
+	local interface, err = network.getInterface(interfaceName)
 	if err then return nil, "Failed to query "..interfaceName.." interface: "..err end
 	if not interface then return nil, "Failed to query "..interfaceName.." interface" end
 	
-	setup.interface = interface
+	local res, err = db.registerSessionIpipInterface(session.sid, interfaceName)
+	if err then return nil, "Failed to save session ipip interface name '"..interfaceName.."' in database: "..err end
+	if not res then return nil, "Failed to save session ipip interface name '"..interfaceName.."' in database" end
 	
 	local res, err = network.upInterface(interfaceName)
 	if err then return nil, "Failed to bring up "..interfaceName.." tunnel: "..err end
 	if not res then return nil, "Failed to bring up "..interfaceName.." tunnel" end
 	
-	if session.internetIPv4 then
+	if session.internetIPv4 and session.internetIPv4cidr then
 		
 		subnet4, err = network.parseIpv4Subnet(session.internetIPv4.."/"..session.internetIPv4cidr)
 		if err then
@@ -361,12 +386,12 @@ function ipip.subscriberSetup(session)
 			return nil, "Failed to set local IPv4 address: "..err
 		end
 		
-		setup.subnet4 = subnet4
-		
 		if mode == "route" then
 			
-			-- configure default route
+			-- interface data changed, update it
+			interface, err = network.getInterface(interfaceName)
 			
+			-- configure default route
 			local res, err = network.setDefaultRoute(interface, false)
 			if err then return nil, err end
 			
@@ -374,7 +399,7 @@ function ipip.subscriberSetup(session)
 		
 	end
 	
-	if session.internetIPv6 then
+	if session.internetIPv6 and session.internetIPv6cidr then
 		
 		subnet6, err = network.parseIpv6Subnet(session.internetIPv6.."/"..session.internetIPv6cidr)
 		if err then
@@ -387,12 +412,12 @@ function ipip.subscriberSetup(session)
 			return nil, "Failed to set local IPv6 address: "..err
 		end
 		
-		setup.subnet6 = subnet6
-		
 		if mode == "route" then
 			
-			-- configure default route
+			-- interface data changed, update it
+			interface, err = network.getInterface(interfaceName)
 			
+			-- configure default route
 			local res, err = network.setDefaultRoute(interface, true)
 			if err then return nil, err end
 			
@@ -400,37 +425,22 @@ function ipip.subscriberSetup(session)
 		
 	end
 	
-	tunnelSetup.count = tunnelSetup.count + 1
-	tunnelSetup.tunnels[session.sid] = setup
-	
-	return setup, nil
+	return interfaceName, nil
 end
 
 function ipip.subscriberTeardown(sid)
 	
-	local setup = tunnelSetup.tunnels[sid]
+	local interfaceName, err = db.getSessionIpipInterface(sid)
+	if err then return nil, "Failed to get session ipip interface name: "..err end
+	if not interfaceName then return nil, "Failed to get session ipip interface name" end
 	
-	if setup and setup.subnet4 then
-		network.unsetDefaultRoute(false)
-	end
+	local res, err = network.downInterface(interfaceName)
+	if err then return nil, "Failed to bring down interface "..interfaceName..":"..err end
+	if not res then return nil, "Failed to bring down interface "..interfaceName end
 	
-	if setup and setup.subnet6 then
-		network.unsetDefaultRoute(false)
-	end
-	
-	if setup and setup.interface then
-		
-		local res, err = network.downInterface(setup.interface.name)
-		if err then return nil, "Failed to bring down interface "..setup.interface.name..":"..err end
-		if not res then return nil, "Failed to bring down interface "..setup.interface.name end
-		
-		local res, err = network.teardownTunnel(setup.interface.name)
-		if err then return nil, "Failed to tear down ipip tunnel:"..err end
-		if not res then return nil, "Failed to tear down ipip tunnel" end
-		
-	end
-	
-	-- TODO: remove element from tunnelSetup
+	local res, err = network.teardownTunnel(interfaceName)
+	if err then return nil, "Failed to tear down ipip tunnel:"..err end
+	if not res then return nil, "Failed to tear down ipip tunnel" end
 	
 	return true, nil
 end

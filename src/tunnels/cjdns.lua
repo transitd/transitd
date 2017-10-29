@@ -53,7 +53,15 @@ function cjdns.requestConnection(request, response)
 	-- allocate ips based on settings in config
 	
 	-- IPv4
-	local subnet4, err = gateway.allocateIpv4(config.cjdns.ipv4subnet, config.cjdns.ipv4gateway);
+	local subnet4, err = network.parseIpv4Subnet(config.cjdns.ipv4subnet)
+	if err then
+		response.success = false response.errorMsg = "Failed to parse config.cjdns.ipv4subnet: "..err return response
+	end
+	local gatewayIp4, err = network.parseIpv4(config.cjdns.ipv4gateway)
+	if err then
+		response.success = false response.errorMsg = "Failed to parse config.cjdns.ipv4subnet" return response
+	end
+	subnet4, err = gateway.allocateIpv4(subnet4, gatewayIp4)
 	if err then
 		response.success = false response.errorMsg = err return response
 	end
@@ -61,11 +69,20 @@ function cjdns.requestConnection(request, response)
 		response.success = false response.errorMsg = "Failed to allocate IPv4 address" return response
 	end
 	response.ipv4, response.cidr4 = unpack(subnet4)
-	response.ipv4gateway = config.cjdns.ipv4gateway
+	response.ipv4gateway = network.ip2string(gatewayIp4)
 	
 	-- IPv6
 	if config.gateway.ipv6support == "yes" then
-		local subnet6, err = gateway.allocateIpv6(config.cjdns.ipv6subnet, config.cjdns.ipv6gateway);
+		
+		local subnet6, err = network.parseIpv6Subnet(config.cjdns.ipv6subnet)
+		if err then
+			response.success = false response.errorMsg = "Failed to parse config.cjdns.ipv6subnet: "..err return response
+		end
+		local gatewayIp6, err = network.parseIpv6(config.cjdns.ipv6gateway)
+		if err then
+			response.success = false response.errorMsg = "Failed to parse config.cjdns.ipv6subnet" return response
+		end
+		subnet6, err = gateway.allocateIpv6(subnet6, gatewayIp6)
 		if err then
 			response.success = false response.errorMsg = err return response
 		end
@@ -74,6 +91,7 @@ function cjdns.requestConnection(request, response)
 		end
 		response.ipv6, response.cidr6 = unpack(subnet6)
 		response.ipv6gateway = config.cjdns.ipv6gateway
+		
 	end
 	
 	local interface, err = cjdnsNet.getInterface()
@@ -410,8 +428,6 @@ function cjdns.deauthorizeKey(key)
 	end
 end
 
-local tunnelSetup = {}
-
 function cjdns.gatewaySetup()
 	
 	local mode = config.cjdns.routing
@@ -420,19 +436,29 @@ function cjdns.gatewaySetup()
 	local interface, err = cjdnsNet.getInterface()
 	if err then return nil, err end
 	
-	tunnelSetup.interface = interface
-	
-	local subnet4, err = gateway.interfaceSetup4(mode, interface, config.cjdns.ipv4subnet, config.cjdns.ipv4gateway)
+	local subnet4, err = network.parseIpv4Subnet(config.cjdns.ipv4subnet)
+	if err then
+		return nil, "Failed to parse config.cjdns.ipv4subnet: "..err
+	end
+	local gatewayIp4, err = network.parseIpv4(config.cjdns.ipv4gateway)
+	if err then
+		return nil, "Failed to parse config.cjdns.ipv4subnet"
+	end
+	subnet4, err = gateway.interfaceSetup4(mode, interface, subnet4, gatewayIp4)
 	if err then return nil, err end
-	
-	tunnelSetup.subnet4 = subnet4
 	
 	if config.gateway.ipv6support == "yes" then
 		
-		local subnet6, err = gateway.interfaceSetup6(mode, interface, config.cjdns.ipv6subnet, config.cjdns.ipv6gateway)
+		local subnet6, err = network.parseIpv6Subnet(config.cjdns.ipv6subnet)
+		if err then
+			return nil, "Failed to parse config.cjdns.ipv6subnet: "..err
+		end
+		local gatewayIp6, err = network.parseIpv6(config.cjdns.ipv6gateway)
+		if err then
+			return nil, "Failed to parse config.cjdns.ipv6subnet"
+		end
+		subnet6, err = gateway.interfaceSetup6(mode, interface, subnet6, gatewayIp6)
 		if err then return nil, err end
-		
-		tunnelSetup.subnet6 = subnet6
 		
 	end
 	
@@ -441,18 +467,32 @@ end
 
 function cjdns.gatewayTeardown()
 	
-	if tunnelSetup and tunnelSetup.interface and tunnelSetup.subnet4 then
+	-- determine cjdns interface
+	local interface, err = cjdnsNet.getInterface()
+	if err then return nil, err end
+	
+	local subnet4, err = network.parseIpv4Subnet(config.cjdns.ipv4subnet)
+	if err then
+		return nil, "Failed to parse config.cjdns.ipv4subnet: "..err
+	end
+	
+	local subnet6, err = network.parseIpv6Subnet(config.cjdns.ipv6subnet)
+	if err then
+		return nil, "Failed to parse config.cjdns.ipv6subnet: "..err
+	end
+	
+	if interface and subnet4 then
 		
-		local result, err = gateway.interfaceTeardown4(tunnelSetup.interface, tunnelSetup.subnet4)
+		local result, err = gateway.interfaceTeardown4(interface, subnet4)
 		if err then
 			return nil, "Failed to unset local IPv6 address: "..err
 		end
 		
 	end
 	
-	if tunnelSetup and tunnelSetup.interface and tunnelSetup.subnet6 then
+	if interface and subnet6 then
 		
-		local result, err = gateway.interfaceTeardown6(tunnelSetup.interface, tunnelSetup.subnet6)
+		local result, err = gateway.interfaceTeardown6(interface, subnet6)
 		if err then
 			return nil, "Failed to unset local IPv6 address: "..err
 		end
