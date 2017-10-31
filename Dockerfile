@@ -27,6 +27,7 @@ RUN { \
 	libsqlite3-dev \
 	sqlite3 \
 	kmod \
+	psmisc \
 	; \
 }
 
