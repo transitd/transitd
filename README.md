@@ -11,37 +11,52 @@ Transit Daemon simplifies the process of arranging Internet access via a communi
 
 ### Warning:  code in this repository is work in progress
 
-## Main Advantages
-Although it is possible for community network users to set up Internet connectivity on their networks manually, using this package has a number of advantages.
-* Quick and efficient to use
-* Installs on routers
-* No network administration knowledge needed
-* Decentralized (uses routing protocol facilities to do breadth first search for gateways)
-* Provides a selection of multiple gateways on a single network
-* Supports multiple routing protocols / network configurations
-* Supports multiple connection methods / tunneling configurations
-* Supports payments
+## How It Works
 
-### Network configuration support
+Transit Daemon has the following parts,
+
+1. Daemon process
+2. Web UI
+3. CLI tool
+
+The daemon process has the following parts,
+
+1. Web server that hosts the Web UI and HTTP JSON-RPC interface
+2. Scanner that searches the detected networks to find other hosts running transitd
+3. Connection manager that manages connections/tunnels
+3. Network support modules *(only cjdns module currently implemented)*
+4. Tunnel support modules *(only ipip module currently functional)*
+5. Payment support modules *(only free module currently implemented)*
+6. DHT that keeps data about gateways on the network *(to be implemented)*
+
+The CLI tool, Web UI, and other hosts communicate with the daemon through the HTTP JSON-RPC interface.  The network support modules interface with locally running routing software.  The tunnel support modules interface with the locally installed VPN software.  The payment support modules interface with payment processing infrastructure available on the Internet.
+
+### Network support
 * cjdns
-* babel *(to be implemented)*
 * batman-adv *(to be implemented)*
-* olsr *(to be implemented)*
+* bmx6/7 *(to be implemented)*
+* olsr/2 *(to be implemented)*
+* babel *(to be implemented)*
 * layer 2 networks *(to be implemented)*
 
-### Tunneling configuration support
-* cjdns tunneling
+### Tunnel support
+* cjdns tunnels
+* ipip
+* gre *(to be implemented)*
 * openvpn *(to be implemented)*
 * softether *(to be implemented)*
+* fastd *(to be implemented)*
+* wireguard *(to be implemented)*
 * tinc *(to be implemented)*
-* ipip/gre *(to be implemented)*
 * tun2socks *(to be implemented)*
-* layer 2 forwarding *(to be implemented)*
+* pptp *(to be implemented)*
+* IPSec *(to be implemented)*
+* l2tp *(to be implemented)*
 
 ### Payment method support
 * free
 * cryptocurrency microtransactions *(to be implemented)*
-* commercial payment processor + vpn service provider *(to be implemented)*
+* commercial payment processors *(to be implemented)*
 
 ## Gateway functions
 1. participate in general node interactions (scan network, bootstrap DHT, etc)
