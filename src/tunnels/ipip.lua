@@ -391,8 +391,17 @@ function ipip.subscriberSetup(session)
 			-- interface data changed, update it
 			interface, err = network.getInterface(interfaceName)
 			
+			local gatewayIp4 = nil
+			
+			if session.internetIPv4gateway then
+				gatewayIp4, err = network.parseIpv4(session.internetIPv4gateway)
+				if err then
+					return nil, "Failed to parse gateway IP"
+				end
+			end
+			
 			-- configure default route
-			local res, err = network.setDefaultRoute(interface, false)
+			local res, err = network.setDefaultRoute(interface, false, gatewayIp4)
 			if err then return nil, err end
 			
 		end
@@ -417,8 +426,17 @@ function ipip.subscriberSetup(session)
 			-- interface data changed, update it
 			interface, err = network.getInterface(interfaceName)
 			
+			local gatewayIp6 = nil
+			
+			if session.internetIPv6gateway then
+				gatewayIp6, err = network.parseIpv6(session.internetIPv6gateway)
+				if err then
+					return nil, "Failed to parse gateway IPv6"
+				end
+			end
+			
 			-- configure default route
-			local res, err = network.setDefaultRoute(interface, true)
+			local res, err = network.setDefaultRoute(interface, true, gatewayIp6)
 			if err then return nil, err end
 			
 		end
