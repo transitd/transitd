@@ -580,6 +580,7 @@ function rpcInterface.getGraphSince(timestamp)
 	
 	for k,host in pairs(hosts) do
 		host.type = 'none'
+		host.label = host.ip
 		
 		local ip, err = network.parseIp(host.ip)
 		if ip then
@@ -595,6 +596,7 @@ function rpcInterface.getGraphSince(timestamp)
 					local addr, cidr = unpack(ifsubnet)
 					if host.ip == network.ip2string(addr) then
 						host.type = 'self'
+						host.label = 'This Node'
 						break
 					end
 				end
@@ -605,13 +607,15 @@ function rpcInterface.getGraphSince(timestamp)
 			local gateway, err = db.lookupGatewayByIp(host.ip)
 			if gateway then
 				host.type = 'gateway'
+				host.label = gateway.name
 			end
 		end
 		
 		if host.type == 'none' then
-			local gateway, err = db.lookupNodeByIp(host.ip)
-			if gateway then
+			local node, err = db.lookupNodeByIp(host.ip)
+			if node then
 				host.type = 'node'
+				host.label = node.name
 			end
 		end
 	end

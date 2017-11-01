@@ -41,31 +41,31 @@ function startNetworkGraph()
 	var container = document.getElementById('network');
 	
 	var options = {
-		physics: {maxVelocity: 5},
+		physics: { maxVelocity: 50, solver: 'repulsion' },
 		groups: {
 		  self: {
 			color: 'blue',
 			shape: 'dot',
-			size: 10,
-			font:{size:8},
+			size: 15,
+			font:{ size: 14 },
 		  },
 		  none: {
 			color: 'gray',
 			shape: 'dot',
 			size: 10,
-			font:{size:8},
+			font:{ size: 8 },
 		  },
 		  node: {
 			color: 'red',
 			shape: 'dot',
-			size: 10,
-			font:{size:8},
+			size: 11,
+			font:{ size: 12 },
 		  },
 		  gateway: {
 			color: 'green',
 			shape: 'dot',
-			size: 10,
-			font:{size:8},
+			size: 12,
+			font:{ size: 12 },
 		  }
 		}
 	  };
@@ -79,7 +79,9 @@ function startNetworkGraph()
 function addNode(id, label, group)
 {
 	if(nodes.get(id) == null)
-		nodes.add({'id':id, 'label':label, 'group':group});
+		nodes.add({'id': id, 'label': label, 'group': group});
+	if(group == 'self')
+		network.focus(id, { locked: true });
 }
 
 
@@ -113,7 +115,7 @@ function loadNetworkGraph()
 						for (index = 0; index < result.hosts.length; ++index)
 						{
 							var host = result.hosts[index];
-							addNode(host.ip, host.ip, host.type);
+							addNode(host.ip, host.label, host.type);
 						}
 					
 					if(result.links)
@@ -137,5 +139,5 @@ function loadNetworkGraph()
 			networkGraphTimeout = setTimeout(loadNetworkGraph,5000);
 			return true;
 		}
-	});	
+	});
 }
