@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env sh
+
 sessionid=$1
 meshIp=$2
 ipv4=$3
@@ -52,6 +53,3 @@ fi
 uci commit network
 /etc/init.d/network reload
 /etc/init.d/firewall reload
-
-# hack
-ip -6 addr add "$oldaddr" dev "$interface"

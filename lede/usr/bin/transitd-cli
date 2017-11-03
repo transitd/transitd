@@ -1,3 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
+set -e
 cd /opt/transitd/src/; lua cli.lua "$@"
 exit $?

@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env sh
+
 sessionid=$1
 meshIp=$2
 ipv4=$3
@@ -18,6 +19,3 @@ uci commit network
 
 /etc/init.d/network reload
 /etc/init.d/firewall reload
-
-# hack
-/etc/init.d/cjdns reload

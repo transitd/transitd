@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 uci del firewall.transitdofflinehttp
 uci commit firewall

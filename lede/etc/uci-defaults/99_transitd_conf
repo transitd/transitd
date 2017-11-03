@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/usr/bin/env sh
+
+set -e
 
 cp /opt/transitd/transitd.conf.sample /opt/transitd/transitd.conf
 transitd-cli --set daemon.authorizedNetworks=127.0.0.1/8,::1/128,192.168.1.0/24
