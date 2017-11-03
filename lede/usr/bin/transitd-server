@@ -1,0 +1,7 @@
+#!/bin/sh
+
+source /etc/profile
+
+cd /opt/transitd/src
+lua daemon.lua
+return $?

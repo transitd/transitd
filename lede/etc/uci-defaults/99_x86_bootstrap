@@ -1,0 +1,73 @@
+ #!/bin/sh
+
+uci set system.@system[0].hostname='lede-transitd'
+
+# set up interfaces
+uci set network.lan.ifname='eth0'
+uci set network.wan.ifname='eth1'
+uci set network.wan6.ifname='eth1'
+uci set network.mesh1=interface
+uci set network.mesh1.proto='static'
+uci set network.mesh1.ipaddr='172.21.0.1'
+uci set network.mesh1.netmask='255.255.0.0'
+uci set network.mesh2=interface
+uci set network.mesh2.proto='static'
+uci set network.mesh2.ifname='eth2'
+uci set network.mesh2.ipaddr='172.22.0.1'
+uci set network.mesh2.netmask='255.255.0.0'
+uci set network.mesh3=interface
+uci set network.mesh3.proto='static'
+uci set network.mesh3.ifname='eth3'
+uci set network.mesh3.ipaddr='172.23.0.1'
+uci set network.mesh3.netmask='255.255.0.0'
+
+# set up dhcp
+uci set dhcp.mesh1=dhcp
+uci set dhcp.mesh1.interface='mesh1'
+uci set dhcp.mesh1.start='10'
+uci set dhcp.mesh1.limit='65500'
+uci set dhcp.mesh1.leasetime='2m'
+uci set dhcp.mesh1.dhcp_option='6,8.8.8.8,8.8.4.4'
+uci set dhcp.mesh2=dhcp
+uci set dhcp.mesh2.interface='mesh2'
+uci set dhcp.mesh2.start='10'
+uci set dhcp.mesh2.limit='65500'
+uci set dhcp.mesh2.leasetime='2m'
+uci set dhcp.mesh2.dhcp_option='6,8.8.8.8,8.8.4.4'
+uci set dhcp.mesh3=dhcp
+uci set dhcp.mesh3.interface='mesh3'
+uci set dhcp.mesh3.start='10'
+uci set dhcp.mesh3.limit='65500'
+uci set dhcp.mesh3.leasetime='2m'
+uci set dhcp.mesh3.dhcp_option='6,8.8.8.8,8.8.4.4'
+
+uci set firewall.meshzone=zone
+uci set firewall.meshzone.input='ACCEPT'
+uci set firewall.meshzone.output='ACCEPT'
+uci set firewall.meshzone.name='mesh'
+uci set firewall.meshzone.forward='ACCEPT'
+uci set firewall.meshzone.network='mesh1 mesh2 mesh3'
+uci set firewall.meshzonefw=forwarding
+uci set firewall.meshzonefw.dest='wan'
+uci set firewall.meshzonefw.src='mesh'
+
+# set up wifi
+uci set wireless.radio0=wifi-device
+uci set wireless.radio0.type='mac80211'
+uci set wireless.radio0.channel='11'
+uci set wireless.radio0.hwmode='11g'
+uci set wireless.radio0.htmode='HT20'
+uci set wireless.radio0.txpower='20'
+uci set wireless.radio0.country='US'
+uci delete wireless.@wifi-iface[0]
+uci set wireless.mesh=wifi-iface
+uci set wireless.mesh.device='radio0'
+uci set wireless.mesh.ssid='mesh'
+uci set wireless.mesh.network='mesh1'
+uci set wireless.mesh.mode='adhoc'
+uci set wireless.mesh.encryption='none'
+uci set wireless.radio0.disabled=0
+
+uci commit
+
+exit 0

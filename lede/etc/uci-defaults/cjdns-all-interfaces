@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# allow cjdns to use all interfaces
+uci delete cjdns.@eth_interface[0]
+uci set cjdns.bindall=eth_interface
+uci set cjdns.bindall.bind='all'
+uci set cjdns.bindall.beacon='2'
+
+uci commit cjdns
+
+exit 0
