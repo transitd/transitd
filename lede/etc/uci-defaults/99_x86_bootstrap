@@ -1,7 +1,5 @@
 #!/usr/bin/env sh
 
-set -e
-
 uci set system.@system[0].hostname='lede-transitd'
 
 # set up interfaces
