@@ -87,6 +87,7 @@ The CLI tool, Web UI, and other hosts communicate with the daemon through the HT
 * alt-getopt
 * luaproc
 * coxpcall
+* lua-copas
 
 A fix is required to allow CGILua to accept JSON-RPC content type (see https://github.com/keplerproject/cgilua/pull/9).  The fix has been merged into CGILua master branch, however, no stable release is available as of this writing.
 
