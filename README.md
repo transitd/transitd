@@ -71,7 +71,9 @@ The CLI tool, Web UI, and other hosts communicate with the daemon through the HT
 4. detect downtime and automatically switch between gateways, track connection quality of servers
 
 [Docker Installation](docker/README.md)
-[LEDE/OpenWrt Image Build Instructions](lede/README.md)
-[Local Installation](INSTALL.md)
-[Design](docs/README.md)
 
+[LEDE/OpenWrt Image Build Instructions](lede/README.md)
+
+[Local Installation](INSTALL.md)
+
+[Design](docs/README.md)
