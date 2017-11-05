@@ -2,7 +2,7 @@
 Each node runs a daemon.  The daemon sends and receives messages over HTTP JSON RPC interface.  The web UI is also available over HTTP.  Subscribers can request connections with gateways.  Connection sessions have a short lifetime and need to be renewed.  The daemon manages networking configuration on both ends, which can be adjusted in the configuration file.
 Knowledge of available gateways on a network is gained by occasionally scanning the network and adding the new information into the DHT.
 
-![Design](design.png?raw=true)
+![Design](https://raw.githubusercontent.com/transitd/transitd/master/docs/design.png)
 
 ## HTTP JSON RPC API
 

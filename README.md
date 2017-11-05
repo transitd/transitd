@@ -1,4 +1,4 @@
-![Transit Daemon](src/www/images/logo.transitd.png?raw=true)
+![Transit Daemon](https://raw.githubusercontent.com/transitd/transitd/master/src/www/images/logo.transitd.png)
 
 # Transit Daemon
 Transit Daemon is an automated Internet gateway publishing tool for community networks.
