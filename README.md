@@ -70,6 +70,8 @@ The CLI tool, Web UI, and other hosts communicate with the daemon through the HT
 3. set up local network configuration for tunneling through gateways
 4. detect downtime and automatically switch between gateways, track connection quality of servers
 
+## Documentation
+
 [Docker Installation](docker/README.md)
 
 [LEDE/OpenWrt Image Build Instructions](lede/README.md)
