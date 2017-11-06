@@ -28,7 +28,10 @@ function rpcInterface.getInterface()
 		
 		info.version = 'prototype'
 		
-		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		local requestip, err = rpcInterface.getRequestIp()
+		if err then
+			return { success = false, errorMsg = err }
+		end
 		
 		local authorized, err = network.isAuthorizedIp(requestip)
 		if err then
@@ -76,7 +79,11 @@ function rpcInterface.getInterface()
 			return { success = false, errorMsg = "Options type is invalid" }
 		end
 		
-		local ip = cgilua.servervariable("REMOTE_ADDR")
+		local ip, err = rpcInterface.getRequestIp()
+		if err then
+			return { success = false, errorMsg = err }
+		end
+		
 		db.registerNode(name, ip, port)
 		
 		if config.gateway.enabled ~= "yes" then
@@ -100,7 +107,10 @@ function rpcInterface.getInterface()
 		
 		sid = tostring(sid)
 		
-		local ip = cgilua.servervariable("REMOTE_ADDR")
+		local ip, err = rpcInterface.getRequestIp()
+		if err then
+			return { success = false, errorMsg = err }
+		end
 		
 		if config.gateway.enabled ~= "yes" then
 			return { success = false, errorMsg = "No gateway here" }
@@ -123,7 +133,10 @@ function rpcInterface.getInterface()
 		
 		sid = tostring(sid)
 		
-		local ip = cgilua.servervariable("REMOTE_ADDR")
+		local ip, err = rpcInterface.getRequestIp()
+		if err then
+			return { success = false, errorMsg = err }
+		end
 		
 		if config.gateway.enabled ~= "yes" then
 			return { success = false, errorMsg = "No gateway here" }
@@ -140,7 +153,10 @@ function rpcInterface.getInterface()
 	
 	connect = function(ip, port, suite, sid)
 		
-		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		local requestip, err = rpcInterface.getRequestIp()
+		if err then
+			return { success = false, errorMsg = err }
+		end
 		
 		local authorized, err = network.isAuthorizedIp(requestip)
 		if err then
@@ -168,7 +184,10 @@ function rpcInterface.getInterface()
 		
 		sid = tostring(sid)
 		
-		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		local requestip, err = rpcInterface.getRequestIp()
+		if err then
+			return { success = false, errorMsg = err }
+		end
 		
 		local authorized, err = network.isAuthorizedIp(requestip)
 		if err then
@@ -197,7 +216,10 @@ function rpcInterface.getInterface()
 		
 		sid = tostring(sid)
 		
-		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		local requestip, err = rpcInterface.getRequestIp()
+		if err then
+			return { success = false, errorMsg = err }
+		end
 		
 		local authorized, err = network.isAuthorizedIp(requestip)
 		if err then
@@ -233,7 +255,10 @@ function rpcInterface.getInterface()
 	
 	listGateways = function(ip, port, suite, sid)
 		
-		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		local requestip, err = rpcInterface.getRequestIp()
+		if err then
+			return { success = false, errorMsg = err }
+		end
 		
 		local authorized, err = network.isAuthorizedIp(requestip)
 		if err then
@@ -255,7 +280,10 @@ function rpcInterface.getInterface()
 	
 	listSessions = function()
 		
-		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		local requestip, err = rpcInterface.getRequestIp()
+		if err then
+			return { success = false, errorMsg = err }
+		end
 		
 		local authorized, err = network.isAuthorizedIp(requestip)
 		if err then
@@ -277,7 +305,10 @@ function rpcInterface.getInterface()
 	
 	status = function()
 		
-		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		local requestip, err = rpcInterface.getRequestIp()
+		if err then
+			return { success = false, errorMsg = err }
+		end
 		
 		local authorized, err = network.isAuthorizedIp(requestip)
 		if err then
@@ -295,7 +326,10 @@ function rpcInterface.getInterface()
 	
 	configure = function(settings)
 		
-		local requestip = cgilua.servervariable("REMOTE_ADDR")
+		local requestip, err = rpcInterface.getRequestIp()
+		if err then
+			return { success = false, errorMsg = err }
+		end
 		
 		local authorized, err = network.isAuthorizedIp(requestip)
 		if err then
@@ -336,6 +370,17 @@ function rpcInterface.getInterface()
 	end,
 	
 	}
+end
+
+function rpcInterface.getRequestIp()
+	
+	local ip = cgilua.servervariable"REMOTE_ADDR"
+	if not ip then return nil, "Failed to get REMOTE_ADDR" end
+	local parsedIp, err = network.parseIp(ip)
+	if err then return nil, err end
+	if not parsedIp then return nil, "Failed to parse REMOTE_ADDR" end
+	
+	return ip
 end
 
 function rpcInterface.transaction(suite, method, request, response)
