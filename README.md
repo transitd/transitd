@@ -72,10 +72,10 @@ The CLI tool, Web UI, and other hosts communicate with the daemon through the HT
 
 ## Documentation
 
-[Docker Installation](docker/README.md)
+[Docker Installation](https://github.com/transitd/transitd/blob/master/docker/README.md)
 
-[LEDE/OpenWrt Image Build Instructions](lede/README.md)
+[LEDE/OpenWrt Image Build Instructions](https://github.com/transitd/transitd/blob/master/lede/README.md)
 
-[Local Installation](INSTALL.md)
+[Local Installation](https://github.com/transitd/transitd/blob/master/INSTALL.md)
 
-[Design](docs/README.md)
+[Design](https://github.com/transitd/transitd/blob/master/docs/README.md)
