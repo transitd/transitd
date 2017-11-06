@@ -4,9 +4,10 @@ set -e
 
 uci set firewall.transitdserverport=rule
 uci set firewall.transitdserverport.enabled='1'
-uci set firewall.transitdserverport.name='Allow-transitd-server'
+uci set firewall.transitdserverport.name='Allow-transitd'
 uci set firewall.transitdserverport.proto='tcp'
 uci set firewall.transitdserverport.dest_port='65533'
+uci set firewall.transitdserverport.src='*'
 uci set firewall.transitdserverport.target='ACCEPT'
 
 uci commit firewall
