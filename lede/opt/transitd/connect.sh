@@ -38,6 +38,10 @@ if [ "$ipv4" != "0" ]; then
 	mask=`cdr2mask $cidr4`
 	uci set network.wan.netmask="${mask}"
 	
+else
+	
+	uci set network.wan.proto=none
+	
 fi
 
 if [ "$ipv4gateway" != "0" ]; then
@@ -53,6 +57,10 @@ if [ "$ipv6" != "0" ]; then
 	uci set network.wan6.proto=static
 	uci set network.wan6.ip6addr="${ipv6}/${cidr6}"
 	uci set network.wan6.ip6prefix=128
+	
+else
+	
+	uci set network.wan6.proto=none
 	
 fi
 
