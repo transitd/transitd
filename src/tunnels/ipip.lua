@@ -115,13 +115,25 @@ function ipip.requestConnectionCommit(request, response)
 	local session, err = db.lookupSession(request.sid)
 	if not err and session then
 		local result, err = ipip.gatewaySubscriberSetup(session)
-		if err then
+		if err or not result then
 			threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "requestConnectionCommit", ["request"] = request, ["response"] = response, error = err})
 		end
 	end
 	
 	response.success = true
 	
+	return response
+end
+
+function ipip.requestConnectionAbort(request, response)
+	response.ipv4 = nil
+	response.cidr4 = nil
+	response.ipv4gateway = nil
+	response.ipv6 = nil
+	response.cidr6 = nil
+	response.ipv6gateway = nil
+	response.interface4 = nil
+	response.interface6 = nil
 	return response
 end
 
