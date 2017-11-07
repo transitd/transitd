@@ -2,6 +2,6 @@
 
 set -e
 
-/etc/init.d/transitd enable && /etc/init.d/transitd start
-/etc/init.d/transitd-redirect enable && /etc/init.d/transitd-redirect start
+/etc/init.d/transitd enable
+/etc/init.d/transitd-redirect enable
 return $?
