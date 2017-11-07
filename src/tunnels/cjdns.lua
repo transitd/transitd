@@ -465,6 +465,13 @@ function cjdns.gatewaySetup()
 	return true, nil
 end
 
+function cjdns.gatewayMaintain()
+	
+	-- TODO: if cjdroute died, reconfigure the tunnels, etc
+	
+	return true, nil
+end
+
 function cjdns.gatewayTeardown()
 	
 	-- determine cjdns interface
