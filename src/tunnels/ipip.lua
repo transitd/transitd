@@ -158,10 +158,8 @@ function ipip.connect(request, response)
 		end
 	end
 	
-	if result.interface then
-		response.interface4 = result.interface.name
-		response.interface6 = result.interface.name
-	end
+	if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
+	if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
 	
 	response.success = true
 	
@@ -344,6 +342,8 @@ function ipip.subscriberSetup(session)
 	
 	local networkModule = require("networks."..suites[suite].network.module)
 	
+	local result = {}
+	
 	local remoteIp, err = network.parseIp(session.meshIP)
 	local localIp, err = networkModule.getMyIp()
 	if err then return nil, err end
@@ -386,6 +386,8 @@ function ipip.subscriberSetup(session)
 			return nil, "Failed to set local IPv4 address: "..err
 		end
 		
+		result.interface4 = interface
+		
 		if mode == "route" then
 			
 			-- interface data changed, update it
@@ -421,6 +423,8 @@ function ipip.subscriberSetup(session)
 			return nil, "Failed to set local IPv6 address: "..err
 		end
 		
+		result.interface6 = interface
+		
 		if mode == "route" then
 			
 			-- interface data changed, update it
@@ -443,7 +447,7 @@ function ipip.subscriberSetup(session)
 		
 	end
 	
-	return interfaceName, nil
+	return result, nil
 end
 
 function ipip.subscriberTeardown(sid)
