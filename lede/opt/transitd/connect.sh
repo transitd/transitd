@@ -8,9 +8,6 @@ ipv6=$5
 ipv6gateway=$6
 interface=$7
 
-# hack
-oldaddr=`ifconfig tuncjdns | awk '/inet6/{print $3}'`
-
 backupfile=/opt/transitd/uci.network.normal.config
 
 if [ ! -e "$backupfile" ]; then
