@@ -41,10 +41,11 @@ uci set dhcp.mesh3.limit='65500'
 uci set dhcp.mesh3.leasetime='2m'
 uci set dhcp.mesh3.dhcp_option='6,8.8.8.8,8.8.4.4'
 
+# set up mesh zone
 uci set firewall.meshzone=zone
+uci set firewall.meshzone.name='mesh'
 uci set firewall.meshzone.input='ACCEPT'
 uci set firewall.meshzone.output='ACCEPT'
-uci set firewall.meshzone.name='mesh'
 uci set firewall.meshzone.forward='ACCEPT'
 uci set firewall.meshzone.network='mesh1 mesh2 mesh3'
 uci set firewall.meshzonefw=forwarding

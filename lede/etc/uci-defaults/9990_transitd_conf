@@ -3,10 +3,19 @@
 set -e
 
 cp /opt/transitd/transitd.conf.sample /opt/transitd/transitd.conf
+
 transitd-cli --set daemon.authorizedNetworks=127.0.0.1/8,::1/128,192.168.1.0/24
+
 transitd-cli --set subscriber.routing=none
 transitd-cli --set subscriber.onConnect=/opt/transitd/connect.sh
 transitd-cli --set subscriber.onDisconnect=/opt/transitd/disconnect.sh
 transitd-cli --set subscriber.onGoingOnline=/opt/transitd/online.sh
 transitd-cli --set subscriber.onGoingOffline=/opt/transitd/offline.sh
+
 transitd-cli --set cjdns.config=/tmp/etc/cjdroute.conf
+
+transitd-cli --set ipip.routing=none
+transitd-cli --set gateway.onConnect=/opt/transitd/register.sh
+transitd-cli --set gateway.onDisconnect=/opt/transitd/release.sh
+
+exit 0

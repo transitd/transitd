@@ -2,6 +2,7 @@
 
 set -e
 
+# set up rule to allow external connections to transitd port
 uci set firewall.transitdserverport=rule
 uci set firewall.transitdserverport.enabled='1'
 uci set firewall.transitdserverport.name='Allow-transitd'
@@ -9,6 +10,16 @@ uci set firewall.transitdserverport.proto='tcp'
 uci set firewall.transitdserverport.dest_port='65533'
 uci set firewall.transitdserverport.src='*'
 uci set firewall.transitdserverport.target='ACCEPT'
+
+# set up transitd zone (for gateway use only)
+uci set firewall.transitdzone=zone
+uci set firewall.transitdzone.name='transitd'
+uci set firewall.transitdzone.input='ACCEPT'
+uci set firewall.transitdzone.output='ACCEPT'
+uci set firewall.transitdzone.forward='ACCEPT'
+uci set firewall.transitdzonefw=forwarding
+uci set firewall.transitdzonefw.dest='wan'
+uci set firewall.transitdzonefw.src='transitd'
 
 uci commit firewall
 
