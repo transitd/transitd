@@ -15,6 +15,14 @@ local online = nil
 
 function monitor.check()
 	
+	monitor.onlineCheck()
+	
+	-- TODO: do other kinds of checks
+	
+end
+
+function monitor.onlineCheck()
+	
 	local target = config.daemon.pingTarget
 	if not target then target = "8.8.8.8" end
 	
