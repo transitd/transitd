@@ -52,6 +52,7 @@ if [ "$ipv6" != "0" ]; then
 	
 	uci set network.wan6.proto=static
 	uci set network.wan6.ip6addr="${ipv6}/${cidr6}"
+	uci set network.wan6.ip6prefix=128
 	
 fi
 
