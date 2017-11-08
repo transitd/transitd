@@ -154,6 +154,9 @@ function ipip.releaseConnection(request, response)
 		threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "releaseConnection", ["request"] = request, ["response"] = response, error = err})
 	end
 	
+	if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
+	if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
+	
 	response.success = true
 	
 	return response
@@ -186,9 +189,12 @@ end
 function ipip.connectAbort(request, response)
 	
 	local result, err = ipip.subscriberTeardown(request.sid)
-	if err then
+	if err or not result then
 		threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "connectAbort", ["request"] = request, ["response"] = response, error = err})
 	end
+	
+	if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
+	if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
 	
 	return response
 end
@@ -301,6 +307,8 @@ end
 
 function ipip.gatewaySubscriberTeardown(session)
 	
+	local result = {}
+	
 	local interfaceName, err = db.getSessionIpipInterface(session.sid)
 	if err then return nil, "Failed to get session ipip interface name: "..err end
 	if not interfaceName then return nil, "Failed to get session ipip interface name" end
@@ -320,6 +328,8 @@ function ipip.gatewaySubscriberTeardown(session)
 		if err then return nil, "Failed to tear down gateway subscriber:"..err end
 		if not res then return nil, "Failed to tear down gateway subscriber" end
 		
+		result.interface4 = interface
+		
 	end
 	
 	if subnet6 then
@@ -327,6 +337,8 @@ function ipip.gatewaySubscriberTeardown(session)
 		local res, err = gateway.interfaceTeardown6(interface, subnet6)
 		if err then return nil, err end
 		if not res then return nil, "Failed to tear down gateway subscriber" end
+		
+		result.interface6 = interface
 		
 	end
 	
@@ -342,7 +354,7 @@ function ipip.gatewaySubscriberTeardown(session)
 		
 	end
 	
-	return true, nil
+	return result, nil
 end
 
 function ipip.subscriberSetup(session)
@@ -475,19 +487,29 @@ end
 
 function ipip.subscriberTeardown(sid)
 	
+	local result = {}
+	
 	local interfaceName, err = db.getSessionIpipInterface(sid)
 	if err then return nil, "Failed to get session ipip interface name: "..err end
 	if not interfaceName then return nil, "Failed to get session ipip interface name" end
 	
-	local res, err = network.downInterface(interfaceName)
+	local interface, err = network.getInterface(interfaceName)
+	if err then return nil, "Failed to query "..interfaceName.." interface: "..err end
+	if not interface then return nil, "Failed to query "..interfaceName.." interface" end
+	
+	local res, err = network.downInterface(interface.name)
 	if err then return nil, "Failed to bring down interface "..interfaceName..":"..err end
 	if not res then return nil, "Failed to bring down interface "..interfaceName end
 	
-	local res, err = network.teardownTunnel(interfaceName)
+	local res, err = network.teardownTunnel(interface.name)
 	if err then return nil, "Failed to tear down ipip tunnel:"..err end
 	if not res then return nil, "Failed to tear down ipip tunnel" end
 	
-	return true, nil
+	-- TODO: fix
+	result.interface4 = interface;
+	result.interface6 = interface;
+	
+	return result, nil
 end
 
 
