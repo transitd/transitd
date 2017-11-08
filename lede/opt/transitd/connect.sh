@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -e
+
 sessionid=$1
 meshIp=$2
 ipv4=$3
@@ -26,12 +28,12 @@ if [ "$ipv4" != "0" ]; then
 	
 	uci set network.wan.proto=static
 	uci set network.wan.ipaddr="${ipv4}"
-	mask=`cdr2mask $cidr4`
+	mask="`cdr2mask $cidr4`"
 	uci set network.wan.netmask="${mask}"
 	
 else
 	
-	uci set network.wan.proto=none
+	uci set network.wan.ifname=""
 	
 fi
 
@@ -51,7 +53,7 @@ if [ "$ipv6" != "0" ]; then
 	
 else
 	
-	uci set network.wan6.proto=none
+	uci set network.wan6.ifname=""
 	
 fi
 
@@ -60,3 +62,8 @@ if [ "$ipv6gateway" != "0" ]; then
 fi
 
 uci commit network
+
+/etc/init.d/network reload
+/etc/init.d/firewall reload
+
+exit 0

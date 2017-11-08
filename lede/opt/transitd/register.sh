@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -e
+
 sessionid=$1
 meshIp=$2
 ipv4=$3
@@ -27,7 +29,7 @@ if [ "$interface4" != "0" ]; then
 	fi
 	
 	if [ "$cidr4" != "0" ]; then
-		mask=`cdr2mask $cidr4`
+		mask="`cdr2mask $cidr4`"
 		uci set "network.${ifname}.netmask=${mask}"
 	fi
 	
@@ -58,3 +60,8 @@ if [ "$interface6" != "0" ]; then
 	uci commit network
 	uci commit firewall
 fi
+
+/etc/init.d/network reload
+/etc/init.d/firewall reload
+
+exit 0

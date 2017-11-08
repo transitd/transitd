@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -e
+
 uci del firewall.transitdofflinehttp
 
 uci set firewall.transitdofflinehttp=redirect
@@ -18,3 +20,5 @@ uci add_list dhcp.@dnsmasq[-1].address=/#/192.168.1.1
 uci commit dhcp
 
 /etc/init.d/dnsmasq reload
+
+exit 0

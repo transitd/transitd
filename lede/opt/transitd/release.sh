@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -e
+
 sessionid=$1
 meshIp=$2
 ipv4=$3
@@ -34,3 +36,8 @@ if [ "$interface6" != "0" ]; then
 	uci commit network
 	uci commit firewall
 fi
+
+/etc/init.d/network reload
+/etc/init.d/firewall reload
+
+exit 0

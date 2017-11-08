@@ -15,7 +15,7 @@ transitd-cli --set subscriber.onGoingOffline=/opt/transitd/offline.sh
 transitd-cli --set cjdns.config=/tmp/etc/cjdroute.conf
 
 transitd-cli --set ipip.routing=none
-transitd-cli --set gateway.onConnect=/opt/transitd/register.sh
-transitd-cli --set gateway.onDisconnect=/opt/transitd/release.sh
+transitd-cli --set gateway.onRegister=/opt/transitd/register.sh
+transitd-cli --set gateway.onRelease=/opt/transitd/release.sh
 
 exit 0

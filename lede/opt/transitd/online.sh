@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -e
+
 uci del firewall.transitdofflinehttp
 uci commit firewall
 
@@ -9,3 +11,5 @@ uci del dhcp.@dnsmasq[-1].address
 uci commit dhcp
 
 /etc/init.d/dnsmasq reload
+
+exit 0

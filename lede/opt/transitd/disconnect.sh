@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+set -e
+
 sessionid=$1
 meshIp=$2
 ipv4=$3
@@ -20,3 +22,8 @@ if [ -e "$backupfile" ]; then
 fi
 
 uci commit network
+
+/etc/init.d/network reload
+/etc/init.d/firewall reload
+
+exit 0
