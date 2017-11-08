@@ -200,7 +200,8 @@ end
 
 function gateway.connect(request, response)
 	
-	local request.sid, err = gateway.allocateSid(request.sid)
+	local err
+	request.sid, err = gateway.allocateSid(request.sid)
 	if err then
 		response.success = false response.errorMsg = err response.temporaryError = true return response
 	end
