@@ -114,11 +114,15 @@ function ipip.requestConnectionCommit(request, response)
 	
 	local session, err = db.lookupSession(request.sid)
 	if not err and session then
+		-- TODO: this should probably be in requestConnection
 		local result, err = ipip.gatewaySubscriberSetup(session)
 		if err or not result then
 			threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "requestConnectionCommit", ["request"] = request, ["response"] = response, error = err})
 		end
 	end
+	
+	if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
+	if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
 	
 	response.success = true
 	
@@ -224,6 +228,8 @@ function ipip.gatewaySubscriberSetup(session)
 	
 	local networkModule = require("networks."..suites[suite].network.module)
 	
+	local result = {}
+	
 	local remoteIp, err = network.parseIp(session.meshIP)
 	local localIp, err = networkModule.getMyIp()
 	if err then return nil, err end
@@ -267,6 +273,8 @@ function ipip.gatewaySubscriberSetup(session)
 		if err then return nil, "Failed to set up routing:"..err end
 		if not subnet4 then return nil, "Failed to set up routing" end
 		
+		result.interface4 = interface
+		
 	end
 	
 	if config.gateway.ipv6support == "yes" and session.internetIPv6 then
@@ -283,9 +291,11 @@ function ipip.gatewaySubscriberSetup(session)
 		if err then return nil, "Failed to set up routing:"..err end
 		if not subnet6 then return nil, "Failed to set up routing" end
 		
+		result.interface6 = interface
+		
 	end
 	
-	return interfaceName, nil
+	return result, nil
 end
 
 function ipip.gatewaySubscriberTeardown(session)
