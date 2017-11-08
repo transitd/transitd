@@ -118,7 +118,7 @@ function gateway.requestConnection(request, response)
 		response.success = false response.errorMsg = err response.temporaryError = true return response
 	end
 	
-	response.sid = sid
+	response.sid = request.sid
 	
 	local result, err = db.registerSession(request.sid, true, request.name, request.suite, request.ip, request.port)
 	if err then
@@ -200,18 +200,12 @@ end
 
 function gateway.connect(request, response)
 	
-	local sid, err = gateway.allocateSid(request.sid)
+	local request.sid, err = gateway.allocateSid(request.sid)
 	if err then
 		response.success = false response.errorMsg = err response.temporaryError = true return response
 	end
 	
-	response.sid = sid
-	
-	if request.sid == nil then
-		request.sid = sid
-	elseif request.sid ~= response.sid then
-		response.success = false response.errorMsg = "Session ID mismatch" return response
-	end
+	response.sid = request.sid
 	
 	local result, err = db.registerSession(request.sid, false, request.name, request.suite, request.ip, request.port)
 	if err then
