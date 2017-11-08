@@ -118,6 +118,8 @@ function gateway.requestConnection(request, response)
 		response.success = false response.errorMsg = err response.temporaryError = true return response
 	end
 	
+	response.sid = sid
+	
 	local result, err = db.registerSession(request.sid, true, request.name, request.suite, request.ip, request.port)
 	if err then
 		threadman.notify({type = "error", module = "gateway", ["function"] = "requestConnection", ["request"] = request, ["response"] = response, ["error"] = err, ["result"] = result})
@@ -146,15 +148,26 @@ function gateway.requestConnectionCommit(request, response)
 end
 
 function gateway.renewConnection(request, response)
+	
+	local session, err = db.lookupSession(request.sid)
+	if err then
+		response.success = false response.errorMsg = err return response
+	end
+	
+	response.sid = session.sid
+	
 	local timestamp = os.time()
 	response.timeoutTimestamp = timestamp + tonumber(config.gateway.subscriberTimeout)
 	response.success = true
 	return response
+	
 end
 
 function gateway.renewConnectionAbort(request, response)
+	
 	response.timeoutTimestamp = nil
 	return response
+	
 end
 
 function gateway.renewConnectionCommit(request, response)

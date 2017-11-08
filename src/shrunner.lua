@@ -33,7 +33,7 @@ function shrunner.run()
 				if msg.type=="released" then exe = config.gateway.onRelease end
 				if msg.type=="connected" then exe = config.subscriber.onConnect end
 				if msg.type=="disconnected" then exe = config.subscriber.onDisconnect end
-				if exe and msg.response.sid then
+				if exe and msg.response and msg.response.sid then
 					local db = require("db")
 					local session = db.lookupSession(msg.response.sid)
 					if session and exe then
