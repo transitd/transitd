@@ -119,10 +119,11 @@ function ipip.requestConnectionCommit(request, response)
 		if err or not result then
 			threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "requestConnectionCommit", ["request"] = request, ["response"] = response, error = err})
 		end
+		
+		if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
+		if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
+		
 	end
-	
-	if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
-	if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
 	
 	response.success = true
 	
