@@ -105,24 +105,14 @@ function ipip.requestConnection(request, response)
 		response.success = false response.errorMsg = err return response
 	end
 	
-	response.success = true
+	local result, err = ipip.gatewaySubscriberSetup(session)
+	if err or not result then
+		threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "requestConnectionCommit", ["request"] = request, ["response"] = response, error = err})
+	end
 	
-	return response
-end
-
-function ipip.requestConnectionCommit(request, response)
-	
-	local session, err = db.lookupSession(request.sid)
-	if not err and session then
-		-- TODO: this should probably be in requestConnection
-		local result, err = ipip.gatewaySubscriberSetup(session)
-		if err or not result then
-			threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "requestConnectionCommit", ["request"] = request, ["response"] = response, error = err})
-		end
-		
+	if result then
 		if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
 		if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
-		
 	end
 	
 	response.success = true
@@ -131,6 +121,21 @@ function ipip.requestConnectionCommit(request, response)
 end
 
 function ipip.requestConnectionAbort(request, response)
+	
+	if response.interface4 or response.interface6 then
+		
+		local session, err = db.lookupSession(request.sid)
+		if err then
+			threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "requestConnectionAbort", ["request"] = request, ["response"] = response, error = err})
+		end
+		
+		local result, err = ipip.gatewaySubscriberTeardown(session)
+		if err then
+			threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "requestConnectionAbort", ["request"] = request, ["response"] = response, error = err})
+		end
+		
+	end
+	
 	response.ipv4 = nil
 	response.cidr4 = nil
 	response.ipv4gateway = nil
@@ -139,6 +144,7 @@ function ipip.requestConnectionAbort(request, response)
 	response.ipv6gateway = nil
 	response.interface4 = nil
 	response.interface6 = nil
+	
 	return response
 end
 
@@ -146,16 +152,18 @@ function ipip.releaseConnection(request, response)
 	
 	local session, err = db.lookupSession(request.sid)
 	if err then
-		response.success = false response.errorMsg = err return response
-	end
-	
-	local result, err = ipip.gatewaySubscriberTeardown(session)
-	if err then
 		threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "releaseConnection", ["request"] = request, ["response"] = response, error = err})
 	end
 	
-	if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
-	if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
+	local result, err = ipip.gatewaySubscriberTeardown(session)
+	if err or not result then
+		threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "releaseConnection", ["request"] = request, ["response"] = response, error = err})
+	end
+	
+	if result then
+		if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
+		if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
+	end
 	
 	response.success = true
 	
@@ -178,8 +186,10 @@ function ipip.connect(request, response)
 		end
 	end
 	
-	if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
-	if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
+	if result then
+		if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
+		if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
+	end
 	
 	response.success = true
 	
@@ -193,8 +203,10 @@ function ipip.connectAbort(request, response)
 		threadman.notify({type = "error", module = "tunnels.ipip", ["function"] = "connectAbort", ["request"] = request, ["response"] = response, error = err})
 	end
 	
-	if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
-	if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
+	if result then
+		if result.interface4 and result.interface4.name then response.interface4 = result.interface4.name end
+		if result.interface6 and result.interface6.name then response.interface6 = result.interface6.name end
+	end
 	
 	return response
 end
@@ -266,7 +278,7 @@ function ipip.gatewaySubscriberSetup(session)
 	if err then return nil, "Failed to bring up "..interfaceName.." tunnel: "..err end
 	if not res then return nil, "Failed to bring up "..interfaceName.." tunnel" end
 	
-	if session.internetIPv4 then
+	if config.ipip.ipv4subnet and config.ipip.ipv4gateway then
 		
 		local subnet4, err = network.parseIpv4Subnet(config.ipip.ipv4subnet)
 		if err then
@@ -284,7 +296,7 @@ function ipip.gatewaySubscriberSetup(session)
 		
 	end
 	
-	if config.gateway.ipv6support == "yes" and session.internetIPv6 then
+	if config.gateway.ipv6support == "yes" and config.ipip.ipv6subnet and config.ipip.ipv6gateway then
 		
 		local subnet6, err = network.parseIpv6Subnet(config.ipip.ipv6subnet)
 		if err then
