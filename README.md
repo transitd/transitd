@@ -37,6 +37,7 @@ The CLI tool, Web UI, and other hosts communicate with the daemon through the HT
 * bmx6/7 *(to be implemented)*
 * olsr/2 *(to be implemented)*
 * babel *(to be implemented)*
+* bird (bgp/ospf) *(to be implemented)*
 * layer 2 networks *(to be implemented)*
 
 ### Tunnel support
@@ -50,7 +51,7 @@ The CLI tool, Web UI, and other hosts communicate with the daemon through the HT
 * tinc *(to be implemented)*
 * tun2socks *(to be implemented)*
 * pptp *(to be implemented)*
-* IPSec *(to be implemented)*
+* IPsec *(to be implemented)*
 * l2tp *(to be implemented)*
 
 ### Payment method support
