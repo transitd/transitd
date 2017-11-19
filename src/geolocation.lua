@@ -15,8 +15,7 @@ local support = require("support")
 
 function geolocation.run()
 
-
-    local listener = threadman.registerListener("geolocation",{"exit", "heartbeat"}
+    local listener = threadman.registerListener("geolocation",{"exit", "heartbeat"})
 
     while true do
         local msg = listener:listen()
@@ -39,12 +38,13 @@ function geolocation.run()
     end
 
     threadman.unregisterListener(listener)
+
 end
 
 function geolocation.updateLocation()
 
     local modules = support.getGeo()
-    local bestlocation = []
+    local bestlocation = {}
     for geomod, geo in pairs(modules) do
         bestlocation = module.queryLocation()
     end
