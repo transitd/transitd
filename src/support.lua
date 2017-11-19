@@ -86,6 +86,24 @@ function support.getSuites()
 	return list
 end
 
+function support.getGeo()
+
+	local list = threadman.getShared('geoModules')
+	if list ~= nil then return list end
+
+	for geomod, geo in pairs(buildList("./geo/")) do
+		local geolocation = require("geo."..geo.module)
+		if geolocation.checkSupport then
+			list[net.name] = geo
+		end
+	end
+
+	threadman.setShared('geoModules', list)
+
+	return list
+
+end
+
 function support.matchSuite(suite)
 	
 	local matchedSuite = nil

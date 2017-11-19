@@ -11,7 +11,9 @@
 [main]
 
 name=lua-transitd
-
+latitude=42.361536
+longitude=-71.0893531
+altitude=0
 
 [daemon]
 
