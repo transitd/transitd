@@ -1,7 +1,7 @@
 --[[
 @file user.lua
 @license The MIT License (MIT)
-@copyright 2017 transitd
+@copyright 2017 William Fleurant
 --]]
 
 --- @module user

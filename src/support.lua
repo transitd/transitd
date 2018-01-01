@@ -93,7 +93,7 @@ function support.getGeo()
 
 	for geomod, geo in pairs(buildList("./geo/")) do
 		local geolocation = require("geo."..geo.module)
-		if geolocation.checkSupport then
+		if geolocation.checkSupport() then
 			list[net.name] = geo
 		end
 	end
