@@ -18,6 +18,7 @@ local gateway = require("gateway")
 local scanner = require("scanner")
 local network = require("network")
 local support = require("support")
+local geolocation = require("geolocation")
 
 function rpcInterface.getInterface()
 	return {
